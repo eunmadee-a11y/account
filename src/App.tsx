@@ -391,7 +391,7 @@ export default function App() {
             </div>
             <span className="text-lg font-black tracking-tight text-brand-text-main">Account</span>
           </div>
-          <nav className="hidden xl:flex items-center gap-1">
+         <nav className="flex overflow-x-auto gap-1 pb-2">
             <TabButton name="홈" icon={Home} />
             <TabButton name="내 지출" icon={CreditCard} />
             <TabButton name="연금/투자 관리" icon={TrendingUp} />
