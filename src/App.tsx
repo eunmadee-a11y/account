@@ -70,6 +70,45 @@ const formatNumber = (num: number) => {
   return new Intl.NumberFormat('ko-KR').format(num);
 };
 
+
+function exportCSV(transactions: any[]) {
+  if (!transactions.length) {
+    alert("데이터 없음");
+    return;
+  }
+
+  const header = ["날짜","구분","카테고리","통장","금액","메모"];
+
+  const rows = transactions.map((t) => [
+    t.date,
+    t.type,
+    t.category,
+    t.account,
+    t.amount,
+    t.memo || ""
+  ]);
+
+  const csvContent =
+    [header, ...rows]
+      .map((e) => e.join(","))
+      .join("\n");
+
+  const blob = new Blob(["\uFEFF" + csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "budget.csv";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+
+
 function EditableHeader({ title, setTitle, description }: any) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(title);
