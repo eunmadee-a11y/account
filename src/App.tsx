@@ -361,11 +361,11 @@ export default function App() {
   const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
     <button 
       onClick={() => setActiveTab(name)}
-      className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all relative ${
-        activeTab === name 
-          ? 'text-brand-primary bg-brand-primary/10' 
-          : 'text-brand-text-sub hover:bg-white/5'
-      }`}
+className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-all relative ${
+  activeTab === name 
+    ? 'text-brand-primary bg-brand-primary/10' 
+    : 'text-brand-text-sub hover:bg-white/5'
+}`}
     >
       <Icon size={16} />
       <span>{tabNames[name]}</span>
@@ -378,36 +378,36 @@ export default function App() {
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text-main flex flex-col font-sans selection:bg-brand-primary/30">
       {/* Navigation Rail / Header */}
-      <header className="h-16 px-6 flex items-center justify-between border-b border-brand-border sticky top-0 bg-brand-bg/80 backdrop-blur-md z-50">
-        
-
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/10">
-              <Activity size={18} className="text-white" />
-            </div>
-            <span className="text-lg font-black tracking-tight text-brand-text-main">Account</span>
-          </div>
-         <nav className="flex overflow-x-auto gap-1 pb-2">
-            <TabButton name="홈" icon={Home} />
-            <TabButton name="내 지출" icon={CreditCard} />
-            <TabButton name="연금/투자 관리" icon={TrendingUp} />
-            <TabButton name="감자 지출" icon={User} />
-            <TabButton name="월급 비교" icon={ComparisonIcon} />
-            <TabButton name="전체 자금 현황" icon={LayoutDashboard} />
-            <TabButton name="대출 관리" icon={LoanIcon} />
-            <TabButton name="1년 결산" icon={BarChart2} />
-          </nav>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 bg-brand-card/50 border border-brand-border px-3 py-1.5 rounded-full">
-            <button onClick={() => changeMonth(-1)} className="p-1 hover:text-brand-primary transition-colors"><ChevronLeft size={16} /></button>
-            <span className="text-sm font-bold min-w-[100px] text-center">{currentMonthDisplay}</span>
-            <button onClick={() => changeMonth(1)} className="p-1 hover:text-brand-primary transition-colors"><ChevronRight size={16} /></button>
-          </div>
-        </div>
-      </header>
+     <header className="h-16 px-6 flex items-center justify-between border-b border-brand-border sticky top-0 bg-brand-bg/80 backdrop-blur-md z-50">
+  
+  
+  <div className="flex items-center gap-8">
+    <div className="flex items-center gap-2">
+      <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/10">
+        <Activity size={18} className="text-white" />
+      </div>
+      <span className="text-lg font-black tracking-tight text-brand-text-main">Account</span>
+    </div>
+    <nav className="flex overflow-x-auto gap-1 pb-2">
+      <TabButton name="홈" icon={Home} />
+      <TabButton name="내 지출" icon={CreditCard} />
+      <TabButton name="연금/투자 관리" icon={TrendingUp} />
+      <TabButton name="감자 지출" icon={User} />
+      <TabButton name="월급 비교" icon={ComparisonIcon} />
+      <TabButton name="전체 자금 현황" icon={LayoutDashboard} />
+      <TabButton name="대출 관리" icon={LoanIcon} />
+      <TabButton name="1년 결산" icon={BarChart2} />
+    </nav>
+  </div>
+  
+  <div className="flex items-center gap-4">
+    <div className="flex items-center gap-3 bg-brand-card/50 border border-brand-border px-3 py-1.5 rounded-full">
+      <button onClick={() => changeMonth(-1)} className="p-1 hover:text-brand-primary transition-colors"><ChevronLeft size={16} /></button>
+      <span className="text-sm font-bold min-w-[100px] text-center">{currentMonthDisplay}</span>
+      <button onClick={() => changeMonth(1)} className="p-1 hover:text-brand-primary transition-colors"><ChevronRight size={16} /></button>
+    </div>
+  </div>
+</header>
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-[1400px] w-full mx-auto p-6 md:p-8">
@@ -2399,6 +2399,11 @@ function TransactionEditModal({
         </div>
 
         <div className="p-8 border-t border-brand-border bg-brand-bg/40 flex gap-4">
+
+                  <button onClick={() => exportCSV(transactions)}>
+  엑셀 다운로드
+</button>
+        
            <button onClick={onClose} className="flex-1 py-4 border border-brand-border rounded-xl font-bold uppercase text-[11px] hover:bg-white/5 transition-all tracking-widest">취소 (DISCARD)</button>
            <button 
              onClick={handleSave} 
@@ -2412,10 +2417,7 @@ function TransactionEditModal({
   );
 }
 
-        <button onClick={() => exportCSV(transactions)}>
-  엑셀 다운로드
-</button>
-        
+
 
 
 // --- HELPERS ---
