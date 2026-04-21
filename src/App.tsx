@@ -380,10 +380,7 @@ export default function App() {
       {/* Navigation Rail / Header */}
       <header className="h-16 px-6 flex items-center justify-between border-b border-brand-border sticky top-0 bg-brand-bg/80 backdrop-blur-md z-50">
         
-        <button onClick={() => exportCSV(transactions)}>
-  엑셀 다운로드
-</button>
-        
+
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/10">
@@ -395,7 +392,7 @@ export default function App() {
             <TabButton name="홈" icon={Home} />
             <TabButton name="내 지출" icon={CreditCard} />
             <TabButton name="연금/투자 관리" icon={TrendingUp} />
-            <TabButton name="내 지출" icon={User} />
+            <TabButton name="감자 지출" icon={User} />
             <TabButton name="월급 비교" icon={ComparisonIcon} />
             <TabButton name="전체 자금 현황" icon={LayoutDashboard} />
             <TabButton name="대출 관리" icon={LoanIcon} />
@@ -475,14 +472,22 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
         description="전체 자금의 흐름을 요약하여 브리핑합니다." 
       />
       {/* 1. Quick Entry Forms - Only for Gamja if preferred, but user said "Remove from My Expense section" */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* We only show Gamja's accounts for quick entry if requested, but instructions say "Remove from My Expense section" */}
-        {balances.filter((b: any) => b.category === '감자 자산').slice(0, 2).map((account: any) => (
-          <div key={account.id} className="bg-brand-card p-6 border border-brand-border rounded-brand shadow-brand">
-            <QuickEntryBox account={account.name} onAdd={addTransaction} categories={categories} setCategories={setCategories} />
-          </div>
-        ))}
-      </div>
+   {/* 1. 내 지출 입력창 */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  {mainAccounts.map((account: any) => (
+    <div
+      key={account.id}
+      className="bg-brand-card p-6 border border-brand-border rounded-brand shadow-brand"
+    >
+      <QuickEntryBox
+        account={account.name}
+        onAdd={addTransaction}
+        categories={categories}
+        setCategories={setCategories}
+      />
+    </div>
+  ))}
+</div>
 
       {/* 2. Account Balances */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -2406,6 +2411,11 @@ function TransactionEditModal({
     </div>
   );
 }
+
+        <button onClick={() => exportCSV(transactions)}>
+  엑셀 다운로드
+</button>
+        
 
 
 // --- HELPERS ---
