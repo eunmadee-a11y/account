@@ -368,7 +368,7 @@ export default function App() {
       }`}
     >
       <Icon size={16} />
-      <span className="hidden md:inline">{tabNames[name]}</span>
+      <span>{tabNames[name]}</span>
       {activeTab === name && (
         <motion.div layoutId="tab" className="absolute bottom-1 left-4 right-4 h-0.5 bg-brand-primary rounded-full shadow-[0_0_15px_rgba(148,213,255,0.6)]" />
       )}
