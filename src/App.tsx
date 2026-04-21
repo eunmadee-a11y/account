@@ -381,24 +381,25 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
      <header className="h-16 px-6 flex items-center justify-between border-b border-brand-border sticky top-0 bg-brand-bg/80 backdrop-blur-md z-50">
   
   
-  <div className="flex items-center gap-8">
-    <div className="flex items-center gap-2">
-      <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/10">
+<div className="flex items-center gap-4 min-w-0 flex-1 overflow-hidden">
+<div className="flex items-center gap-2 shrink-0">
+  <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/10">
         <Activity size={18} className="text-white" />
       </div>
       <span className="text-lg font-black tracking-tight text-brand-text-main">Account</span>
     </div>
-    <nav className="flex overflow-x-auto gap-1 pb-2">
-      <TabButton name="홈" icon={Home} />
-      <TabButton name="내 지출" icon={CreditCard} />
-      <TabButton name="연금/투자 관리" icon={TrendingUp} />
-      <TabButton name="감자 지출" icon={User} />
-      <TabButton name="월급 비교" icon={ComparisonIcon} />
-      <TabButton name="전체 자금 현황" icon={LayoutDashboard} />
-      <TabButton name="대출 관리" icon={LoanIcon} />
-      <TabButton name="1년 결산" icon={BarChart2} />
-    </nav>
-  </div>
+ <div className="w-full max-w-full overflow-hidden">
+  <nav className="flex w-full max-w-full gap-2 overflow-x-auto overflow-y-hidden whitespace-nowrap pb-2 touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <TabButton name="홈" icon={Home} />
+    <TabButton name="내 지출" icon={CreditCard} />
+    <TabButton name="연금/투자 관리" icon={TrendingUp} />
+    <TabButton name="감자 지출" icon={User} />
+    <TabButton name="월급 비교" icon={ComparisonIcon} />
+    <TabButton name="전체 자금 현황" icon={LayoutDashboard} />
+    <TabButton name="대출 관리" icon={LoanIcon} />
+    <TabButton name="1년 결산" icon={BarChart2} />
+  </nav>
+</div>
   
   <div className="flex items-center gap-4">
     <div className="flex items-center gap-3 bg-brand-card/50 border border-brand-border px-3 py-1.5 rounded-full">
@@ -805,7 +806,8 @@ function ExpenseView({ transactions, setTransactions, filteredData, changeMonth,
           const expenseTotal = accountTxs.filter((t: any) => t.type === '지출').reduce((sum: number, t: any) => sum + t.amount, 0);
 
           return (
-            <div key={accountName} className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand flex flex-col h-[650px]">
+            <div key={accountName} 
+        className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand flex flex-col min-h-[420px] md:h-[650px]"
                {/* Account Header Summary */}
                <div className="p-6 border-b border-brand-border bg-white/5 space-y-6">
                   <div className="flex items-center gap-3">
@@ -1204,56 +1206,8 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
                       </div>
                    </div>
 
-                   <div className="bg-brand-bg/40 p-3 rounded-xl border border-brand-border/50">
-                     <p className="text-[8px] font-black text-brand-text-sub uppercase mb-2">간편 내역 추가</p>
-                     <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                           <div className="space-y-1">
-                              <label className="text-[8px] font-bold opacity-50 ml-1">유형</label>
-                              <select className="form-select text-[9px] py-1 h-[28px] bg-brand-card" id={`type-${accountName}`}>
-                                 <option value="지출">지출</option>
-                                 <option value="수입">수입</option>
-                              </select>
-                           </div>
-                           <div className="space-y-1">
-                              <label className="text-[8px] font-bold opacity-50 ml-1">항목</label>
-                              <select className="form-select text-[9px] py-1 h-[28px] bg-brand-card" id={`cat-${accountName}`}>
-                                 {categories.expense.map((c: string) => <option key={c} value={c}>{c}</option>)}
-                              </select>
-                           </div>
-                        </div>
-                        <NumericInput 
-                          placeholder="금액" 
-                          onChange={(v: number) => { (window as any)[`val-${accountName}`] = v; }} 
-                          className="form-input text-[10px] font-black py-1 h-[28px]" 
-                        />
-                        <input type="text" placeholder="메모" className="form-input text-[9px] py-1 h-[28px]" id={`memo-${accountName}`} />
-                        <button 
-                          onClick={() => {
-                            const type = (document.getElementById(`type-${accountName}`) as HTMLSelectElement).value as TransactionType;
-                            const cat = (document.getElementById(`cat-${accountName}`) as HTMLSelectElement).value;
-                            const amount = (window as any)[`val-${accountName}`] || 0;
-                            const memo = (document.getElementById(`memo-${accountName}`) as HTMLInputElement).value;
-                            
-                            if (amount <= 0) return;
-                            const tx: GamjaTransaction = {
-                              id: Math.random().toString(36).substr(2, 9),
-                              date: new Date().toISOString().split('T')[0],
-                              type,
-                              account: accountName,
-                              category: cat,
-                              amount,
-                              memo: memo || '자산 관리'
-                            };
-                            setGamjaTransactions([tx, ...gamjaTransactions]);
-                            (document.getElementById(`memo-${accountName}`) as HTMLInputElement).value = '';
-                          }}
-                          className="w-full py-1.5 bg-brand-purple text-white rounded-md text-[9px] font-black hover:brightness-110 transition-all uppercase tracking-widest"
-                        >
-                           추가 (ADD)
-                        </button>
-                     </div>
-                   </div>
+                  
+                 
                 </div>
               );
            })}
