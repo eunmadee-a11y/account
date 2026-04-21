@@ -2243,8 +2243,15 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
                            <Cell key={`cell-gamja-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
                         ))}
                       </Bar>
+
+                
                    </BarChart>
                 </ResponsiveContainer>
+
+                 <button onClick={() => exportCSV(transactions)}>
+  엑셀 다운로드
+</button>
+               
              </div>
            )}
         </div>
@@ -2400,9 +2407,7 @@ function TransactionEditModal({
 
         <div className="p-8 border-t border-brand-border bg-brand-bg/40 flex gap-4">
 
-                  <button onClick={() => exportCSV(transactions)}>
-  엑셀 다운로드
-</button>
+ 
         
            <button onClick={onClose} className="flex-1 py-4 border border-brand-border rounded-xl font-bold uppercase text-[11px] hover:bg-white/5 transition-all tracking-widest">취소 (DISCARD)</button>
            <button 
