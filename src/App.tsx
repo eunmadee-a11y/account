@@ -395,7 +395,7 @@ export default function App() {
             <TabButton name="홈" icon={Home} />
             <TabButton name="내 지출" icon={CreditCard} />
             <TabButton name="연금/투자 관리" icon={TrendingUp} />
-            <TabButton name="감자 지출" icon={User} />
+            <TabButton name="내 지출" icon={User} />
             <TabButton name="월급 비교" icon={ComparisonIcon} />
             <TabButton name="전체 자금 현황" icon={LayoutDashboard} />
             <TabButton name="대출 관리" icon={LoanIcon} />
