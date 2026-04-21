@@ -379,6 +379,11 @@ export default function App() {
     <div className="min-h-screen bg-brand-bg text-brand-text-main flex flex-col font-sans selection:bg-brand-primary/30">
       {/* Navigation Rail / Header */}
       <header className="h-16 px-6 flex items-center justify-between border-b border-brand-border sticky top-0 bg-brand-bg/80 backdrop-blur-md z-50">
+        
+        <button onClick={() => exportCSV(transactions)}>
+  엑셀 다운로드
+</button>
+        
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/10">
