@@ -856,55 +856,12 @@ function ExpenseView({ transactions, setTransactions, filteredData, changeMonth,
                   
                   <div className="space-y-4">
                      {/* 간편 내역 추가 폼 */}
-                     <div className="bg-brand-bg/40 p-3 rounded-xl border border-brand-border/50">
-                        <p className="text-[8px] font-black text-brand-text-sub uppercase mb-2">간편 내역 추가</p>
-                        <div className="space-y-2">
-                           <div className="grid grid-cols-2 gap-2">
-                              <div className="space-y-1">
-                                 <label className="text-[8px] font-bold opacity-50 ml-1">유형</label>
-                                 <select className="form-select text-[9px] py-1 h-[28px] bg-brand-card" id={`exp-type-${accountName}`}>
-                                    <option value="지출">지출</option>
-                                    <option value="수입">수입</option>
-                                 </select>
-                              </div>
-                              <div className="space-y-1">
-                                 <label className="text-[8px] font-bold opacity-50 ml-1">항목</label>
-                                 <select className="form-select text-[9px] py-1 h-[28px] bg-brand-card" id={`exp-cat-${accountName}`}>
-                                    {categories.expense.map((c: string) => <option key={c} value={c}>{c}</option>)}
-                                 </select>
-                              </div>
-                           </div>
-                           <NumericInput 
-                             placeholder="금액" 
-                             onChange={(v: number) => { (window as any)[`exp-val-${accountName}`] = v; }} 
-                             className="form-input text-[10px] font-black py-1 h-[28px]" 
-                           />
-                           <input type="text" placeholder="메모" className="form-input text-[9px] py-1 h-[28px]" id={`exp-memo-${accountName}`} />
-                           <button 
-                             onClick={() => {
-                               const type = (document.getElementById(`exp-type-${accountName}`) as HTMLSelectElement).value as TransactionType;
-                               const cat = (document.getElementById(`exp-cat-${accountName}`) as HTMLSelectElement).value;
-                               const amount = (window as any)[`exp-val-${accountName}`] || 0;
-                               const memo = (document.getElementById(`exp-memo-${accountName}`) as HTMLInputElement).value;
-                               if (amount <= 0) return;
-                               const tx: Transaction = {
-                                 id: Math.random().toString(36).substr(2, 9),
-                                 date: new Date().toISOString().split('T')[0],
-                                 type,
-                                 account: accountName as any,
-                                 category: cat,
-                                 amount,
-                                 memo: memo || '자산 관리'
-                               };
-                               setTransactions([tx, ...transactions]);
-                               (document.getElementById(`exp-memo-${accountName}`) as HTMLInputElement).value = '';
-                             }}
-                             className="w-full py-1.5 bg-brand-primary text-white rounded-md text-[9px] font-black hover:brightness-110 transition-all uppercase tracking-widest"
-                           >
-                              추가
-                           </button>
-                        </div>
-                     </div>
+
+
+
+
+
+                    
 
                      <div>
                        <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">현재 잔액</p>
