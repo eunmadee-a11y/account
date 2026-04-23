@@ -378,36 +378,75 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text-main flex flex-col font-sans selection:bg-brand-primary/30">
       {/* Navigation Rail / Header */}
-     <header className="h-16 px-6 flex items-center justify-between border-b border-brand-border sticky top-0 bg-brand-bg/80 backdrop-blur-md z-50">
-  
-  
-  <div className="flex items-center gap-8">
-    <div className="flex items-center gap-2">
-      <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/10">
-        <Activity size={18} className="text-white" />
+
+
+{/* Navigation Rail / Header */}
+<header className="sticky top-0 bg-brand-bg/80 backdrop-blur-md z-50 border-b border-brand-border">
+  <div className="px-4 md:px-6 py-3 flex flex-col gap-3">
+    
+    {/* 1줄: 제목 / 월 이동 */}
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/10 shrink-0">
+          <Activity size={18} className="text-white" />
+        </div>
+        <span className="text-base md:text-lg font-black tracking-tight text-brand-text-main truncate">
+          Account
+        </span>
       </div>
-      <span className="text-lg font-black tracking-tight text-brand-text-main">Account</span>
+
+      <div className="flex items-center gap-2 bg-brand-card/50 border border-brand-border px-2.5 py-1.5 rounded-full shrink-0">
+        <button
+          onClick={() => changeMonth(-1)}
+          className="p-1 hover:text-brand-primary transition-colors"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <span className="text-xs md:text-sm font-bold min-w-[88px] md:min-w-[100px] text-center">
+          {currentMonthDisplay}
+        </span>
+        <button
+          onClick={() => changeMonth(1)}
+          className="p-1 hover:text-brand-primary transition-colors"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
     </div>
-    <nav className="flex overflow-x-auto gap-1 pb-2">
-      <TabButton name="홈" icon={Home} />
-      <TabButton name="내 지출" icon={CreditCard} />
-      <TabButton name="연금/투자 관리" icon={TrendingUp} />
-      <TabButton name="감자 지출" icon={User} />
-      <TabButton name="월급 비교" icon={ComparisonIcon} />
-      <TabButton name="전체 자금 현황" icon={LayoutDashboard} />
-      <TabButton name="대출 관리" icon={LoanIcon} />
-      <TabButton name="1년 결산" icon={BarChart2} />
-    </nav>
-  </div>
-  
-  <div className="flex items-center gap-4">
-    <div className="flex items-center gap-3 bg-brand-card/50 border border-brand-border px-3 py-1.5 rounded-full">
-      <button onClick={() => changeMonth(-1)} className="p-1 hover:text-brand-primary transition-colors"><ChevronLeft size={16} /></button>
-      <span className="text-sm font-bold min-w-[100px] text-center">{currentMonthDisplay}</span>
-      <button onClick={() => changeMonth(1)} className="p-1 hover:text-brand-primary transition-colors"><ChevronRight size={16} /></button>
+
+    {/* 2줄: 모바일 가로 롤링 메뉴 */}
+    <div className="relative -mx-4 md:mx-0">
+      <nav className="flex gap-2 overflow-x-auto px-4 md:px-0 scrollbar-hide snap-x snap-mandatory">
+        <div className="shrink-0 snap-start">
+          <TabButton name="홈" icon={Home} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="내 지출" icon={CreditCard} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="연금/투자 관리" icon={TrendingUp} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="감자 지출" icon={User} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="월급 비교" icon={ComparisonIcon} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="전체 자금 현황" icon={LayoutDashboard} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="대출 관리" icon={LoanIcon} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="1년 결산" icon={BarChart2} />
+        </div>
+      </nav>
     </div>
   </div>
 </header>
+
+      
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-[1400px] w-full mx-auto p-6 md:p-8">
