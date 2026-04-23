@@ -507,8 +507,7 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
     >
       <EditableHeader 
         title={tabName} 
-        setTitle={setTabName} 
-        description="전체 자금의 흐름을 요약하여 브리핑합니다." 
+       
       />
       {/* 1. Quick Entry Forms - Only for Gamja if preferred, but user said "Remove from My Expense section" */}
    {/* 1. 내 지출 입력창 */}
