@@ -1,3 +1,12 @@
+// 🔥 이 줄부터 추가 (파일 최상단)
+import { useMemo } from "react";
+import { motion } from "framer-motion";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { Search, X, ChevronLeft, ChevronRight, Activity, CreditCard, Wallet, Trash2, Edit2 } from "lucide-react";
+
+// 🔥 이것도 같이 추가
+const formatNumber = (num) => Number(num).toLocaleString();
+
 function ExpenseView({
   transactions,
   setTransactions,
@@ -224,12 +233,17 @@ function ExpenseView({
             .filter((t: any) => t.type === '지출')
             .reduce((sum: number, t: any) => sum + t.amount, 0);
 
-          return (
-            <div
-              key={accountName}
-              className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand flex flex-col min-h-[420px] md:h-[650px]"
-            >
-              <div className="p-6 border-b border-brand-border bg-white/5 space-y-6">
+
+
+return (
+  <div
+    key={accountName}
+    className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand flex flex-col min-h-[420px] md:h-[650px]"
+  >
+    {/* Account Header Summary */}
+    <div className="p-6 border-b border-brand-border bg-white/5 space-y-6">
+
+      
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center text-brand-primary">
                     <Wallet size={20} />
