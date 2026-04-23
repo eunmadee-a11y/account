@@ -137,7 +137,8 @@ function EditableHeader({ title, setTitle, description }: any) {
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <h3 className="text-2xl font-black">{title}</h3>
+
+            <h3 className="text-xl md:text-2xl font-bold">{title}</h3>
             <button 
               onClick={() => setIsEditing(true)}
               className="p-1.5 rounded-lg hover:bg-white/5 opacity-0 group-hover:opacity-100 transition-all text-brand-text-sub"
@@ -390,7 +391,7 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
         <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/10 shrink-0">
           <Activity size={18} className="text-white" />
         </div>
-        <span className="text-base md:text-lg font-black tracking-tight text-brand-text-main truncate">
+        <span className="text-sm md:text-lg font-blod tracking-tight text-brand-text-main truncate">
           Account
         </span>
       </div>
@@ -507,6 +508,7 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
     >
       <EditableHeader 
         title={tabName} 
+        
        
       />
       {/* 1. Quick Entry Forms - Only for Gamja if preferred, but user said "Remove from My Expense section" */}
