@@ -867,6 +867,17 @@ useEffect(() => {
         {currentAccountName || '통장 없음'}
       </h3>
 
+      <div className="text-xs text-red-300 space-y-1">
+  <p>currentAccountName: {String(currentAccountName)}</p>
+  <p>myAccountNames: {JSON.stringify(myAccountNames)}</p>
+  <p>filteredMonthTxs: {filteredMonthTxs.length}</p>
+  <p>
+    matchedTxs: {
+      filteredMonthTxs.filter((t: any) => t.account === currentAccountName).length
+    }
+  </p>
+</div>
+
       <button
         onClick={() =>
           setCurrentAccountIndex((prev) =>
@@ -879,105 +890,119 @@ useEffect(() => {
       </button>
     </div>
 
-    {currentAccountName && (() => {
-      const accountBalance = balances.find((b: any) => b.name === currentAccountName);
-      const accountTxs = filteredMonthTxs.filter((t: any) => t.account === currentAccountName);
-      const incomeTotal = accountTxs
-        .filter((t: any) => t.type === '수입')
-        .reduce((sum: number, t: any) => sum + t.amount, 0);
-      const expenseTotal = accountTxs
-        .filter((t: any) => t.type === '지출')
-        .reduce((sum: number, t: any) => sum + t.amount, 0);
 
-      return (
-        <div className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand flex flex-col h-[650px]">
-          <div className="p-6 border-b border-brand-border bg-white/5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center text-brand-primary">
-                <Wallet size={20} />
-              </div>
-              <h4 className="font-black text-base">{currentAccountName}</h4>
-            </div>
+{currentAccountName ? (() => {
+  const accountBalance = balances.find((b: any) => b.name === currentAccountName);
+  const accountTxs = filteredMonthTxs.filter((t: any) => t.account === currentAccountName);
+  const incomeTotal = accountTxs
+    .filter((t: any) => t.type === '수입')
+    .reduce((sum: number, t: any) => sum + t.amount, 0);
+  const expenseTotal = accountTxs
+    .filter((t: any) => t.type === '지출')
+    .reduce((sum: number, t: any) => sum + t.amount, 0);
 
-            <div>
-              <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
-                현재 잔액
-              </p>
-              <p className="text-2xl font-black tabular-nums text-brand-text-main">
-                {formatNumber(accountBalance?.currentBalance || 0)}원
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pb-2">
-              <div>
-                <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">
-                  이번 달 수입
-                </p>
-                <p className="text-sm font-black text-brand-mint tabular-nums">
-                  +{formatNumber(incomeTotal)}
-                </p>
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">
-                  이번 달 지출
-                </p>
-                <p className="text-sm font-black text-brand-pink tabular-nums">
-                  -{formatNumber(expenseTotal)}
-                </p>
-              </div>
-            </div>
+  return (
+    <div className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand flex flex-col h-[650px]">
+      <div className="p-6 border-b border-brand-border bg-white/5 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center text-brand-primary">
+            <Wallet size={20} />
           </div>
+          <h4 className="font-black text-base">{currentAccountName}</h4>
+        </div>
 
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-6 py-3 bg-brand-bg/30 border-b border-brand-border flex justify-between items-center">
-              <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">
-                거래 내역
-              </span>
-              <span className="text-[10px] font-bold text-brand-text-sub opacity-50 uppercase">
-                {accountTxs.length}건
-              </span>
-            </div>
+        <div>
+          <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
+            현재 잔액
+          </p>
+          <p className="text-2xl font-black tabular-nums text-brand-text-main">
+            {formatNumber(accountBalance?.currentBalance || 0)}원
+          </p>
+        </div>
 
-            <div className="flex-1 overflow-y-auto divide-y divide-brand-border custom-scrollbar">
-              {accountTxs.length > 0 ? (
-                accountTxs.map((t: any) => (
-                  <div key={t.id} className="px-6 py-4 hover:bg-white/5 transition-colors group">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-[10px] text-brand-text-sub font-black uppercase mb-0.5">
-                          {t.date}
-                        </p>
-                        <p className="text-xs font-black">{t.memo || t.category}</p>
-                      </div>
-                      <div className="text-right">
-                        <p
-                          className={`text-xs font-black tabular-nums ${
-                            t.type === '수입' ? 'text-brand-mint' : 'text-brand-pink'
-                          }`}
-                        >
-                          {t.type === '수입' ? '+' : '-'}
-                          {formatNumber(t.amount)}
-                        </p>
-                        <span className="text-[9px] font-bold text-brand-text-sub bg-brand-border/30 px-1.5 py-0.5 rounded">
-                          {t.category}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center p-10 text-center space-y-2 opacity-20">
-                  <Activity size={24} />
-                  <p className="text-[10px] font-black uppercase tracking-widest">
-                    내역이 없습니다
-                  </p>
-                </div>
-              )}
-            </div>
+        <div className="grid grid-cols-2 gap-4 pb-2">
+          <div>
+            <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">
+              이번 달 수입
+            </p>
+            <p className="text-sm font-black text-brand-mint tabular-nums">
+              +{formatNumber(incomeTotal)}
+            </p>
+          </div>
+          <div>
+            <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">
+              이번 달 지출
+            </p>
+            <p className="text-sm font-black text-brand-pink tabular-nums">
+              -{formatNumber(expenseTotal)}
+            </p>
           </div>
         </div>
-      );
-    })()}
+      </div>
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="px-6 py-3 bg-brand-bg/30 border-b border-brand-border flex justify-between items-center">
+          <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">
+            거래 내역
+          </span>
+          <span className="text-[10px] font-bold text-brand-text-sub opacity-50 uppercase">
+            {accountTxs.length}건
+          </span>
+        </div>
+
+        <div className="flex-1 overflow-y-auto divide-y divide-brand-border custom-scrollbar">
+          {accountTxs.length > 0 ? (
+            accountTxs.map((t: any) => (
+              <div key={t.id} className="px-6 py-4 hover:bg-white/5 transition-colors group">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-[10px] text-brand-text-sub font-black uppercase mb-0.5">
+                      {t.date}
+                    </p>
+                    <p className="text-xs font-black">{t.memo || t.category}</p>
+                  </div>
+                  <div className="text-right">
+                    <p
+                      className={`text-xs font-black tabular-nums ${
+                        t.type === '수입' ? 'text-brand-mint' : 'text-brand-pink'
+                      }`}
+                    >
+                      {t.type === '수입' ? '+' : '-'}
+                      {formatNumber(t.amount)}
+                    </p>
+                    <span className="text-[9px] font-bold text-brand-text-sub bg-brand-border/30 px-1.5 py-0.5 rounded">
+                      {t.category}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center p-10 text-center space-y-2 opacity-50">
+              <Activity size={24} />
+              <p className="text-[10px] font-black uppercase tracking-widest">
+                해당 통장에 연결된 거래 내역이 없습니다
+              </p>
+              <p className="text-xs text-brand-text-sub">
+                transaction.account 값과 통장 이름이 같은지 확인하세요
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+})() : (
+  <div className="bg-brand-card border border-brand-border rounded-brand h-[300px] flex flex-col items-center justify-center text-center space-y-3">
+    <Activity size={28} className="text-brand-text-sub/40" />
+    <p className="text-sm font-black text-brand-text-main">표시할 내 통장이 없습니다</p>
+    <p className="text-xs text-brand-text-sub">
+      balances에 category가 '내 통장'인 계좌를 추가해주세요
+    </p>
+  </div>
+)}
+
+    
   </div>
 </div>
         
