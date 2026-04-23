@@ -351,3 +351,4 @@ return (
     </motion.div>
   );
 }
+export default ExpenseView;
