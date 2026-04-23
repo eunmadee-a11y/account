@@ -730,7 +730,6 @@ function ExpenseView({ transactions, setTransactions, filteredData, changeMonth,
         <EditableHeader 
           title={tabName} 
           setTitle={setTabName} 
-          description="이번 달 지출 패턴과 통장별 흐름을 한눈에 파악합니다."
         />
         
         <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -951,7 +950,6 @@ function PensionView({ balances, tabName, setTabName }: any) {
         <EditableHeader 
           title={tabName} 
           setTitle={setTabName} 
-          description="전체 자금 현황에서 입력된 데이터를 바탕으로 실시간 현황을 제공합니다."
         />
         <div className="bg-brand-card border border-brand-border p-5 rounded-brand flex items-center gap-8 shadow-brand">
            <div>
@@ -1067,7 +1065,6 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         <EditableHeader 
           title={tabName} 
           setTitle={setTabName} 
-          description="감자의 자금 흐름과 통장별 내역을 별도로 관리합니다."
         />
         
         <div className="relative w-full sm:w-64">
@@ -1290,7 +1287,6 @@ function AssetStatusView({ balances, setBalances, tabName, setTabName }: any) {
       <EditableHeader 
         title={tabName} 
         setTitle={setTabName} 
-        description="전체 자산 현황을 한눈에 파악하고 관리합니다." 
       />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-brand-card border border-brand-border rounded-xl overflow-hidden shadow-brand p-4 md:p-6">
          <div className="flex-1">
@@ -1394,7 +1390,6 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
       <EditableHeader 
         title={tabName} 
         setTitle={setTabName} 
-        description="상환 계획을 관리하고 부부의 총 부채 현황을 추적합니다."
       />
       {/* 1. Global Summary Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1860,7 +1855,6 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
       <EditableHeader 
         title={tabName} 
         setTitle={setTabName} 
-        description={`${selectedYear}년 가구 월급 데이터를 비교 분석합니다.`}
       />
 
       {/* 1. TOP: Household Total Income Summary (Annual) */}
@@ -2125,7 +2119,7 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-6xl mx-auto space-y-12 pb-20">
-      <EditableHeader title={tabName} setTitle={setTabName} description="지난 1년간의 지출을 항목별로 정산하여 소비 흐름을 분석합니다." />
+      <EditableHeader title={tabName} setTitle={setTabName}  />
       
       {/* 내 지출 영역 */}
       <div className="space-y-6">
