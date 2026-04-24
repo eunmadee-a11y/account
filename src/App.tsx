@@ -630,101 +630,80 @@ const quickAccounts = quickAccountKeywords
 
 
 
-
-{/* ✅ 여기 (그리드 밖) */}
-<div className="bg-brand-card p-6 md:p-8 border border-brand-border rounded-brand">
-  <div className="flex items-center justify-between mb-6">
-    <h3 className="font-bold flex items-center gap-2 text-brand-purple">
-      <CalendarIcon size={20} />
-      지출 캘린더
-    </h3>
-  </div>
-
-  <Calendar 
-    currentDate={currentDate} 
-    transactions={transactions} 
-    selectedDateStr={selectedDateStr} 
-    onDateClick={(d: string) => setSelectedDateStr(d)} 
-  />
-</div>
-        
-
-        
-        
-
           {/* Selected Date Details */}
           <div className="bg-brand-card rounded-brand border border-brand-border overflow-hidden">
-             <div className="px-6 py-4 border-b border-brand-border flex justify-between items-center bg-white/5">
-                <h3 className="font-bold flex items-center gap-2">
-                   <CalendarIcon size={18} className="text-brand-primary" />
-                   {selectedDateStr ? `${selectedDateStr} 내역` : '날짜를 선택하세요'}
-                </h3>
-                {selectedDateStr && <span className="text-xs font-bold text-brand-text-sub">{selectedDateTransactions.length}건</span>}
-             </div>
-             <div className="divide-y divide-brand-border min-h-[100px]">
-               {selectedDateTransactions.length > 0 ? (
-                 selectedDateTransactions.map((t: any) => (
-                   <div key={t.id} className="px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors group">
-                     <div className="flex items-center gap-4">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${t.type === '수입' ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
-                           {t.type === '수입' ? <Plus size={14} /> : <Minus size={14} />}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold">{t.memo || t.category}</p>
-                          <p className="text-[10px] text-brand-text-sub">{t.account}</p>
-                        </div>
-                     </div>
-                     <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className={`text-sm font-black ${t.type === '수입' ? 'text-brand-mint' : 'text-brand-text-main'}`}>
-                             {t.type === '수입' ? '+' : '-'}{formatCurrency(t.amount)}
-                          </p>
-                        </div>
-                        <button onClick={() => deleteTransaction(t.id)} className="p-2 text-brand-text-sub hover:text-brand-pink opacity-0 group-hover:opacity-100 transition-all">
-                           <Trash2 size={16} />
-                        </button>
-                     </div>
-                   </div>
-                 ))
-               ) : (
-                 <div className="p-12 text-center text-brand-text-sub font-bold flex flex-col items-center gap-2">
-                    <CheckCircle2 size={32} className="opacity-20" />
-                    {selectedDateStr ? '내역 없음 (무지출)' : '캘린더에서 날짜를 클릭하세요'}
-                 </div>
-               )}
-             </div>
+            <div className="px-6 py-4 border-b border-brand-border flex justify-between items-center bg-white/5">
+              <h3 className="font-bold flex items-center gap-2">
+                <CalendarIcon size={18} className="text-brand-primary" />
+                {selectedDateStr ? `${selectedDateStr} 내역` : '날짜를 선택하세요'}
+              </h3>
+              {selectedDateStr && (
+                <span className="text-xs font-bold text-brand-text-sub">
+                  {selectedDateTransactions.length}건
+                </span>
+              )}
+            </div>
+
+            <div className="divide-y divide-brand-border min-h-[100px]">
+              {selectedDateTransactions.length > 0 ? (
+                selectedDateTransactions.map((t: any) => (
+                  <div key={t.id} className="px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors group">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${t.type === '수입' ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
+                        {t.type === '수입' ? <Plus size={14} /> : <Minus size={14} />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">{t.memo || t.category}</p>
+                        <p className="text-[10px] text-brand-text-sub">{t.account}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className={`text-sm font-black ${t.type === '수입' ? 'text-brand-mint' : 'text-brand-text-main'}`}>
+                          {t.type === '수입' ? '+' : '-'}{formatCurrency(t.amount)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => deleteTransaction(t.id)}
+                        className="p-2 text-brand-text-sub hover:text-brand-pink opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-12 text-center text-brand-text-sub font-bold flex flex-col items-center gap-2">
+                  <CheckCircle2 size={32} className="opacity-20" />
+                  {selectedDateStr ? '내역 없음 (무지출)' : '캘린더에서 날짜를 클릭하세요'}
+                </div>
+              )}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Home Right Column - Calendar */}
-        <div className="space-y-6">
-           <div className="bg-brand-card p-6 border border-brand-border h-fit">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold flex items-center gap-2 text-brand-purple text-lg uppercase">
-                  <LayoutDashboard size={20} />대출 요약
-                </h3>
-              </div>
-              <div className="space-y-4">
-                 <div className="p-5 bg-brand-bg border border-brand-border">
-                    <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1">전체 남은 대출 금액</p>
-                    <p className="text-3xl font-black text-brand-pink">{formatCurrency(loanSummary.totalRemaining)}</p>
-                 </div>
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-brand-bg border border-brand-border">
-                       <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">상환한 원금</p>
-                       <p className="text-sm font-black text-brand-mint">{formatCurrency(loanSummary.totalPrincipalPaid)}</p>
-                    </div>
-                    <div className="p-4 bg-brand-bg border border-brand-border">
-                       <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">상환한 이자</p>
-                       <p className="text-sm font-black text-brand-pink">{formatCurrency(loanSummary.totalInterestPaid)}</p>
-                    </div>
-                 </div>
-              </div>
-           </div>
+      {/* 지출 캘린더 (전체 폭) */}
+      <div className="bg-brand-card p-6 md:p-8 border border-brand-border rounded-brand">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="font-bold flex items-center gap-2 text-brand-purple">
+            <CalendarIcon size={20} />
+            지출 캘린더
+          </h3>
+        </div>
 
-          
+        <Calendar
+          currentDate={currentDate}
+          transactions={transactions}
+          selectedDateStr={selectedDateStr}
+          onDateClick={(d: string) => setSelectedDateStr(d)}
+        />
+      </div>
+    </motion.div>
   );
 }
+        
 
 
 
