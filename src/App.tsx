@@ -722,22 +722,7 @@ const quickAccounts = quickAccountKeywords
               </div>
            </div>
 
-           <div className="bg-brand-card p-6 border border-brand-border">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold flex items-center gap-2 text-brand-purple">
-                  <CalendarIcon size={20} />
-                  지출 캘린더
-                </h3>
-              </div>
-              <Calendar 
-                currentDate={currentDate} 
-                transactions={transactions} 
-                selectedDateStr={selectedDateStr} 
-                onDateClick={(d: string) => setSelectedDateStr(d)} 
-              />
-           </div>
-        </div>
-      </div>
+          
     </motion.div>
   );
 }
