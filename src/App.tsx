@@ -491,6 +491,15 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
   const mainAccounts = balances.filter((b: any) => b.category === '내 통장');
 
+const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(null);
+
+const quickAccountOrder = ['내 생활비 통장', '내 여유자금', '자동이체'];
+
+const quickAccounts = quickAccountOrder
+  .map(name => mainAccounts.find((account: any) => account.name === name))
+  .filter(Boolean);
+
+  
   const selectedDateTransactions = useMemo(() => {
     if (!selectedDateStr) return [];
     return transactions.filter((t: any) => t.date === selectedDateStr);
@@ -512,22 +521,47 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
        
       />
       {/* 1. Quick Entry Forms - Only for Gamja if preferred, but user said "Remove from My Expense section" */}
-   {/* 1. 내 지출 입력창 */}
-<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-  {mainAccounts.map((account: any) => (
-    <div
-      key={account.id}
-      className="bg-brand-card p-6 border border-brand-border rounded-brand shadow-brand"
-    >
+
+
+
+
+{/* 1. 홈 상단 통장 입력 버튼 */}
+<div className="space-y-4">
+  <div className="grid grid-cols-3 gap-3">
+    {quickAccounts.map((account: any) => (
+      <button
+        key={account.id}
+        onClick={() =>
+          setActiveQuickAccount(
+            activeQuickAccount === account.name ? null : account.name
+          )
+        }
+        className={`py-3 px-3 rounded-xl border font-black text-xs md:text-sm transition-all active:scale-95 ${
+          activeQuickAccount === account.name
+            ? 'bg-brand-primary text-white border-brand-primary shadow-lg shadow-brand-primary/20'
+            : 'bg-brand-card text-brand-text-main border-brand-border hover:border-brand-primary'
+        }`}
+      >
+        {account.name}
+      </button>
+    ))}
+  </div>
+
+  {activeQuickAccount && (
+    <div className="bg-brand-card p-6 border border-brand-border rounded-brand shadow-brand">
       <QuickEntryBox
-        account={account.name}
+        account={activeQuickAccount}
         onAdd={addTransaction}
         categories={categories}
         setCategories={setCategories}
       />
     </div>
-  ))}
+  )}
 </div>
+
+
+
+      
 
       {/* 2. Account Balances */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -688,6 +722,34 @@ function ExpenseView({ transactions, setTransactions, filteredData, changeMonth,
   const now = new Date();
   const month = now.getMonth();
   const year = now.getFullYear();
+const defaultAccountIndex = Math.max(
+  0,
+  myAccountNames.findIndex((name: string) => name === '내 생활비 통장')
+);
+
+const [currentAccountIndex, setCurrentAccountIndex] = useState(defaultAccountIndex);
+
+useEffect(() => {
+  const newDefaultIndex = Math.max(
+    0,
+    myAccountNames.findIndex((name: string) => name === '내 생활비 통장')
+  );
+  setCurrentAccountIndex(newDefaultIndex);
+}, [myAccountNames]);
+
+const handlePrevAccount = () => {
+  setCurrentAccountIndex((prev) =>
+    prev === 0 ? myAccountNames.length - 1 : prev - 1
+  );
+};
+
+const handleNextAccount = () => {
+  setCurrentAccountIndex((prev) =>
+    prev === myAccountNames.length - 1 ? 0 : prev + 1
+  );
+};
+
+  
 
   const filteredMonthTxs = useMemo(() => {
     if (!searchQuery.trim()) return currMonthTxs;
@@ -706,6 +768,20 @@ function ExpenseView({ transactions, setTransactions, filteredData, changeMonth,
     expenseTxs.forEach((t: any) => {
       totals[t.category] = (totals[t.category] || 0) + t.amount;
     });
+
+const currentAccountName = myAccountNames[currentAccountIndex] || '';
+const currentAccountBalance = balances.find((b: any) => b.name === currentAccountName);
+const currentAccountTxs = filteredMonthTxs.filter((t: any) => t.account === currentAccountName);
+
+const currentIncomeTotal = currentAccountTxs
+  .filter((t: any) => t.type === '수입')
+  .reduce((sum: number, t: any) => sum + t.amount, 0);
+
+const currentExpenseTotal = currentAccountTxs
+  .filter((t: any) => t.type === '지출')
+  .reduce((sum: number, t: any) => sum + t.amount, 0);
+
+
     
     const totalAmount = Object.values(totals).reduce((a, b) => a + b, 0);
     if (totalAmount === 0) return [];
