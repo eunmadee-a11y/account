@@ -723,7 +723,6 @@ const quickAccounts = quickAccountKeywords
            </div>
 
           
-    </motion.div>
   );
 }
 
