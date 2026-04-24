@@ -584,8 +584,8 @@ const quickAccounts = quickAccountKeywords
       </div>
 
       {/* 3. Main Dashboard Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
+<div className="grid grid-cols-1 gap-8">
+      <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <SummarySmallCard label="이번 달 총수입" value={monthlySummary.income} color="text-brand-mint" />
             <SummarySmallCard label="이번 달 총지출" value={monthlySummary.expense} color="text-brand-pink" />
@@ -627,6 +627,30 @@ const quickAccounts = quickAccountKeywords
               </div>
             </div>
           </div>
+
+
+
+
+{/* ✅ 여기 (그리드 밖) */}
+<div className="bg-brand-card p-6 md:p-8 border border-brand-border rounded-brand">
+  <div className="flex items-center justify-between mb-6">
+    <h3 className="font-bold flex items-center gap-2 text-brand-purple">
+      <CalendarIcon size={20} />
+      지출 캘린더
+    </h3>
+  </div>
+
+  <Calendar 
+    currentDate={currentDate} 
+    transactions={transactions} 
+    selectedDateStr={selectedDateStr} 
+    onDateClick={(d: string) => setSelectedDateStr(d)} 
+  />
+</div>
+        
+
+        
+        
 
           {/* Selected Date Details */}
           <div className="bg-brand-card rounded-brand border border-brand-border overflow-hidden">
