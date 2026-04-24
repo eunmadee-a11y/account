@@ -493,10 +493,12 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
 
 const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(null);
 
-const quickAccountOrder = ['내 생활비 통장', '내 여유자금', '자동이체'];
+const quickAccountKeywords = ['생활비', '여유자금', '자동이체'];
 
-const quickAccounts = quickAccountOrder
-  .map(name => mainAccounts.find((account: any) => account.name === name))
+const quickAccounts = quickAccountKeywords
+  .map(keyword =>
+    mainAccounts.find((account: any) => account.name.includes(keyword))
+  )
   .filter(Boolean);
 
   
