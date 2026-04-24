@@ -848,7 +848,50 @@ function ExpenseView({ transactions, setTransactions, filteredData, changeMonth,
         ))}
       </div>
 
-      {/* 지출 분석 */}
+    
+      {/* 선택된 통장 내역 */}
+      <div className="max-w-2xl mx-auto bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand flex flex-col h-[650px]">
+        <div className="p-6 border-b border-brand-border bg-white/5 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center text-brand-primary">
+              <Wallet size={20} />
+            </div>
+            <h4 className="font-black text-base">{activeExpenseAccount || '통장 선택'}</h4>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
+                현재 잔액
+              </p>
+              <p className="text-2xl font-black tabular-nums text-brand-text-main">
+                {formatNumber(activeAccountBalance?.currentBalance || 0)}원
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pb-2">
+              <div>
+                <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">
+                  이번 달 수입
+                </p>
+                <p className="text-sm font-black text-brand-mint tabular-nums">
+                  +{formatNumber(activeIncomeTotal)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">
+                  이번 달 지출
+                </p>
+                <p className="text-sm font-black text-brand-pink tabular-nums">
+                  -{formatNumber(activeExpenseTotal)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+  {/* 지출 분석 */}
       <div className="bg-brand-card border border-brand-border rounded-brand p-8 shadow-brand">
          <h4 className="text-lg font-black mb-10 flex items-center gap-2">
             <Activity size={20} className="text-brand-primary" />
@@ -923,47 +966,8 @@ function ExpenseView({ transactions, setTransactions, filteredData, changeMonth,
          )}
       </div>
 
-      {/* 선택된 통장 내역 */}
-      <div className="max-w-2xl mx-auto bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand flex flex-col h-[650px]">
-        <div className="p-6 border-b border-brand-border bg-white/5 space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center text-brand-primary">
-              <Wallet size={20} />
-            </div>
-            <h4 className="font-black text-base">{activeExpenseAccount || '통장 선택'}</h4>
-          </div>
 
-          <div className="space-y-4">
-            <div>
-              <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
-                현재 잔액
-              </p>
-              <p className="text-2xl font-black tabular-nums text-brand-text-main">
-                {formatNumber(activeAccountBalance?.currentBalance || 0)}원
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pb-2">
-              <div>
-                <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">
-                  이번 달 수입
-                </p>
-                <p className="text-sm font-black text-brand-mint tabular-nums">
-                  +{formatNumber(activeIncomeTotal)}
-                </p>
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">
-                  이번 달 지출
-                </p>
-                <p className="text-sm font-black text-brand-pink tabular-nums">
-                  -{formatNumber(activeExpenseTotal)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
+        
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="px-6 py-3 bg-brand-bg/30 border-b border-brand-border flex justify-between items-center">
             <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">
