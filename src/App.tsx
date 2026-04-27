@@ -1723,11 +1723,13 @@ const getPreviousBalance = (asset: any) => {
 
   
 
+
 const updateBalance = (id: string, value: number) => {
   setBalances(balances.map((b: any) =>
     b.id === id
       ? {
           ...b,
+          currentBalance: value,
           monthlyBalances: {
             ...(b.monthlyBalances || {}),
             [monthKey]: value
@@ -1736,6 +1738,8 @@ const updateBalance = (id: string, value: number) => {
       : b
   ));
 };
+
+  
 
   
   const updateName = (id: string, name: string) => {
