@@ -450,8 +450,8 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
       
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-[1400px] w-full mx-auto p-6 md:p-8">
-        <AnimatePresence mode="wait">
+<main className="flex-1 w-full px-3 md:px-6">
+      <AnimatePresence mode="wait">
           {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, tabName: tabNames['홈'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '홈': name })), categories: myCategories, setCategories: setMyCategories }} />}
           {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, changeMonth, deleteTransaction, myAccountNames, balances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, tabName: tabNames['내 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '내 지출': name })), categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true) }} />}
           {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, tabName: tabNames['연금/투자 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '연금/투자 관리': name })) }} />}
@@ -584,7 +584,7 @@ const quickAccounts = quickAccountKeywords
       </div>
 
       {/* 3. Main Dashboard Grid */}
-<div className="grid grid-cols-1 gap-8">
+<div className="grid grid-cols-1 gap-4">
       <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <SummarySmallCard label="이번 달 총수입" value={monthlySummary.income} color="text-brand-mint" />
@@ -685,8 +685,9 @@ const quickAccounts = quickAccountKeywords
       </div>
 
       {/* 지출 캘린더 (전체 폭) */}
-      <div className="bg-brand-card p-6 md:p-8 border border-brand-border rounded-brand">
-        <div className="flex items-center justify-between mb-6">
+<div className="bg-brand-card p-3 md:p-4 border border-brand-border rounded-brand">
+      
+      <div className="flex items-center justify-between mb-2">
           <h3 className="font-bold flex items-center gap-2 text-brand-purple">
             <CalendarIcon size={20} />
             지출 캘린더
