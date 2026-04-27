@@ -313,12 +313,6 @@ useEffect(() => {
     balances.filter((b: any) => b.category === '감자 자산').map((b: any) => b.name)
   , [balances]);
 
-  const loanSummary = useMemo(() => {
-    let totalRemaining = 0;
-    let totalPrincipalPaid = 0;
-    let totalInterestPaid = 0;
-
-
 
 
     const calculatedBalances = useMemo(() => {
@@ -347,6 +341,18 @@ useEffect(() => {
     };
   });
 }, [balances, transactions, gamjaTransactions]);
+
+
+
+  
+  const loanSummary = useMemo(() => {
+    let totalRemaining = 0;
+    let totalPrincipalPaid = 0;
+    let totalInterestPaid = 0;
+
+
+
+
 
     
 
