@@ -209,9 +209,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
   const [gamjaTransactions, setGamjaTransactions] = useState<GamjaTransaction[]>(MOCK_GAMJA_TRANSACTIONS);
 
-  const [balances, setBalances] = useState<BalanceEntry[]>(() => {
-  const saved = localStorage.getItem('balances');
-  return saved ? JSON.parse(saved) : INITIAL_BALANCES;
+  const [balances, setBalances] = useState<BalanceEntry[]>(INITIAL_BALANCES);
 });
   const [salaries, setSalaries] = useState<SalaryData>({ 
     mySalaryRecords: [], 
