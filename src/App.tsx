@@ -543,6 +543,8 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
       setBalances,   // 🔥 추가
       searchQuery: mySearchQuery, 
       setSearchQuery: setMySearchQuery, 
+      const [mySearchQuery, setMySearchQuery] = useState('');
+ const [gamjaSearchQuery, setGamjaSearchQuery] = useState('');
       tabName: tabNames['내 지출'], 
       setTabName: (name: string) => setTabNames(prev => ({ ...prev, '내 지출': name })), 
       categories: myCategories, 
