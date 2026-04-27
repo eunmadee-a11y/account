@@ -1090,9 +1090,6 @@ const year = currentDate.getFullYear();
 
 function PensionView({ balances, tabName, setTabName }: any) {
   const invAssets = balances.filter((b: any) => b.category === '투자/연금');
-  const total = invAssets.reduce((sum: number, b: any) => sum + b.currentBalance, 0);
-  const prevTotal = invAssets.reduce((sum: number, b: any) => sum + b.previousBalance, 0);
-  const diff = total - prevTotal;
 
   return (
     <motion.div 
@@ -1556,6 +1553,9 @@ const total = balances.reduce((sum: number, b: any) => sum + getMonthlyBalance(b
 const prevTotal = balances.reduce((sum: number, b: any) => sum + getPreviousBalance(b), 0);
   
 
+const categories = ['내 통장', '투자/연금', '감자 자산', '기타 자산'];
+
+  
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto space-y-6 pb-12 px-2">
       <EditableHeader 
