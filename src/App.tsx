@@ -604,11 +604,25 @@ const quickAccounts = quickAccountKeywords
 
 
       
+{/* 2. Account Balances */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+  {mainAccounts.map((b: any) => (
+    <div key={b.id} className="group relative bg-brand-card p-6 rounded-brand shadow-brand border border-brand-border overflow-hidden hover:border-brand-primary/50 transition-all">
+      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+        <Wallet size={48} />
+      </div>
+      <p className="text-xs font-bold text-brand-text-sub uppercase tracking-wider mb-2">{b.name} 잔액</p>
+      <h2 className="text-2xl font-black">{formatCurrency(b.currentBalance)}</h2>
+      <div className="mt-4 flex items-center gap-2">
+        <span className={`text-[10px] font-semibold ${b.currentBalance >= b.previousBalance ? 'text-brand-mint' : 'text-brand-pink'}`}>
+          전달 대비 {b.currentBalance >= b.previousBalance ? '+' : ''}{formatCurrency(b.currentBalance - b.previousBalance)}
+        </span>
+      </div>
+    </div>
+  ))}
+</div>
 
-      {/* 2. Account Balances */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {mainAccounts.map((b: any) => (
-
+{/* ✅ 자동이체 아래 연금 카드 */}
 {autoTransferAccount && (
   <div className="mt-2">
     <div className="bg-brand-card p-6 rounded-brand border border-brand-border shadow-brand flex items-center justify-between">
@@ -627,6 +641,7 @@ const quickAccounts = quickAccountKeywords
     </div>
   </div>
 )}
+      
 
   
           <div key={b.id} className="group relative bg-brand-card p-6 rounded-brand shadow-brand border border-brand-border overflow-hidden hover:border-brand-primary/50 transition-all">
