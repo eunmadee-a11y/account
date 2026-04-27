@@ -1671,13 +1671,15 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
   const [activeLoanId, setActiveLoanId] = useState(loans[0]?.id || '');
   const activeLoan = loans.find((l: any) => l.id === activeLoanId);
 
-  const [newRepayment, setNewRepayment] = useState({
-    principal: 0,
-    interest: 0,
-    turn: 1,
-    date: new Date().toISOString().split('T')[0],
-    memo: ''
-  });
+
+const [newRepayment, setNewRepayment] = useState({
+  principal: 0,
+  interest: 0,
+  date: new Date().toISOString().split('T')[0],
+  memo: ''
+});
+
+  
 
   const getLoanStats = (loan: any) => {
     const cumulativePrincipal = loan.repayments.reduce((sum: number, r: any) => sum + r.principal, 0);
@@ -1694,16 +1696,37 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
     setLoans(loans.map((l: any) => l.id === id ? { ...l, originalTotalAmount: amount } : l));
   };
 
-  const addRepayment = () => {
-    if (!activeLoanId) return;
-    const repayment = {
-      id: Math.random().toString(36).substr(2, 9),
-      loanName: activeLoan.name,
-      ...newRepayment
-    };
-    setLoans(loans.map((l: any) => l.id === activeLoanId ? { ...l, repayments: [repayment, ...l.repayments] } : l));
-    setNewRepayment({ ...newRepayment, principal: 0, interest: 0, turn: newRepayment.turn + 1, memo: '' });
+
+const addRepayment = () => {
+  if (!activeLoanId || !activeLoan) return;
+
+  const nextTurn =
+    activeLoan.repayments.length > 0
+      ? Math.max(...activeLoan.repayments.map((r: any) => Number(r.turn) || 0)) + 1
+      : 1;
+
+  const repayment = {
+    id: Math.random().toString(36).substr(2, 9),
+    loanName: activeLoan.name,
+    turn: nextTurn,
+    ...newRepayment
   };
+
+  setLoans(loans.map((l: any) =>
+    l.id === activeLoanId
+      ? { ...l, repayments: [repayment, ...l.repayments] }
+      : l
+  ));
+
+  setNewRepayment({
+    ...newRepayment,
+    principal: 0,
+    interest: 0,
+    memo: ''
+  });
+};
+
+  
 
   const deleteRepayment = (loanId: string, repaymentId: string) => {
     setLoans(loans.map((l: any) => l.id === loanId ? { ...l, repayments: l.repayments.filter((r: any) => r.id !== repaymentId) } : l));
@@ -1795,7 +1818,7 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
                               <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">상환 날짜</label>
                               <input type="date" value={newRepayment.date} onChange={e => setNewRepayment({...newRepayment, date: e.target.value})} className="form-input text-xs h-[42px]" />
                            </div>
-                           <NumericInput label="회차" value={newRepayment.turn} onChange={(v: number) => setNewRepayment({...newRepayment, turn: v})} className="form-input text-sm font-black" />
+                          
                         </div>
                         <div className="space-y-1.5">
                            <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">메모</label>
@@ -1866,10 +1889,10 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
                                  </tr>
                               ) : activeLoan.repayments.map((r: any) => (
                                  <tr key={r.id} className="hover:bg-white/5 transition-colors group">
-                                    <td className="px-8 py-4 font-black text-brand-primary text-sm">{r.turn}회차</td>
-                                    <td className="px-4 py-4 text-center text-xs font-bold tabular-nums">{r.date}</td>
-                                    <td className="px-4 py-4 text-right font-black text-sm tabular-nums">{formatNumber(r.principal)}원</td>
-                                    <td className="px-4 py-4 text-right font-black text-sm text-brand-pink tabular-nums">{formatNumber(r.interest)}원</td>
+                                    <td className="px-8 py-4 font-black text-brand-primary text-sm">{r.turn}</td>
+<td className="px-4 py-4 text-center text-xs font-bold tabular-nums">{r.date}</td>
+<td className="px-4 py-4 text-right font-black text-sm tabular-nums">{formatNumber(r.principal)}</td>
+<td className="px-4 py-4 text-right font-black text-sm text-brand-pink tabular-nums">{formatNumber(r.interest)}</td>
                                     <td className="px-4 py-4 text-xs font-medium text-brand-text-sub">{r.memo || '-'}</td>
                                     <td className="px-8 py-4 text-right">
                                        <button 
