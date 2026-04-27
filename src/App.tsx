@@ -518,6 +518,17 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
   const mainAccounts = balances.filter((b: any) => b.category === '내 통장');
 
+const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+
+const pensionTotal = balances
+  .filter((b: any) => b.category === '투자/연금')
+  .reduce((sum: number, b: any) => {
+    const monthlyValue = b.monthlyBalances?.[monthKey];
+    return sum + (typeof monthlyValue === 'number' ? monthlyValue : b.currentBalance || 0);
+  }, 0);
+
+
+  
 const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(null);
 
 const quickAccountKeywords = ['생활비', '여유자금', '자동이체'];
@@ -606,6 +617,21 @@ const quickAccounts = quickAccountKeywords
                 전달 대비 {b.currentBalance >= b.previousBalance ? '+' : ''}{formatCurrency(b.currentBalance - b.previousBalance)}
               </span>
             </div>
+
+
+{b.name.includes('자동이체') && (
+  <div className="mt-4 pt-4 border-t border-brand-border flex items-center justify-between">
+    <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">
+      연금 총액
+    </span>
+    <span className="text-sm font-black text-brand-purple tabular-nums">
+      {formatCurrency(pensionTotal)}
+    </span>
+  </div>
+)}
+
+
+            
           </div>
         ))}
       </div>
