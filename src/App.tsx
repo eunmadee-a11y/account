@@ -1579,7 +1579,6 @@ const updateBalance = (id: string, value: number) => {
     b.id === id
       ? {
           ...b,
-          currentBalance: value,
           monthlyBalances: {
             ...(b.monthlyBalances || {}),
             [monthKey]: value
@@ -1643,12 +1642,16 @@ const categories = ['내 통장', '투자/연금', '감자 자산', '기타 자�
                       className="w-full bg-transparent border-b border-white/5 focus:border-brand-primary/30 px-0 py-1 text-xs font-black text-brand-text-sub outline-none transition-all"
                       placeholder="계좌명"
                     />
-                    <NumericInput 
-                      value={b.currentBalance}
-                      onChange={(val: number) => updateBalance(b.id, val)}
-                      className="bg-transparent border-none p-0 text-xl font-black text-brand-text-main tabular-nums focus:ring-0 w-full"
-                      placeholder="0"
-                    />
+
+<NumericInput 
+  value={getMonthlyBalance(b)}
+  onChange={(val: number) => updateBalance(b.id, val)}
+  className="bg-transparent border-none p-0 text-xl font-black text-brand-text-main tabular-nums focus:ring-0 w-full"
+  placeholder="0"
+/>
+
+
+                    
                     <div className="flex justify-between items-center text-[9px] font-bold text-brand-text-sub/30 pb-1 border-t border-brand-border/10">
                        <span className="uppercase tracking-tighter">전달 잔액</span>
                        <span className="tabular-nums">{formatNumber(b.previousBalance)}원</span>
