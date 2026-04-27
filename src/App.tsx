@@ -332,9 +332,18 @@ export default function App() {
   }, [loans, currentDate]);
 
   // Handlers
-  const changeMonth = (offset: number) => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
-  };
+
+const changeMonth = (offset: number) => {
+  const nextDate = new Date(
+    currentDate.getFullYear(),
+    currentDate.getMonth() + offset,
+    1
+  );
+
+  setCurrentDate(nextDate);
+  setSelectedDateStr(nextDate.toISOString().split('T')[0]);
+};
+  
 
   const updateBalance = (id: string, value: number) => {
     setBalances(prev => prev.map(b => b.id === id ? { ...b, currentBalance: value } : b));
@@ -453,7 +462,7 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 <main className="flex-1 w-full px-3 md:px-6">
       <AnimatePresence mode="wait">
           {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, tabName: tabNames['홈'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '홈': name })), categories: myCategories, setCategories: setMyCategories }} />}
-          {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, changeMonth, deleteTransaction, myAccountNames, balances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, tabName: tabNames['내 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '내 지출': name })), categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true) }} />}
+          {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, changeMonth, currentDate, deleteTransaction, myAccountNames, balances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, tabName: tabNames['내 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '내 지출': name })), categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true) }} />}
           {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, tabName: tabNames['연금/투자 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '연금/투자 관리': name })) }} />}
           {activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances, tabName: tabNames['감자 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '감자 지출': name })), categories: gamjaCategories, setCategories: setGamjaCategories, onOpenEdit: () => setIsGamjaEditModalOpen(true) }} />}
           {activeTab === '월급 비교' && <SalaryView key="salary" {...{ salaries, setSalaries, tabName: tabNames['월급 비교'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '월급 비교': name })), salaryLabels, setSalaryLabels, currentDate }} />}
@@ -708,11 +717,12 @@ const quickAccounts = quickAccountKeywords
 
 
 
-function ExpenseView({ transactions, setTransactions, filteredData, changeMonth, deleteTransaction, myAccountNames, balances, searchQuery, setSearchQuery, tabName, setTabName, categories, setCategories, onOpenEdit }: any) {
+function ExpenseView({ transactions, setTransactions, filteredData, changeMonth, currentDate, deleteTransaction, myAccountNames, balances, searchQuery, setSearchQuery, tabName, setTabName, categories, setCategories, onOpenEdit }: any) {
   const { currMonthTxs } = filteredData;
-  const now = new Date();
-  const month = now.getMonth();
-  const year = now.getFullYear();
+
+const month = currentDate.getMonth();
+const year = currentDate.getFullYear();
+  
 
   const accountKeywords = ['생활비', '여유자금', '자동이체'];
 
@@ -803,7 +813,7 @@ function ExpenseView({ transactions, setTransactions, filteredData, changeMonth,
         <EditableHeader
           title={tabName}
           setTitle={setTabName}
-          description="이번 달 지출 패턴과 통장별 흐름을 한눈에 파악합니다."
+        
         />
 
         <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -1247,7 +1257,6 @@ const gamjaPensionTotal = balances
         <EditableHeader
           title={tabName}
           setTitle={setTabName}
-          description="감자의 자금 흐름과 통장별 내역을 별도로 관리합니다."
         />
 
         <div className="relative w-full sm:w-64">
