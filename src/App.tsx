@@ -253,6 +253,27 @@ useEffect(() => {
 
   const currentMonthDisplay = `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`;
 
+
+const getMonthKey = (date: Date) => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const getBalanceForMonth = (asset: any, date: Date) => {
+  const key = getMonthKey(date);
+  return asset.monthlyBalances?.[key] ?? asset.currentBalance ?? 0;
+};
+
+const syncedBalances = useMemo(() => {
+  const prevDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+
+  return balances.map((b: any) => ({
+    ...b,
+    currentBalance: getBalanceForMonth(b, currentDate),
+    previousBalance: getBalanceForMonth(b, prevDate)
+  }));
+}, [balances, currentDate]);
+
+  
   // Calculated Summaries
   const filteredData = useMemo(() => {
     const month = currentDate.getMonth();
@@ -290,29 +311,31 @@ useEffect(() => {
     };
   }, [transactions, currentDate]);
 
+
+
+
   const totalAssets = useMemo(() => {
-    const total = balances.reduce((sum, b) => sum + b.currentBalance, 0);
-    const prevTotal = balances.reduce((sum, b) => sum + b.previousBalance, 0);
-    
-    const cashLike = balances.filter(b => b.category === '내 통장').reduce((sum, b) => sum + b.currentBalance, 0);
-    const investment = balances.filter(b => b.category === '투자/연금').reduce((sum, b) => sum + b.currentBalance, 0);
-    const gamja = balances.filter(b => b.category === '감자 자산').reduce((sum, b) => sum + b.currentBalance, 0);
-    const others = balances.filter(b => b.category === '기타 자산').reduce((sum, b) => sum + b.currentBalance, 0);
+  const total = syncedBalances.reduce((sum, b) => sum + b.currentBalance, 0);
+  const prevTotal = syncedBalances.reduce((sum, b) => sum + b.previousBalance, 0);
 
-    const change = total - prevTotal;
-    const changeRate = prevTotal !== 0 ? (change / prevTotal) * 100 : 0;
+  const cashLike = syncedBalances.filter(b => b.category === '내 통장').reduce((sum, b) => sum + b.currentBalance, 0);
+  const investment = syncedBalances.filter(b => b.category === '투자/연금').reduce((sum, b) => sum + b.currentBalance, 0);
+  const gamja = syncedBalances.filter(b => b.category === '감자 자산').reduce((sum, b) => sum + b.currentBalance, 0);
+  const others = syncedBalances.filter(b => b.category === '기타 자산').reduce((sum, b) => sum + b.currentBalance, 0);
 
-    return { total, cashLike, investment, gamja, others, change, changeRate };
-  }, [balances]);
+  const change = total - prevTotal;
+  const changeRate = prevTotal !== 0 ? (change / prevTotal) * 100 : 0;
 
-  const myAccountNames = useMemo(() => 
-    balances.filter((b: any) => b.category === '내 통장').map((b: any) => b.name)
-  , [balances]);
+  return { total, cashLike, investment, gamja, others, change, changeRate };
+}, [syncedBalances]);
 
-  const gamjaAccountNames = useMemo(() => 
-    balances.filter((b: any) => b.category === '감자 자산').map((b: any) => b.name)
-  , [balances]);
+const myAccountNames = useMemo(() => 
+  syncedBalances.filter((b: any) => b.category === '내 통장').map((b: any) => b.name)
+, [syncedBalances]);
 
+const gamjaAccountNames = useMemo(() => 
+  syncedBalances.filter((b: any) => b.category === '감자 자산').map((b: any) => b.name)
+, [syncedBalances]);
 
 
     const calculatedBalances = useMemo(() => {
@@ -508,12 +531,13 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 {/* Main Content Area */}
 <main className="flex-1 w-full px-3 md:px-6">
   <AnimatePresence mode="wait">
-    {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances: calculatedBalances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, tabName: tabNames['홈'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '홈': name })), categories: myCategories, setCategories: setMyCategories }} />}
+   {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances: syncedBalances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, tabName: tabNames['홈'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '홈': name })), categories: myCategories, setCategories: setMyCategories }} />}
 
-{activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, changeMonth, currentDate, deleteTransaction, myAccountNames, balances: calculatedBalances, setBalances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, tabName: tabNames['내 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '내 지출': name })), categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true) }} />}
-    {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, setBalances, currentDate, tabName: tabNames['연금/투자 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '연금/투자 관리': name })) }} />}
+{activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, changeMonth, currentDate, deleteTransaction, myAccountNames, balances: syncedBalances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, tabName: tabNames['내 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '내 지출': name })), categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true) }} />}
 
-    {activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances: calculatedBalances, tabName: tabNames['감자 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '감자 지출': name })), categories: gamjaCategories, setCategories: setGamjaCategories, onOpenEdit: () => setIsGamjaEditModalOpen(true) }} />}
+{activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances: syncedBalances, tabName: tabNames['연금/투자 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '연금/투자 관리': name })) }} />}
+
+{activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances: syncedBalances, tabName: tabNames['감자 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '감자 지출': name })), categories: gamjaCategories, setCategories: setGamjaCategories, onOpenEdit: () => setIsGamjaEditModalOpen(true) }} />}
 
     {activeTab === '월급 비교' && <SalaryView key="salary" {...{ salaries, setSalaries, tabName: tabNames['월급 비교'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '월급 비교': name })), salaryLabels, setSalaryLabels, currentDate }} />}
 
@@ -1775,7 +1799,9 @@ const getPreviousBalance = (asset: any) => {
 /> 
 
 
-const updateBalance = (id: string, value: number) => {
+
+
+  const updateBalance = (id: string, value: number) => {
   setBalances(balances.map((b: any) =>
     b.id === id
       ? {
