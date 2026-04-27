@@ -466,7 +466,9 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
           {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, tabName: tabNames['연금/투자 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '연금/투자 관리': name })) }} />}
           {activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances, tabName: tabNames['감자 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '감자 지출': name })), categories: gamjaCategories, setCategories: setGamjaCategories, onOpenEdit: () => setIsGamjaEditModalOpen(true) }} />}
           {activeTab === '월급 비교' && <SalaryView key="salary" {...{ salaries, setSalaries, tabName: tabNames['월급 비교'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '월급 비교': name })), salaryLabels, setSalaryLabels, currentDate }} />}
-          {activeTab === '전체 자금 현황' && <AssetStatusView key="status" {...{ balances, setBalances, tabName: tabNames['전체 자금 현황'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '전체 자금 현황': name })) }} />}
+
+{activeTab === '전체 자금 현황' && <AssetStatusView key="status" {...{ balances, setBalances, currentDate, tabName: tabNames['전체 자금 현황'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '전체 자금 현황': name })) }} />}
+        
           {activeTab === '대출 관리' && <LoanManagementView key="loans" {...{ loans, setLoans, loanSummary, tabName: tabNames['대출 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '대출 관리': name })) }} />}
           {activeTab === '1년 결산' && <AnnualSettlementView key="annual" {...{ transactions, gamjaTransactions, salaries, tabName: tabNames['1년 결산'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '1년 결산': name })) }} />}
         </AnimatePresence>
@@ -1126,8 +1128,14 @@ function PensionView({ balances, tabName, setTabName }: any) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
          {invAssets.map((asset: any) => {
-           const diffVal = asset.currentBalance - asset.previousBalance;
-           const diffRate = asset.previousBalance !== 0 ? (diffVal / asset.previousBalance) * 100 : 0;
+
+
+const currentValue = getMonthlyBalance(asset);
+const previousValue = getPreviousBalance(asset);
+const diffVal = currentValue - previousValue;
+const diffRate = previousValue !== 0 ? (diffVal / previousValue) * 100 : 0;
+
+      
            return (
              <div key={asset.id} className="bg-brand-card border border-brand-border p-6 rounded-brand shadow-brand hover:border-brand-primary/50 transition-all group">
                 <div className="flex justify-between items-start mb-4">
@@ -1140,13 +1148,13 @@ function PensionView({ balances, tabName, setTabName }: any) {
                 <div className="space-y-4">
                    <div>
                       <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-tighter">이번 달 잔액</p>
-                      <p className="text-lg font-black tabular-nums tracking-tighter">{formatCurrency(asset.currentBalance)}</p>
+                      <p className="text-lg font-black tabular-nums tracking-tighter">{formatCurrency(getMonthlyBalance(asset))}</p>
                    </div>
                    
                    <div className="grid grid-cols-2 gap-2 pt-4 border-t border-brand-border">
                       <div>
                          <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-0.5 tracking-tighter">전달 잔액</p>
-                         <p className="text-xs font-bold text-brand-text-sub tabular-nums">{formatCurrency(asset.previousBalance)}</p>
+                         <p className="text-xs font-bold text-brand-text-sub tabular-nums">{formatCurrency(getPreviousBalance(asset))}</p>
                       </div>
                       <div className="text-right">
                          <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-0.5 tracking-tighter">변동률</p>
@@ -1501,19 +1509,52 @@ const gamjaPensionTotal = balances
 
 
 
-function AssetStatusView({ balances, setBalances, tabName, setTabName }: any) {
-  const categories = ['내 통장', '투자/연금', '감자 자산', '기타 자산'];
+function AssetStatusView({ balances, setBalances, currentDate, tabName, setTabName }: any) {
+const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
-  const updateBalance = (id: string, value: number) => {
-    setBalances(balances.map((b: any) => b.id === id ? { ...b, currentBalance: value } : b));
-  };
+const getMonthlyBalance = (asset: any) => {
+  return asset.monthlyBalances?.[monthKey] ?? asset.currentBalance ?? 0;
+};
 
+const getPreviousMonthKey = () => {
+  const prev = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+  return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const getPreviousBalance = (asset: any) => {
+  const prevKey = getPreviousMonthKey();
+  return asset.monthlyBalances?.[prevKey] ?? asset.previousBalance ?? 0;
+};
+
+
+
+  
+
+const updateBalance = (id: string, value: number) => {
+  setBalances(balances.map((b: any) =>
+    b.id === id
+      ? {
+          ...b,
+          currentBalance: value,
+          monthlyBalances: {
+            ...(b.monthlyBalances || {}),
+            [monthKey]: value
+          }
+        }
+      : b
+  ));
+};
+
+  
   const updateName = (id: string, name: string) => {
     setBalances(balances.map((b: any) => b.id === id ? { ...b, name: name } : b));
   };
 
-  const total = balances.reduce((sum: number, b: any) => sum + (b.currentBalance || 0), 0);
-  const prevTotal = balances.reduce((sum: number, b: any) => sum + (b.previousBalance || 0), 0);
+
+
+const total = balances.reduce((sum: number, b: any) => sum + getMonthlyBalance(b), 0);
+const prevTotal = balances.reduce((sum: number, b: any) => sum + getPreviousBalance(b), 0);
+  
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto space-y-6 pb-12 px-2">
