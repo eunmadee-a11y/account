@@ -319,11 +319,19 @@ useEffect(() => {
     let totalInterestPaid = 0;
 
 
-const calculatedBalances = useMemo(() => {
-  return balances.map((b: any) => {
-    if (b.category !== '내 통장') return b;
 
-    const accountTxs = transactions.filter((t: any) => t.account === b.name);
+
+    const calculatedBalances = useMemo(() => {
+  return balances.map((b: any) => {
+    const isManagedAccount =
+      b.category === '내 통장' || b.category === '감자 자산';
+
+    if (!isManagedAccount) return b;
+
+    const accountTxs =
+      b.category === '감자 자산'
+        ? gamjaTransactions.filter((t: any) => t.account === b.name)
+        : transactions.filter((t: any) => t.account === b.name);
 
     const income = accountTxs
       .filter((t: any) => t.type === '수입')
@@ -338,7 +346,7 @@ const calculatedBalances = useMemo(() => {
       currentBalance: (b.startingBalance || 0) + income - expense
     };
   });
-}, [balances, transactions]);
+}, [balances, transactions, gamjaTransactions]);
 
     
 
