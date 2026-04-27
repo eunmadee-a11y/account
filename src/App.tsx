@@ -219,7 +219,6 @@ const [salaries, setSalaries] = useState<SalaryData>({
 const [loans, setLoans] = useState<Loan[]>(INITIAL_LOANS);
 
 
- localStorage.clear()
   
   
 
