@@ -1091,83 +1091,130 @@ const year = currentDate.getFullYear();
 function PensionView({ balances, tabName, setTabName }: any) {
   const invAssets = balances.filter((b: any) => b.category === '투자/연금');
 
+  const getSafeBalance = (value: any) => {
+    return typeof value === 'number' && !isNaN(value) ? value : 0;
+  };
+
+  const total = invAssets.reduce(
+    (sum: number, b: any) => sum + getSafeBalance(b.currentBalance),
+    0
+  );
+
+  const prevTotal = invAssets.reduce(
+    (sum: number, b: any) => sum + getSafeBalance(b.previousBalance),
+    0
+  );
+
+  const diff = total - prevTotal;
+
   return (
-    <motion.div 
-       initial={{ opacity: 0, x: 20 }} 
-       animate={{ opacity: 1, x: 0 }}
-       exit={{ opacity: 0, x: -20 }}
-       className="space-y-8"
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-8"
     >
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <EditableHeader 
-          title={tabName} 
-          setTitle={setTabName} 
+        <EditableHeader
+          title={tabName}
+          setTitle={setTabName}
         />
+
         <div className="bg-brand-card border border-brand-border p-5 rounded-brand flex items-center gap-8 shadow-brand">
-           <div>
-             <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">투자 총액</p>
-             <p className="text-2xl font-black text-brand-primary tabular-nums">{formatCurrency(total)}</p>
-           </div>
-           <div className="w-[1px] h-10 bg-brand-border" />
-           <div>
-             <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">전달 대비 변동</p>
-             <div className="flex items-center gap-2">
-                <p className={`text-base font-black tabular-nums ${diff >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
-                  {diff >= 0 ? '+' : ''}{formatCurrency(diff)}
-                </p>
-                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${diff >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
-                  {prevTotal !== 0 ? ((diff / prevTotal) * 100).toFixed(2) : '0.00'}%
-                </span>
-             </div>
-           </div>
+          <div>
+            <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
+              투자 총액
+            </p>
+            <p className="text-2xl font-black text-brand-primary tabular-nums">
+              {formatCurrency(total)}
+            </p>
+          </div>
+
+          <div className="w-[1px] h-10 bg-brand-border" />
+
+          <div>
+            <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
+              전달 대비 변동
+            </p>
+            <div className="flex items-center gap-2">
+              <p className={`text-base font-black tabular-nums ${diff >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
+                {diff >= 0 ? '+' : ''}
+                {formatCurrency(diff)}
+              </p>
+              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${diff >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
+                {prevTotal !== 0 ? ((diff / prevTotal) * 100).toFixed(2) : '0.00'}%
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-         {invAssets.map((asset: any) => {
+      {invAssets.length === 0 ? (
+        <div className="bg-brand-card border border-brand-border rounded-brand p-10 text-center text-brand-text-sub font-bold">
+          투자/연금 항목이 없습니다
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {invAssets.map((asset: any) => {
+            const currentValue = getSafeBalance(asset.currentBalance);
+            const previousValue = getSafeBalance(asset.previousBalance);
+            const diffVal = currentValue - previousValue;
+            const diffRate = previousValue !== 0 ? (diffVal / previousValue) * 100 : 0;
 
-
-const currentValue = getMonthlyBalance(asset);
-const previousValue = getPreviousBalance(asset);
-const diffVal = currentValue - previousValue;
-const diffRate = previousValue !== 0 ? (diffVal / previousValue) * 100 : 0;
-
-      
-           return (
-             <div key={asset.id} className="bg-brand-card border border-brand-border p-6 rounded-brand shadow-brand hover:border-brand-primary/50 transition-all group">
+            return (
+              <div
+                key={asset.id}
+                className="bg-brand-card border border-brand-border p-6 rounded-brand shadow-brand hover:border-brand-primary/50 transition-all group"
+              >
                 <div className="flex justify-between items-start mb-4">
-                   <h4 className="font-black text-brand-text-main group-hover:text-brand-primary transition-colors">{asset.name}</h4>
-                   <div className={`p-1.5 rounded-lg ${diffVal >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
-                      <TrendingUp size={14} className={diffVal < 0 ? 'rotate-180' : ''} />
-                   </div>
+                  <h4 className="font-black text-brand-text-main group-hover:text-brand-primary transition-colors">
+                    {asset.name}
+                  </h4>
+                  <div className={`p-1.5 rounded-lg ${diffVal >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
+                    <TrendingUp size={14} className={diffVal < 0 ? 'rotate-180' : ''} />
+                  </div>
                 </div>
-                
+
                 <div className="space-y-4">
-                   <div>
-                      <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-tighter">이번 달 잔액</p>
-                      <p className="text-lg font-black tabular-nums tracking-tighter">{formatCurrency(getMonthlyBalance(asset))}</p>
-                   </div>
-                   
-                   <div className="grid grid-cols-2 gap-2 pt-4 border-t border-brand-border">
-                      <div>
-                         <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-0.5 tracking-tighter">전달 잔액</p>
-                         <p className="text-xs font-bold text-brand-text-sub tabular-nums">{formatCurrency(getPreviousBalance(asset))}</p>
-                      </div>
-                      <div className="text-right">
-                         <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-0.5 tracking-tighter">변동률</p>
-                         <p className={`text-xs font-black tabular-nums ${diffVal >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
-                            {diffVal >= 0 ? '+' : ''}{diffRate.toFixed(1)}%
-                         </p>
-                      </div>
-                   </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-tighter">
+                      이번 달 잔액
+                    </p>
+                    <p className="text-lg font-black tabular-nums tracking-tighter">
+                      {formatCurrency(currentValue)}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-4 border-t border-brand-border">
+                    <div>
+                      <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-0.5 tracking-tighter">
+                        전달 잔액
+                      </p>
+                      <p className="text-xs font-bold text-brand-text-sub tabular-nums">
+                        {formatCurrency(previousValue)}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-0.5 tracking-tighter">
+                        변동률
+                      </p>
+                      <p className={`text-xs font-black tabular-nums ${diffVal >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
+                        {diffVal >= 0 ? '+' : ''}
+                        {diffRate.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
                 </div>
-             </div>
-           );
-         })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </motion.div>
   );
 }
+
 
 
 
