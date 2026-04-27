@@ -1159,6 +1159,22 @@ function PensionView({ balances, tabName, setTabName }: any) {
 function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, tabName, setTabName, categories, setCategories, onOpenEdit }: any) {
   const mainAccount = '감자 생활비 통장';
 
+
+const gamjaCashTotal = balances
+  .filter((b: any) =>
+    b.name.includes('감자 생활비') ||
+    b.name.includes('감자 여유자금') ||
+    b.name.includes('감자 적금')
+  )
+  .reduce((sum: number, b: any) => sum + (b.currentBalance || 0), 0);
+
+const gamjaPensionTotal = balances
+  .filter((b: any) =>
+    b.name.includes('감자 퇴직금') ||
+    b.name.includes('감자 개인연금')
+  )
+  .reduce((sum: number, b: any) => sum + (b.currentBalance || 0), 0);
+  
   const orderedGamjaAccounts = [
     ...gamjaAccountNames.filter((name: string) => name === mainAccount),
     ...gamjaAccountNames.filter((name: string) => name !== mainAccount)
@@ -1247,6 +1263,26 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
       </div>
 
       {/* 감자 통장 선택 버튼 */}
+<div className="grid grid-cols-2 gap-3">
+  <div className="bg-brand-card border border-brand-border rounded-brand p-5 shadow-brand">
+    <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-2">
+      현금 전체
+    </p>
+    <p className="text-2xl font-black text-brand-primary tabular-nums">
+      {formatCurrency(gamjaCashTotal)}
+    </p>
+  </div>
+
+  <div className="bg-brand-card border border-brand-border rounded-brand p-5 shadow-brand">
+    <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-2">
+      연금
+    </p>
+    <p className="text-2xl font-black text-brand-purple tabular-nums">
+      {formatCurrency(gamjaPensionTotal)}
+    </p>
+  </div>
+</div>
+      
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {orderedGamjaAccounts.map((accountName: string) => (
           <button
