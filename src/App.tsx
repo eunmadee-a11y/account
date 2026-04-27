@@ -201,28 +201,26 @@ export default function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(new Date().toISOString().split('T')[0]);
   
-  // Search State
-  const [mySearchQuery, setMySearchQuery] = useState('');
-  const [gamjaSearchQuery, setGamjaSearchQuery] = useState('');
 
-  // Data State
-  const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
-  const [gamjaTransactions, setGamjaTransactions] = useState<GamjaTransaction[]>(MOCK_GAMJA_TRANSACTIONS);
 
-  const [balances, setBalances] = useState<BalanceEntry[]>(INITIAL_BALANCES);
+// Data State
+const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
+const [gamjaTransactions, setGamjaTransactions] = useState<GamjaTransaction[]>(MOCK_GAMJA_TRANSACTIONS);
+
+const [balances, setBalances] = useState<BalanceEntry[]>(INITIAL_BALANCES);
+
+const [salaries, setSalaries] = useState<SalaryData>({ 
+  mySalaryRecords: [], 
+  gamjaSalaryRecords: [], 
+  mySalary: 3500000, 
+  gamjaSalary: 4200000 
 });
-  const [salaries, setSalaries] = useState<SalaryData>({ 
-    mySalaryRecords: [], 
-    gamjaSalaryRecords: [], 
-    mySalary: 3500000, 
-    gamjaSalary: 4200000 
-  });
-  const [loans, setLoans] = useState<Loan[]>(INITIAL_LOANS);
 
-useEffect(() => {
-  localStorage.setItem('balances', JSON.stringify(balances));
-}, [balances]);
+const [loans, setLoans] = useState<Loan[]>(INITIAL_LOANS);
 
+
+ localStorage.clear()
+  
   
 
   // Category State (Editable)
