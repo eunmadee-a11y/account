@@ -208,7 +208,11 @@ export default function App() {
   // Data State
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
   const [gamjaTransactions, setGamjaTransactions] = useState<GamjaTransaction[]>(MOCK_GAMJA_TRANSACTIONS);
-  const [balances, setBalances] = useState<BalanceEntry[]>(INITIAL_BALANCES);
+
+  const [balances, setBalances] = useState<BalanceEntry[]>(() => {
+  const saved = localStorage.getItem('balances');
+  return saved ? JSON.parse(saved) : INITIAL_BALANCES;
+});
   const [salaries, setSalaries] = useState<SalaryData>({ 
     mySalaryRecords: [], 
     gamjaSalaryRecords: [], 
@@ -216,6 +220,12 @@ export default function App() {
     gamjaSalary: 4200000 
   });
   const [loans, setLoans] = useState<Loan[]>(INITIAL_LOANS);
+
+useEffect(() => {
+  localStorage.setItem('balances', JSON.stringify(balances));
+}, [balances]);
+
+  
 
   // Category State (Editable)
   const [myCategories, setMyCategories] = useState({
@@ -442,9 +452,7 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
         <div className="shrink-0 snap-start">
           <TabButton name="월급 비교" icon={ComparisonIcon} />
         </div>
-        <div className="shrink-0 snap-start">
-          <TabButton name="전체 자금 현황" icon={LayoutDashboard} />
-        </div>
+     
         <div className="shrink-0 snap-start">
           <TabButton name="대출 관리" icon={LoanIcon} />
         </div>
@@ -463,11 +471,10 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
       <AnimatePresence mode="wait">
           {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, tabName: tabNames['홈'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '홈': name })), categories: myCategories, setCategories: setMyCategories }} />}
           {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, changeMonth, currentDate, deleteTransaction, myAccountNames, balances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, tabName: tabNames['내 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '내 지출': name })), categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true) }} />}
-          {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, tabName: tabNames['연금/투자 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '연금/투자 관리': name })) }} />}
+          {activeTab === '연금/투자 관리' && <PensionView key="pension" {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, setBalances, currentDate, tabName: tabNames['연금/투자 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '연금/투자 관리': name })) }} />}
           {activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances, tabName: tabNames['감자 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '감자 지출': name })), categories: gamjaCategories, setCategories: setGamjaCategories, onOpenEdit: () => setIsGamjaEditModalOpen(true) }} />}
           {activeTab === '월급 비교' && <SalaryView key="salary" {...{ salaries, setSalaries, tabName: tabNames['월급 비교'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '월급 비교': name })), salaryLabels, setSalaryLabels, currentDate }} />}
 
-{activeTab === '전체 자금 현황' && <AssetStatusView key="status" {...{ balances, setBalances, currentDate, tabName: tabNames['전체 자금 현황'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '전체 자금 현황': name })) }} />}
         
           {activeTab === '대출 관리' && <LoanManagementView key="loans" {...{ loans, setLoans, loanSummary, tabName: tabNames['대출 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '대출 관리': name })) }} />}
           {activeTab === '1년 결산' && <AnnualSettlementView key="annual" {...{ transactions, gamjaTransactions, salaries, tabName: tabNames['1년 결산'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '1년 결산': name })) }} />}
@@ -1088,24 +1095,42 @@ const year = currentDate.getFullYear();
 
 
 
-function PensionView({ balances, tabName, setTabName }: any) {
+function PensionView({ balances, setBalances, currentDate, tabName, setTabName }: any) {
   const invAssets = balances.filter((b: any) => b.category === '투자/연금');
 
-  const getSafeBalance = (value: any) => {
-    return typeof value === 'number' && !isNaN(value) ? value : 0;
+  const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+
+  const prevDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+  const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+
+  const getMonthlyAmount = (asset: any) => {
+    return asset.monthlyPensionProfits?.[monthKey] ?? 0;
   };
 
-  const total = invAssets.reduce(
-    (sum: number, b: any) => sum + getSafeBalance(b.currentBalance),
-    0
-  );
+  const getPreviousAmount = (asset: any) => {
+    return asset.monthlyPensionProfits?.[prevMonthKey] ?? 0;
+  };
 
-  const prevTotal = invAssets.reduce(
-    (sum: number, b: any) => sum + getSafeBalance(b.previousBalance),
-    0
-  );
+  const updateMonthlyProfit = (id: string, value: number) => {
+    setBalances((prev: any[]) =>
+      prev.map((b: any) =>
+        b.id === id
+          ? {
+              ...b,
+              monthlyPensionProfits: {
+                ...(b.monthlyPensionProfits || {}),
+                [monthKey]: value
+              }
+            }
+          : b
+      )
+    );
+  };
 
-  const diff = total - prevTotal;
+  const totalProfit = invAssets.reduce((sum: number, asset: any) => sum + getMonthlyAmount(asset), 0);
+  const prevTotalProfit = invAssets.reduce((sum: number, asset: any) => sum + getPreviousAmount(asset), 0);
+  const diff = totalProfit - prevTotalProfit;
+  const rate = prevTotalProfit !== 0 ? (diff / prevTotalProfit) * 100 : 0;
 
   return (
     <motion.div
@@ -1118,15 +1143,16 @@ function PensionView({ balances, tabName, setTabName }: any) {
         <EditableHeader
           title={tabName}
           setTitle={setTabName}
+          description={`${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월 연금 수익금 입력`}
         />
 
         <div className="bg-brand-card border border-brand-border p-5 rounded-brand flex items-center gap-8 shadow-brand">
           <div>
             <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
-              투자 총액
+              이번 달 수익금
             </p>
             <p className="text-2xl font-black text-brand-primary tabular-nums">
-              {formatCurrency(total)}
+              {formatCurrency(totalProfit)}
             </p>
           </div>
 
@@ -1134,7 +1160,18 @@ function PensionView({ balances, tabName, setTabName }: any) {
 
           <div>
             <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
-              전달 대비 변동
+              전달 수익금
+            </p>
+            <p className="text-base font-black text-brand-text-sub tabular-nums">
+              {formatCurrency(prevTotalProfit)}
+            </p>
+          </div>
+
+          <div className="w-[1px] h-10 bg-brand-border" />
+
+          <div>
+            <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
+              전달 대비
             </p>
             <div className="flex items-center gap-2">
               <p className={`text-base font-black tabular-nums ${diff >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
@@ -1142,7 +1179,8 @@ function PensionView({ balances, tabName, setTabName }: any) {
                 {formatCurrency(diff)}
               </p>
               <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${diff >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
-                {prevTotal !== 0 ? ((diff / prevTotal) * 100).toFixed(2) : '0.00'}%
+                {diff >= 0 ? '+' : ''}
+                {rate.toFixed(2)}%
               </span>
             </div>
           </div>
@@ -1154,56 +1192,71 @@ function PensionView({ balances, tabName, setTabName }: any) {
           투자/연금 항목이 없습니다
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {invAssets.map((asset: any) => {
-            const currentValue = getSafeBalance(asset.currentBalance);
-            const previousValue = getSafeBalance(asset.previousBalance);
-            const diffVal = currentValue - previousValue;
-            const diffRate = previousValue !== 0 ? (diffVal / previousValue) * 100 : 0;
+            const currentProfit = getMonthlyAmount(asset);
+            const previousProfit = getPreviousAmount(asset);
+            const diffVal = currentProfit - previousProfit;
+            const diffRate = previousProfit !== 0 ? (diffVal / previousProfit) * 100 : 0;
 
             return (
               <div
                 key={asset.id}
-                className="bg-brand-card border border-brand-border p-6 rounded-brand shadow-brand hover:border-brand-primary/50 transition-all group"
+                className="bg-brand-card border border-brand-border p-6 rounded-brand shadow-brand hover:border-brand-primary/50 transition-all"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <h4 className="font-black text-brand-text-main group-hover:text-brand-primary transition-colors">
-                    {asset.name}
-                  </h4>
+                <div className="flex justify-between items-start mb-5">
+                  <div>
+                    <h4 className="font-black text-brand-text-main">
+                      {asset.name}
+                    </h4>
+                    <p className="text-[10px] text-brand-text-sub font-bold mt-1">
+                      입력 안 한 달은 0원 기준
+                    </p>
+                  </div>
+
                   <div className={`p-1.5 rounded-lg ${diffVal >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
                     <TrendingUp size={14} className={diffVal < 0 ? 'rotate-180' : ''} />
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <div>
-                    <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-tighter">
-                      이번 달 잔액
-                    </p>
-                    <p className="text-lg font-black tabular-nums tracking-tighter">
-                      {formatCurrency(currentValue)}
-                    </p>
-                  </div>
+                  <NumericInput
+                    label="이번 달 수익금"
+                    value={currentProfit}
+                    onChange={(v: number) => updateMonthlyProfit(asset.id, v)}
+                    className="form-input text-lg font-black py-3 w-full"
+                    placeholder="0"
+                  />
 
                   <div className="grid grid-cols-2 gap-2 pt-4 border-t border-brand-border">
                     <div>
-                      <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-0.5 tracking-tighter">
-                        전달 잔액
+                      <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-0.5">
+                        전달 수익금
                       </p>
                       <p className="text-xs font-bold text-brand-text-sub tabular-nums">
-                        {formatCurrency(previousValue)}
+                        {formatCurrency(previousProfit)}
                       </p>
                     </div>
 
                     <div className="text-right">
-                      <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-0.5 tracking-tighter">
+                      <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-0.5">
                         변동률
                       </p>
                       <p className={`text-xs font-black tabular-nums ${diffVal >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
                         {diffVal >= 0 ? '+' : ''}
-                        {diffRate.toFixed(1)}%
+                        {diffRate.toFixed(2)}%
                       </p>
                     </div>
+                  </div>
+
+                  <div className="p-3 bg-brand-bg/50 rounded-xl border border-brand-border flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-brand-text-sub">
+                      전달 대비 금액
+                    </span>
+                    <span className={`text-sm font-black ${diffVal >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
+                      {diffVal >= 0 ? '+' : ''}
+                      {formatCurrency(diffVal)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1215,7 +1268,7 @@ function PensionView({ balances, tabName, setTabName }: any) {
   );
 }
 
-
+    
 
 
 function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, tabName, setTabName, categories, setCategories, onOpenEdit }: any) {
