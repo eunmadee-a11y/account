@@ -58,12 +58,12 @@ export const INITIAL_BALANCES: BalanceEntry[] = [
   { id: '9', name: '청약', category: '투자/연금', currentBalance: 15000000, previousBalance: 14900000 },
   { id: '10', name: '퇴직연금', category: '투자/연금', currentBalance: 22000000, previousBalance: 21500000 },
   { id: '11', name: '적금', category: '투자/연금', currentBalance: 5000000, previousBalance: 4500000 },
-  // 감자 자산
-  { id: '12', name: '감자 생활비 통장', category: '감자 자산', currentBalance: 0, previousBalance: 0,startingBalance: 0  },
-  { id: '13', name: '감자 여유자금 통장', category: '감자 자산', currentBalance: 0, previousBalance: 0,startingBalance: 0  },
-  { id: '14', name: '감자 개인연금', category: '감자 자산', currentBalance: 0, previousBalance: 0,startingBalance: 0 0 },
-  { id: '15', name: '감자 퇴직금', category: '감자 자산', currentBalance: 0, previousBalance: 0,startingBalance: 0  },
-  { id: '18', name: '감자 적금', category: '감자 자산', currentBalance: 0, previousBalance: 0,startingBalance: 0  },
+ // 감자 자산
+{ id: '12', name: '감자 생활비 통장', category: '감자 자산', currentBalance: 0, previousBalance: 0, startingBalance: 0 },
+{ id: '13', name: '감자 여유자금 통장', category: '감자 자산', currentBalance: 0, previousBalance: 0, startingBalance: 0 },
+{ id: '14', name: '감자 개인연금', category: '감자 자산', currentBalance: 0, previousBalance: 0, startingBalance: 0 },
+{ id: '15', name: '감자 퇴직금', category: '감자 자산', currentBalance: 0, previousBalance: 0, startingBalance: 0 },
+{ id: '18', name: '감자 적금', category: '감자 자산', currentBalance: 0, previousBalance: 0, startingBalance: 0 },
   // 기타 자산
   { id: '16', name: 'A통장', category: '기타 자산', currentBalance: 0, previousBalance: 0,startingBalance: 0  },
   { id: '17', name: 'B통장', category: '기타 자산', currentBalance: 0, previousBalance: 0,startingBalance: 0  },
