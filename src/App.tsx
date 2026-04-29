@@ -819,12 +819,18 @@ const yearStartAccounts = balances.filter((b: any) =>
   )
 );
 
+
+
+
+
 const updateYearStartBalance = (id: string, value: number) => {
   setBalances((prev: any[]) =>
     prev.map((b: any) =>
       b.id === id
         ? {
             ...b,
+            currentBalance: value,
+            previousBalance: b.previousBalance ?? value,
             monthlyBalances: {
               ...(b.monthlyBalances || {}),
               [yearStartKey]: value
@@ -834,6 +840,10 @@ const updateYearStartBalance = (id: string, value: number) => {
     )
   );
 };
+
+
+
+  
 
   const accountKeywords = ['생활비', '여유자금', '자동이체'];
 
@@ -1200,7 +1210,9 @@ const updateYearStartBalance = (id: string, value: number) => {
 
         <NumericInput
           label="1월 시작 잔액"
-          value={account.monthlyBalances?.[yearStartKey] ?? 0}
+
+          value={account.monthlyBalances?.[yearStartKey] ?? account.currentBalance ?? 0}
+          
           onChange={(v: number) => updateYearStartBalance(account.id, v)}
           className="form-input text-sm font-black py-2 w-full"
         />
