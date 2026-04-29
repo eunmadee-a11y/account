@@ -1075,11 +1075,6 @@ const updateYearStartBalance = (id: string, value: number) => {
                 <p className="text-sm font-black text-brand-pink tabular-nums">
                   -{formatNumber(activeExpenseTotal)}
                 </p>
-
-
-
-
-          
               </div>
             </div>
           </div>
@@ -1100,8 +1095,8 @@ const updateYearStartBalance = (id: string, value: number) => {
               activeAccountTxs.map((t: any) => (
 
 <div key={t.id} className="px-6 py-4 hover:bg-white/5 transition-colors group">
-<div className="flex justify-between items-start gap-2">
-  <div className="min-w-0">
+  <div className="flex justify-between items-start gap-3">
+    <div className="min-w-0">
       <p className="text-[10px] text-brand-text-sub font-black uppercase mb-0.5">
         {t.date}
       </p>
@@ -1111,11 +1106,8 @@ const updateYearStartBalance = (id: string, value: number) => {
     </div>
 
     <div className="flex items-start gap-3 shrink-0">
-<div className="flex items-center gap-2">
-  <div className="text-right">
-      
-      
-      <p
+      <div className="text-right">
+        <p
           className={`text-xs font-black tabular-nums ${
             t.type === '수입' ? 'text-brand-mint' : 'text-brand-pink'
           }`}
