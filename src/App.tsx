@@ -1461,6 +1461,27 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
   const year = currentDate.getFullYear();
   const yearStartKey = `${year}-01`;
 
+  const gamjaCashAccounts = balances.filter((b: any) =>
+    b.name.includes('감자 생활비') ||
+    b.name.includes('감자 여유자금') ||
+    b.name.includes('감자 적금')
+  );
+
+  const gamjaPensionAccounts = balances.filter((b: any) =>
+    b.name.includes('감자 퇴직금') ||
+    b.name.includes('감자 개인연금')
+  );
+
+  const gamjaCashTotal = gamjaCashAccounts.reduce(
+    (sum: number, b: any) => sum + (b.currentBalance || 0),
+    0
+  );
+
+  const gamjaPensionTotal = gamjaPensionAccounts.reduce(
+    (sum: number, b: any) => sum + (b.currentBalance || 0),
+    0
+  );
+
   const gamjaBalanceKeywords = [
     '감자 생활비',
     '감자 여유자금',
@@ -1489,13 +1510,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     );
   };
 
-  const gamjaStartAccounts = balances.filter((b: any) =>
-    b.name.includes('감자 생활비') ||
-    b.name.includes('감자 여유자금') ||
-    b.name.includes('감자 적금') ||
-    b.name.includes('감자 퇴직금') ||
-    b.name.includes('감자 개인연금')
-  );
+  const gamjaStartAccounts = [...gamjaCashAccounts, ...gamjaPensionAccounts];
 
   const updateGamjaStartBalance = (id: string, value: number) => {
     setBalances((prev: any[]) =>
@@ -1585,10 +1600,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-6xl mx-auto space-y-8 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <EditableHeader
-          title={tabName}
-          setTitle={setTabName}
-        />
+        <EditableHeader title={tabName} setTitle={setTabName} />
 
         <div className="relative w-full sm:w-64">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-text-sub" />
@@ -1605,51 +1617,46 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
       {/* 감자 현금 / 연금 잔액 */}
       <div className="space-y-3">
         <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand p-4">
-          <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-3">
-            현금 전체
-          </p>
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">
+              현금 전체
+            </p>
+            <p className="text-base md:text-lg font-black text-brand-primary tabular-nums">
+              {formatCurrency(gamjaCashTotal)}
+            </p>
+          </div>
 
           <div className="grid grid-cols-3 gap-2">
-            {balances
-              .filter((b: any) =>
-                b.name.includes('감자 생활비') ||
-                b.name.includes('감자 여유자금') ||
-                b.name.includes('감자 적금')
-              )
-              .map((b: any) => (
-                <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
-                  <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
-                    {b.name}
-                  </p>
-                  <p className="text-sm md:text-base font-black tabular-nums truncate">
-                    {formatCurrency(b.currentBalance)}
-                  </p>
-                </div>
-              ))}
+            {gamjaCashAccounts.map((b: any) => (
+              <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
+                <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">{b.name}</p>
+                <p className="text-sm md:text-base font-black tabular-nums truncate">
+                  {formatCurrency(b.currentBalance)}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand p-4">
-          <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-3">
-            연금
-          </p>
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">
+              연금
+            </p>
+            <p className="text-base md:text-lg font-black text-brand-purple tabular-nums">
+              {formatCurrency(gamjaPensionTotal)}
+            </p>
+          </div>
 
           <div className="grid grid-cols-2 gap-2">
-            {balances
-              .filter((b: any) =>
-                b.name.includes('감자 퇴직금') ||
-                b.name.includes('감자 개인연금')
-              )
-              .map((b: any) => (
-                <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
-                  <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
-                    {b.name}
-                  </p>
-                  <p className="text-sm md:text-base font-black tabular-nums truncate">
-                    {formatCurrency(b.currentBalance)}
-                  </p>
-                </div>
-              ))}
+            {gamjaPensionAccounts.map((b: any) => (
+              <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
+                <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">{b.name}</p>
+                <p className="text-sm md:text-base font-black tabular-nums truncate">
+                  {formatCurrency(b.currentBalance)}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -1669,35 +1676,6 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
             {accountName}
           </button>
         ))}
-      </div>
-
-      {/* 감자 시작 잔액 입력 */}
-      <div className="bg-brand-card border border-brand-border rounded-brand p-6 shadow-brand space-y-5">
-        <div>
-          <h4 className="text-lg font-black text-brand-purple">
-            {year}년 1월 감자 시작 잔액
-          </h4>
-          <p className="text-xs font-bold text-brand-text-sub mt-1">
-            감자 생활비 / 여유자금 / 적금 / 퇴직금 / 개인연금 시작 잔액을 입력하세요.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {gamjaStartAccounts.map((account: any) => (
-            <div key={account.id} className="bg-brand-bg border border-brand-border rounded-xl p-4 space-y-3">
-              <p className="text-xs font-black text-brand-text-main">
-                {account.name}
-              </p>
-
-              <NumericInput
-                label="1월 시작 잔액"
-                value={account.monthlyBalances?.[yearStartKey] ?? account.currentBalance ?? 0}
-                onChange={(v: number) => updateGamjaStartBalance(account.id, v)}
-                className="form-input text-sm font-black py-2 w-full"
-              />
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* 선택된 감자 통장 */}
@@ -1728,20 +1706,12 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
 
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 bg-brand-bg/50 border border-brand-border rounded-xl">
-              <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">
-                이번 달 수입
-              </p>
-              <p className="text-sm font-black text-brand-mint">
-                +{formatNumber(incomeTotal)}
-              </p>
+              <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">이번 달 수입</p>
+              <p className="text-sm font-black text-brand-mint">+{formatNumber(incomeTotal)}</p>
             </div>
             <div className="p-4 bg-brand-bg/50 border border-brand-border rounded-xl">
-              <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">
-                이번 달 지출
-              </p>
-              <p className="text-sm font-black text-brand-pink">
-                -{formatNumber(expenseTotal)}
-              </p>
+              <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">이번 달 지출</p>
+              <p className="text-sm font-black text-brand-pink">-{formatNumber(expenseTotal)}</p>
             </div>
           </div>
 
@@ -1763,9 +1733,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
                 <button
                   onClick={() => setNewTx({ ...newTx, type: '지출', category: categories.expense[0] })}
                   className={`flex-1 py-1 rounded-md transition-all font-black ${
-                    newTx.type === '지출'
-                      ? 'bg-brand-pink text-white shadow-sm'
-                      : 'text-brand-text-sub hover:text-white'
+                    newTx.type === '지출' ? 'bg-brand-pink text-white shadow-sm' : 'text-brand-text-sub hover:text-white'
                   }`}
                 >
                   지출
@@ -1773,9 +1741,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
                 <button
                   onClick={() => setNewTx({ ...newTx, type: '수입', category: categories.income[0] })}
                   className={`flex-1 py-1 rounded-md transition-all font-black ${
-                    newTx.type === '수입'
-                      ? 'bg-brand-mint text-white shadow-sm'
-                      : 'text-brand-text-sub hover:text-white'
+                    newTx.type === '수입' ? 'bg-brand-mint text-white shadow-sm' : 'text-brand-text-sub hover:text-white'
                   }`}
                 >
                   수입
@@ -1874,6 +1840,35 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* 감자 시작 잔액 입력 */}
+      <div className="bg-brand-card border border-brand-border rounded-brand p-6 shadow-brand space-y-5">
+        <div>
+          <h4 className="text-lg font-black text-brand-purple">
+            {year}년 1월 감자 시작 잔액
+          </h4>
+          <p className="text-xs font-bold text-brand-text-sub mt-1">
+            감자 생활비 / 여유자금 / 적금 / 퇴직금 / 개인연금 시작 잔액을 입력하세요.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {gamjaStartAccounts.map((account: any) => (
+            <div key={account.id} className="bg-brand-bg border border-brand-border rounded-xl p-4 space-y-3">
+              <p className="text-xs font-black text-brand-text-main">
+                {account.name}
+              </p>
+
+              <NumericInput
+                label="1월 시작 잔액"
+                value={account.monthlyBalances?.[yearStartKey] ?? account.currentBalance ?? 0}
+                onChange={(v: number) => updateGamjaStartBalance(account.id, v)}
+                className="form-input text-sm font-black py-2 w-full"
+              />
+            </div>
+          ))}
         </div>
       </div>
 
