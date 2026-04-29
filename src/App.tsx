@@ -680,14 +680,16 @@ const addTransaction = (tx: any) => {
       </p>
     </div>
 
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 gap-2">
       {quickAccounts.map((b: any) => (
-        <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
-          <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
+<div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-2.5 py-2 min-w-0">
+  
+  <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
             {b.name}
           </p>
 
-<p className="text-sm md:text-base font-black tabular-nums truncate">
+
+  <p className="text-lg md:text-xl font-black tabular-nums leading-tight whitespace-nowrap">
   {formatCurrency(Number(b.currentBalance) || 0)}
 </p>
 
