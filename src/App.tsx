@@ -1824,66 +1824,51 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
             <span>{activeAccountTxs.length}건</span>
           </div>
 
+          <div className="flex-1 overflow-y-auto divide-y divide-brand-border custom-scrollbar">
+            {activeAccountTxs.length > 0 ? (
+              activeAccountTxs.map((t: any) => (
+                <div key={t.id} className="px-6 md:px-8 py-5 flex items-center justify-between hover:bg-white/5 transition-colors group">
+                  <div className="flex items-center gap-4 md:gap-6 min-w-0">
+                    <div className={`w-10 h-10 flex items-center justify-center border rounded-xl shrink-0 ${
+                      t.type === '수입'
+                        ? 'bg-brand-mint/5 border-brand-mint/20 text-brand-mint'
+                        : 'bg-brand-pink/5 border-brand-pink/20 text-brand-pink'
+                    }`}>
+                      {t.type === '수입' ? <Plus size={16} /> : <Minus size={16} />}
+                    </div>
 
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="text-sm font-black truncate">{t.memo || t.category}</p>
+                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-brand-border/30 text-brand-text-sub uppercase tracking-tighter shrink-0">
+                          {t.category}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-brand-text-sub font-bold uppercase tracking-wider">
+                        {t.date}
+                      </p>
+                    </div>
+                  </div>
 
-<div className="flex-1 overflow-y-auto divide-y divide-brand-border custom-scrollbar">
-  {activeAccountTxs.length > 0 ? (
-    activeAccountTxs.map((t: any) => (
-      <div key={t.id} className="px-6 md:px-8 py-5 flex items-center justify-between hover:bg-white/5 transition-colors group">
-        <div className="flex items-center gap-4 md:gap-6 min-w-0">
-          <div className={`w-10 h-10 flex items-center justify-center border rounded-xl shrink-0 ${
-            t.type === '수입'
-              ? 'bg-brand-mint/5 border-brand-mint/20 text-brand-mint'
-              : 'bg-brand-pink/5 border-brand-pink/20 text-brand-pink'
-          }`}>
-            {t.type === '수입' ? <Plus size={16} /> : <Minus size={16} />}
+                  <p className={`text-sm md:text-base font-black tabular-nums tracking-tighter shrink-0 ${
+                    t.type === '수입' ? 'text-brand-mint' : 'text-brand-text-main'
+                  }`}>
+                    {t.type === '수입' ? '+' : '-'}{formatNumber(t.amount)}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center p-20 opacity-20 space-y-2">
+                <Activity size={32} />
+                <p className="text-xs font-black uppercase tracking-widest">
+                  검색 결과가 없습니다
+                </p>
+              </div>
+            )}
           </div>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <p className="text-sm font-black truncate">{t.memo || t.category}</p>
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-brand-border/30 text-brand-text-sub uppercase tracking-tighter shrink-0">
-                {t.category}
-              </span>
-            </div>
-
-            <p className="text-[10px] text-brand-text-sub font-bold uppercase tracking-wider">
-              {t.date}
-            </p>
-          </div>
-        </div>
-
-        {/* 👇 여기만 바뀐 부분 */}
-        <div className="flex items-center gap-2 shrink-0">
-          <p className={`text-sm md:text-base font-black tabular-nums tracking-tighter ${
-            t.type === '수입' ? 'text-brand-mint' : 'text-brand-text-main'
-          }`}>
-            {t.type === '수입' ? '+' : '-'}{formatNumber(t.amount)}
-          </p>
-
-          <button
-            onClick={() => deleteGamjaTransaction(t.id)}
-            className="w-6 h-6 flex items-center justify-center text-brand-text-sub hover:text-brand-pink opacity-0 group-hover:opacity-100 transition-all"
-          >
-            <X size={14} />
-          </button>
         </div>
       </div>
-    ))
-  ) : (
-    <div className="h-full flex flex-col items-center justify-center p-20 opacity-20 space-y-2">
-      <Activity size={32} />
-      <p className="text-xs font-black uppercase tracking-widest">
-        검색 결과가 없습니다
-      </p>
-    </div>
-  )}
-</div>
 
-
-
-
-          
       {/* 감자 시작 잔액 입력 */}
       <div className="bg-brand-card border border-brand-border rounded-brand p-6 shadow-brand space-y-5">
         <div>
