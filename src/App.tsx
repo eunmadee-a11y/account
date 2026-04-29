@@ -630,8 +630,8 @@ const addTransaction = (tx: any) => {
 
 {/* 1. 홈 상단 통장 입력 버튼 */}
 <div className="space-y-4">
-  <div className="grid grid-cols-3 gap-3">
-    {quickAccounts.map((account: any) => (
+<div className="grid grid-cols-2 gap-3">
+  {quickAccounts.map((account: any) => (
       <button
         key={account.id}
         onClick={() =>
@@ -2390,8 +2390,9 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
       </div>
 
       <div className="grid grid-cols-2 gap-4 mt-4">
-         <button onClick={() => { setNewTx({...newTx, type: '수입', category: categories.income[0] }); handleAdd('수입'); }} className="bg-brand-mint/10 text-brand-mint text-[11px] font-black py-3 rounded-xl hover:bg-brand-mint/20 transition-all uppercase">수입</button>
          <button onClick={() => { setNewTx({...newTx, type: '지출', category: categories.expense[0] }); handleAdd('지출'); }} className="bg-brand-pink/10 text-brand-pink text-[11px] font-black py-3 rounded-xl hover:bg-brand-pink/20 transition-all uppercase">지출</button>
+               <button onClick={() => { setNewTx({...newTx, type: '수입', category: categories.income[0] }); handleAdd('수입'); }} className="bg-brand-mint/10 text-brand-mint text-[11px] font-black py-3 rounded-xl hover:bg-brand-mint/20 transition-all uppercase">수입</button>
+
       </div>
     </div>
   );
