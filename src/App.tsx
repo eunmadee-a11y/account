@@ -2753,14 +2753,14 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
          
          <div className="h-[500px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-               <BarChart data={monthlySalaryData} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
+               <BarChart data={monthlySalaryData}   margin={{ top: 10, right: 5, left: 0, bottom: 0 }}>
+
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#25282b" />
                   <XAxis 
-                     dataKey="name" 
-                     axisLine={false} 
-                     tickLine={false} 
-                     tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 'bold' }} 
-                     dy={15}
+                      dataKey="name"
+  tickMargin={4}
+  axisLine={false}
+  tickLine={false}
                   />
                   <YAxis hide />
                   <Tooltip 
