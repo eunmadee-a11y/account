@@ -1558,8 +1558,6 @@ const gamjaPensionTotal = balances
         </div>
       </div>
 
-      {/* 감자 통장 선택 버튼 */}
-<div className="grid grid-cols-2 gap-3">
 
 
 
