@@ -709,23 +709,6 @@ const addTransaction = (tx: any) => {
 
       
 
-  {autoTransferAccount && (
-    <div className="bg-brand-card p-6 rounded-brand border border-brand-border shadow-brand flex items-center justify-between">
-      <div>
-        <p className="text-xs font-bold text-brand-text-sub uppercase tracking-wider mb-2">
-          연금 총액
-        </p>
-        <h2 className="text-2xl font-black text-brand-purple">
-          {formatCurrency(pensionTotal)}
-        </h2>
-      </div>
-
-      <div className="opacity-10">
-        <Coins size={40} />
-      </div>
-    </div>
-  )}
-</div>
 
 
 
