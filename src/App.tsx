@@ -563,19 +563,19 @@ const pensionTotal = balances
 
 
 
-const cashTotal = balances
+
+
+  const cashTotal = balances
   .filter((b: any) =>
-    b.category === '내 통장' ||
-    (
-      b.category === '투자/연금' &&
-      b.name.includes('적금')
-    )
+    b.name.includes('생활비') ||
+    b.name.includes('여유자금') ||
+    b.name.includes('자동이체') ||
+    b.name.includes('적금')
   )
   .reduce((sum: number, b: any) => {
     const monthlyValue = b.monthlyBalances?.[monthKey];
     return sum + (typeof monthlyValue === 'number' ? monthlyValue : b.currentBalance || 0);
   }, 0);
-
 
   
   
@@ -1290,22 +1290,27 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
     return asset.monthlyPensionProfits?.[prevMonthKey] ?? 0;
   };
 
-  const updateMonthlyProfit = (id: string, value: number) => {
-    setBalances((prev: any[]) =>
-      prev.map((b: any) =>
-        b.id === id
-          ? {
-              ...b,
-              monthlyPensionProfits: {
-                ...(b.monthlyPensionProfits || {}),
-                [monthKey]: value
-              }
+const updateMonthlyProfit = (id: string, value: number) => {
+  setBalances((prev: any[]) =>
+    prev.map((b: any) =>
+      b.id === id
+        ? {
+            ...b,
+            currentBalance: value,
+            monthlyBalances: {
+              ...(b.monthlyBalances || {}),
+              [monthKey]: value
+            },
+            monthlyPensionProfits: {
+              ...(b.monthlyPensionProfits || {}),
+              [monthKey]: value
             }
-          : b
-      )
-    );
-  };
-
+          }
+        : b
+    )
+  );
+};
+  
   const totalProfit = invAssets.reduce((sum: number, asset: any) => sum + getMonthlyAmount(asset), 0);
   const prevTotalProfit = invAssets.reduce((sum: number, asset: any) => sum + getPreviousAmount(asset), 0);
   const diff = totalProfit - prevTotalProfit;
