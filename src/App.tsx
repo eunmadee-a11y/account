@@ -561,6 +561,22 @@ const pensionTotal = balances
   }, 0);
 
 
+
+const cashTotal = balances
+  .filter((b: any) =>
+    b.category === '내 통장' ||
+    (
+      b.category === '투자/연금' &&
+      b.name.includes('적금')
+    )
+  )
+  .reduce((sum: number, b: any) => {
+    const monthlyValue = b.monthlyBalances?.[monthKey];
+    return sum + (typeof monthlyValue === 'number' ? monthlyValue : b.currentBalance || 0);
+  }, 0);
+
+
+  
   
 const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(null);
 
@@ -640,22 +656,58 @@ const addTransaction = (tx: any) => {
       
 {/* 2. Account Balances */}
 <div className="space-y-3">
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-    {mainAccounts.map((b: any) => (
-      <div key={b.id} className="group relative bg-brand-card p-6 rounded-brand shadow-brand border border-brand-border overflow-hidden hover:border-brand-primary/50 transition-all">
-        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-          <Wallet size={48} />
+  <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand p-4">
+    <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-3">
+      내 통장 잔액
+    </p>
+
+    <div className="grid grid-cols-3 gap-2">
+      {quickAccounts.map((b: any) => (
+        <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
+          <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
+            {b.name}
+          </p>
+          <p className="text-sm md:text-base font-black tabular-nums truncate">
+            {formatCurrency(b.currentBalance)}
+          </p>
         </div>
-        <p className="text-xs font-bold text-brand-text-sub uppercase tracking-wider mb-2">{b.name} 잔액</p>
-        <h2 className="text-2xl font-black">{formatCurrency(b.currentBalance)}</h2>
-        <div className="mt-4 flex items-center gap-2">
-          <span className={`text-[10px] font-semibold ${b.currentBalance >= b.previousBalance ? 'text-brand-mint' : 'text-brand-pink'}`}>
-            전달 대비 {b.currentBalance >= b.previousBalance ? '+' : ''}{formatCurrency(b.currentBalance - b.previousBalance)}
-          </span>
-        </div>
-      </div>
-    ))}
+      ))}
+    </div>
   </div>
+
+  <div className="bg-brand-card p-4 rounded-brand border border-brand-border shadow-brand flex items-center justify-between">
+    <div>
+      <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-1">
+        현금 합계
+      </p>
+      <h2 className="text-xl font-black text-brand-primary">
+        {formatCurrency(cashTotal)}
+      </h2>
+    </div>
+
+    <div className="opacity-10">
+      <Wallet size={34} />
+    </div>
+  </div>
+
+  <div className="bg-brand-card p-4 rounded-brand border border-brand-border shadow-brand flex items-center justify-between">
+    <div>
+      <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-1">
+        연금 총액
+      </p>
+      <h2 className="text-xl font-black text-brand-purple">
+        {formatCurrency(pensionTotal)}
+      </h2>
+    </div>
+
+    <div className="opacity-10">
+      <Coins size={34} />
+    </div>
+  </div>
+</div>
+
+
+      
 
   {autoTransferAccount && (
     <div className="bg-brand-card p-6 rounded-brand border border-brand-border shadow-brand flex items-center justify-between">
