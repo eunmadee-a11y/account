@@ -1562,6 +1562,8 @@ const gamjaPensionTotal = balances
 <div className="grid grid-cols-2 gap-3">
 
 
+
+
 {/* 감자 현금 / 연금 잔액 */}
 <div className="space-y-3">
   <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand p-4">
@@ -1577,7 +1579,10 @@ const gamjaPensionTotal = balances
           b.name.includes('감자 적금')
         )
         .map((b: any) => (
-          <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
+          <div
+            key={b.id}
+            className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0"
+          >
             <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
               {b.name}
             </p>
@@ -1601,7 +1606,10 @@ const gamjaPensionTotal = balances
           b.name.includes('감자 개인연금')
         )
         .map((b: any) => (
-          <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
+          <div
+            key={b.id}
+            className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0"
+          >
             <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
               {b.name}
             </p>
@@ -1614,23 +1622,25 @@ const gamjaPensionTotal = balances
   </div>
 </div>
 
+{/* 감자 통장 선택 버튼 */}
+<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+  {orderedGamjaAccounts.map((accountName: string) => (
+    <button
+      key={accountName}
+      onClick={() => setActiveGamjaAccount(accountName)}
+      className={`py-3 px-3 rounded-xl border font-black text-xs md:text-sm transition-all active:scale-95 ${
+        activeGamjaAccount === accountName
+          ? 'bg-brand-purple text-white border-brand-purple shadow-lg shadow-brand-purple/20'
+          : 'bg-brand-card text-brand-text-main border-brand-border hover:border-brand-purple'
+      }`}
+    >
+      {accountName}
+    </button>
+  ))}
+</div>
+
+
   
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {orderedGamjaAccounts.map((accountName: string) => (
-          <button
-            key={accountName}
-            onClick={() => setActiveGamjaAccount(accountName)}
-            className={`py-3 px-3 rounded-xl border font-black text-xs md:text-sm transition-all active:scale-95 ${
-              activeGamjaAccount === accountName
-                ? 'bg-brand-purple text-white border-brand-purple shadow-lg shadow-brand-purple/20'
-                : 'bg-brand-card text-brand-text-main border-brand-border hover:border-brand-purple'
-            }`}
-          >
-            {accountName}
-          </button>
-        ))}
-      </div>
 
       {/* 선택된 감자 통장 */}
       <div className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand">
