@@ -1690,117 +1690,334 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         ))}
       </div>
 
-
-
-
-{/* 선택된 감자 통장 */}
-<div className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand">
-  <div className="p-5 md:p-8 border-b border-brand-border bg-white/5 space-y-6">
-    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 bg-brand-purple/10 rounded-xl flex items-center justify-center text-brand-purple shrink-0">
-          <Wallet size={24} />
-        </div>
-        <div>
-          <h4 className="font-black text-lg">{activeGamjaAccount}</h4>
-          <p className="text-[10px] font-bold text-brand-text-sub uppercase tracking-widest">
-            감자 통장 관리
-          </p>
-        </div>
-      </div>
-
-      <div className="sm:text-right">
-        <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
-          현재 잔액
-        </p>
-        <p className="text-2xl md:text-3xl font-black tabular-nums">
-          {formatCurrency(activeBalance?.currentBalance || 0)}
-        </p>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-2 gap-4">
-      <div className="p-4 bg-brand-bg/50 border border-brand-border rounded-xl">
-        <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">이번 달 수입</p>
-        <p className="text-sm font-black text-brand-mint">+{formatNumber(incomeTotal)}</p>
-      </div>
-      <div className="p-4 bg-brand-bg/50 border border-brand-border rounded-xl">
-        <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">이번 달 지출</p>
-        <p className="text-sm font-black text-brand-pink">-{formatNumber(expenseTotal)}</p>
-      </div>
-    </div>
-
-    {/* 입력창 */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end bg-brand-bg/50 p-4 rounded-xl border border-brand-border/50 overflow-hidden">
-      <input type="date" value={newTx.date} onChange={e => setNewTx({ ...newTx, date: e.target.value })} className="form-input text-xs py-1.5" />
-
-      <div className="flex bg-brand-bg rounded-lg p-0.5 border border-brand-border">
-        <button onClick={() => setNewTx({ ...newTx, type: '지출', category: categories.expense[0] })} className={`flex-1 py-1 ${newTx.type === '지출' ? 'bg-brand-pink text-white' : ''}`}>지출</button>
-        <button onClick={() => setNewTx({ ...newTx, type: '수입', category: categories.income[0] })} className={`flex-1 py-1 ${newTx.type === '수입' ? 'bg-brand-mint text-white' : ''}`}>수입</button>
-      </div>
-
-      <select value={newTx.category} onChange={e => setNewTx({ ...newTx, category: e.target.value })} className="form-select text-xs">
-        {(newTx.type === '지출' ? categories.expense : categories.income).map((c: string) => (
-          <option key={c} value={c}>{c}</option>
-        ))}
-      </select>
-
-      <NumericInput value={newTx.amount} onChange={(v: number) => setNewTx({ ...newTx, amount: v })} />
-
-      <input type="text" value={newTx.memo} onChange={e => setNewTx({ ...newTx, memo: e.target.value })} className="form-input text-xs" />
-
-      <button onClick={handleAdd} className="lg:col-span-5 bg-brand-purple text-white py-2 rounded">
-        추가
-      </button>
-    </div>
-  </div>
-
-  {/* 거래 내역 */}
-  <div className="flex flex-col h-[500px]">
-    <div className="px-6 py-3 bg-brand-bg/30 border-b flex justify-between text-[10px]">
-      <span>{activeGamjaAccount} 거래 내역</span>
-      <span>{activeAccountTxs.length}건</span>
-    </div>
-
-    <div className="flex-1 overflow-y-auto divide-y">
-      {activeAccountTxs.length > 0 ? (
-        activeAccountTxs.map((t: any) => (
-          <div key={t.id} className="px-6 py-4 flex justify-between group">
-            <div className="flex gap-3">
-              {t.type === '수입' ? <Plus size={14} /> : <Minus size={14} />}
+      {/* 선택된 감자 통장 */}
+      <div className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand">
+        <div className="p-5 md:p-8 border-b border-brand-border bg-white/5 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-brand-purple/10 rounded-xl flex items-center justify-center text-brand-purple shrink-0">
+                <Wallet size={24} />
+              </div>
               <div>
-                <p className="text-xs">{t.memo || t.category}</p>
-                <p className="text-[10px]">{t.date}</p>
+                <h4 className="font-black text-lg">{activeGamjaAccount}</h4>
+                <p className="text-[10px] font-bold text-brand-text-sub uppercase tracking-widest">
+                  감자 통장 관리
+                </p>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <p>{t.type === '수입' ? '+' : '-'}{formatNumber(t.amount)}</p>
-              <button onClick={() => {
-                deleteGamjaTransaction(t.id);
-                applyGamjaTxToBalance(t, true);
-              }}>
-                <Trash2 size={14} />
-              </button>
+            <div className="sm:text-right">
+              <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
+                현재 잔액
+              </p>
+              <p className="text-2xl md:text-3xl font-black tabular-nums">
+                {formatCurrency(activeBalance?.currentBalance || 0)}
+              </p>
             </div>
           </div>
-        ))
-      ) : (
-        <div className="p-10 text-center text-xs">내역 없음</div>
-      )}
-    </div>
-  </div>
-</div>
 
-<div className="flex justify-center pt-10">
-  <button onClick={onOpenEdit} className="px-6 py-3 border rounded">
-    감자 수정
-  </button>
-</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 bg-brand-bg/50 border border-brand-border rounded-xl">
+              <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">이번 달 수입</p>
+              <p className="text-sm font-black text-brand-mint">+{formatNumber(incomeTotal)}</p>
+            </div>
+            <div className="p-4 bg-brand-bg/50 border border-brand-border rounded-xl">
+              <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">이번 달 지출</p>
+              <p className="text-sm font-black text-brand-pink">-{formatNumber(expenseTotal)}</p>
+            </div>
+          </div>
 
-      
+          {/* 입력창 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end bg-brand-bg/50 p-4 rounded-xl border border-brand-border/50 overflow-hidden">
+            <div className="space-y-1.5 min-w-0">
+              <label className="text-[9px] font-black text-brand-text-sub uppercase ml-1">날짜</label>
+              <input
+                type="date"
+                value={newTx.date}
+                onChange={e => setNewTx({ ...newTx, date: e.target.value })}
+                className="form-input text-xs py-1.5 w-full max-w-full min-w-0"
+              />
+            </div>
 
-        
+            <div className="space-y-1.5 text-xs min-w-0">
+              <label className="text-[9px] font-black text-brand-text-sub uppercase ml-1">유형</label>
+              <div className="flex bg-brand-bg rounded-lg p-0.5 border border-brand-border w-full">
+                <button
+                  onClick={() => setNewTx({ ...newTx, type: '지출', category: categories.expense[0] })}
+                  className={`flex-1 py-1 rounded-md transition-all font-black ${
+                    newTx.type === '지출' ? 'bg-brand-pink text-white shadow-sm' : 'text-brand-text-sub hover:text-white'
+                  }`}
+                >
+                  지출
+                </button>
+                <button
+                  onClick={() => setNewTx({ ...newTx, type: '수입', category: categories.income[0] })}
+                  className={`flex-1 py-1 rounded-md transition-all font-black ${
+                    newTx.type === '수입' ? 'bg-brand-mint text-white shadow-sm' : 'text-brand-text-sub hover:text-white'
+                  }`}
+                >
+                  수입
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 min-w-0">
+              <label className="text-[9px] font-black text-brand-text-sub uppercase ml-1">항목</label>
+              <select
+                value={newTx.category}
+                onChange={e => setNewTx({ ...newTx, category: e.target.value })}
+                className="form-select text-xs py-1.5 h-[34px] w-full max-w-full min-w-0"
+              >
+                {(newTx.type === '지출' ? categories.expense : categories.income).map((c: string) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="min-w-0">
+              <NumericInput
+                label="금액"
+                value={newTx.amount}
+                onChange={(v: number) => setNewTx({ ...newTx, amount: v })}
+                className="form-input text-sm font-black py-1.5 w-full max-w-full min-w-0"
+              />
+            </div>
+
+            <div className="space-y-1.5 min-w-0">
+              <label className="text-[9px] font-black text-brand-text-sub uppercase ml-1">메모</label>
+              <input
+                type="text"
+                value={newTx.memo}
+                placeholder="메모"
+                onChange={e => setNewTx({ ...newTx, memo: e.target.value })}
+                className="form-input text-xs py-1.5 w-full max-w-full min-w-0"
+              />
+            </div>
+
+            <button
+              onClick={handleAdd}
+              className="md:col-span-2 lg:col-span-5 bg-brand-purple text-white font-black py-3 rounded-lg shadow-lg shadow-brand-purple/20 hover:brightness-110 active:scale-[0.98] transition-all text-xs uppercase tracking-widest"
+            >
+              내역 추가 (ADD ENTRY)
+            </button>
+          </div>
+        </div>
+
+        {/* 거래 내역 */}
+        <div className="flex flex-col h-[500px]">
+          <div className="px-6 md:px-8 py-3 bg-brand-bg/30 border-b border-brand-border flex justify-between items-center text-[10px] font-black text-brand-text-sub uppercase tracking-widest">
+            <span>{activeGamjaAccount} 거래 내역</span>
+            <span>{activeAccountTxs.length}건</span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto divide-y divide-brand-border custom-scrollbar">
+            {activeAccountTxs.length > 0 ? (
+              activeAccountTxs.map((t: any) => (
+                <div key={t.id} className="px-6 md:px-8 py-5 flex items-center justify-between hover:bg-white/5 transition-colors group">
+                  <div className="flex items-center gap-4 md:gap-6 min-w-0">
+                    <div className={`w-10 h-10 flex items-center justify-center border rounded-xl shrink-0 ${
+                      t.type === '수입'
+                        ? 'bg-brand-mint/5 border-brand-mint/20 text-brand-mint'
+                        : 'bg-brand-pink/5 border-brand-pink/20 text-brand-pink'
+                    }`}>
+                      {t.type === '수입' ? <Plus size={16} /> : <Minus size={16} />}
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="text-sm font-black truncate">{t.memo || t.category}</p>
+                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-brand-border/30 text-brand-text-sub uppercase tracking-tighter shrink-0">
+                          {t.category}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-brand-text-sub font-bold uppercase tracking-wider">
+                        {t.date}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className={`text-sm md:text-base font-black tabular-nums tracking-tighter shrink-0 ${
+                    t.type === '수입' ? 'text-brand-mint' : 'text-brand-text-main'
+                  }`}>
+                    {t.type === '수입' ? '+' : '-'}{formatNumber(t.amount)}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center p-20 opacity-20 space-y-2">
+                <Activity size={32} />
+                <p className="text-xs font-black uppercase tracking-widest">
+                  검색 결과가 없습니다
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 감자 시작 잔액 입력 */}
+      <div className="bg-brand-card border border-brand-border rounded-brand p-6 shadow-brand space-y-5">
+        <div>
+          <h4 className="text-lg font-black text-brand-purple">
+            {year}년 1월 감자 시작 잔액
+          </h4>
+          <p className="text-xs font-bold text-brand-text-sub mt-1">
+            감자 생활비 / 여유자금 / 적금 / 퇴직금 / 개인연금 시작 잔액을 입력하세요.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {gamjaStartAccounts.map((account: any) => (
+            <div key={account.id} className="bg-brand-bg border border-brand-border rounded-xl p-4 space-y-3">
+              <p className="text-xs font-black text-brand-text-main">
+                {account.name}
+              </p>
+
+              <NumericInput
+                label="1월 시작 잔액"
+                value={account.monthlyBalances?.[yearStartKey] ?? account.currentBalance ?? 0}
+                onChange={(v: number) => updateGamjaStartBalance(account.id, v)}
+                className="form-input text-sm font-black py-2 w-full"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-center pt-10">
+        <button
+          onClick={onOpenEdit}
+          className="px-12 py-4 bg-brand-card border border-brand-border rounded-2xl font-black text-brand-purple uppercase tracking-widest shadow-brand hover:border-brand-purple transition-all flex items-center gap-3 active:scale-95"
+        >
+          <Edit2 size={18} />
+          감자 지출 내역 및 항목 수정 (EDIT EXPENSES)
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+
+
+
+function AssetStatusView({ balances, setBalances, currentDate, tabName, setTabName }: any) {
+const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+
+const getMonthlyBalance = (asset: any) => {
+  return asset.monthlyBalances?.[monthKey] ?? asset.currentBalance ?? 0;
+};
+
+const getPreviousMonthKey = () => {
+  const prev = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+  return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const getPreviousBalance = (asset: any) => {
+  const prevKey = getPreviousMonthKey();
+  return asset.monthlyBalances?.[prevKey] ?? asset.previousBalance ?? 0;
+};
+
+
+
+  
+
+
+const updateBalance = (id: string, value: number) => {
+  setBalances(balances.map((b: any) =>
+    b.id === id
+      ? {
+          ...b,
+          currentBalance: value,
+          monthlyBalances: {
+            ...(b.monthlyBalances || {}),
+            [monthKey]: value
+          }
+        }
+      : b
+  ));
+};
+
+  
+
+  
+  const updateName = (id: string, name: string) => {
+    setBalances(balances.map((b: any) => b.id === id ? { ...b, name: name } : b));
+  };
+
+
+
+const total = balances.reduce((sum: number, b: any) => sum + getMonthlyBalance(b), 0);
+const prevTotal = balances.reduce((sum: number, b: any) => sum + getPreviousBalance(b), 0);
+  
+
+const categories = ['내 통장', '투자/연금', '감자 자산', '기타 자산'];
+
+  
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto space-y-6 pb-12 px-2">
+      <EditableHeader 
+        title={tabName} 
+        setTitle={setTabName} 
+      />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-brand-card border border-brand-border rounded-xl overflow-hidden shadow-brand p-4 md:p-6">
+         <div className="flex-1">
+            <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">현재 총 자산 합계</p>
+            <h4 className="text-3xl md:text-4xl font-black text-brand-primary tabular-nums tracking-tighter">{formatCurrency(total)}</h4>
+         </div>
+         <div className="flex-1 md:text-right border-t md:border-t-0 md:border-l border-brand-border pt-4 md:pt-0 md:pl-6">
+            <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1">지난달 대비 흐름</p>
+            <div className="flex md:justify-end items-center gap-2">
+               <p className="text-lg font-black">{formatCurrency(prevTotal)}</p>
+               <p className={`text-xs font-black px-2 py-0.5 rounded ${total >= prevTotal ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
+                  {total >= prevTotal ? '▲' : '▼'} {formatCurrency(Math.abs(total - prevTotal))}
+               </p>
+            </div>
+         </div>
+      </div>
+
+      <div className="space-y-8">
+        {categories.map(cat => (
+          <div key={cat} className="space-y-4">
+            <div className="flex items-center gap-3 px-2">
+               <h4 className="text-xs font-black text-brand-primary uppercase tracking-widest">{cat}</h4>
+               <div className="flex-1 h-px bg-brand-border/50" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {balances.filter((b: any) => b.category === cat).map((b: any) => (
+                <div key={b.id} className="p-3 bg-brand-card border border-brand-border rounded-xl shadow-sm hover:border-brand-primary/50 transition-all flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <input 
+                      type="text" 
+                      value={b.name} 
+                      onChange={e => updateName(b.id, e.target.value)}
+                      className="w-full bg-transparent border-b border-white/5 focus:border-brand-primary/30 px-0 py-1 text-xs font-black text-brand-text-sub outline-none transition-all"
+                      placeholder="계좌명"
+                    />
+
+<NumericInput 
+  value={getMonthlyBalance(b)}
+  onChange={(val: number) => updateBalance(b.id, val)}
+  className="bg-transparent border-none p-0 text-xl font-black text-brand-text-main tabular-nums focus:ring-0 w-full"
+  placeholder="0"
+/>
+
+
+                    
+                    <div className="flex justify-between items-center text-[9px] font-bold text-brand-text-sub/30 pb-1 border-t border-brand-border/10">
+                       <span className="uppercase tracking-tighter">전달 잔액</span>
+                       <span className="tabular-nums">{formatNumber(b.previousBalance)}원</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName }: any) {
   const [activeLoanId, setActiveLoanId] = useState(loans[0]?.id || '');
   const activeLoan = loans.find((l: any) => l.id === activeLoanId);
