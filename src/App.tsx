@@ -343,6 +343,36 @@ useEffect(() => {
 
   // Handlers
 
+const targetAccountKeywords = ['생활비', '여유자금', '자동이체'];
+
+const isTargetMyAccount = (accountName: string) =>
+  targetAccountKeywords.some(keyword => accountName?.includes(keyword));
+
+const getTxDelta = (tx: any) => {
+  if (!tx || !isTargetMyAccount(tx.account)) return 0;
+  return tx.type === '수입' ? tx.amount : -tx.amount;
+};
+
+const applyTxToBalance = (tx: any, reverse = false) => {
+  const delta = getTxDelta(tx);
+  if (delta === 0) return;
+
+  setBalances(prev =>
+    prev.map(b =>
+      b.category === '내 통장' && b.name === tx.account
+        ? { ...b, currentBalance: b.currentBalance + (reverse ? -delta : delta) }
+        : b
+    )
+  );
+};
+
+const addMyTransaction = (tx: any) => {
+  setTransactions(prev => [tx, ...prev]);
+  applyTxToBalance(tx);
+};
+
+  
+
 const changeMonth = (offset: number) => {
   const nextDate = new Date(
     currentDate.getFullYear(),
@@ -470,8 +500,9 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 {/* Main Content Area */}
 <main className="flex-1 w-full px-3 md:px-6">
   <AnimatePresence mode="wait">
-    {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, tabName: tabNames['홈'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '홈': name })), categories: myCategories, setCategories: setMyCategories }} />}
 
+{activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, addMyTransaction, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, tabName: tabNames['홈'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '홈': name })), categories: myCategories, setCategories: setMyCategories }} />}
+    
 {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, changeMonth, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, tabName: tabNames['내 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '내 지출': name })), categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true) }} />}
     {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, setBalances, currentDate, tabName: tabNames['연금/투자 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '연금/투자 관리': name })) }} />}
 
@@ -514,8 +545,9 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 
 // --- TAB VIEWS ---
 
-function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
-  const mainAccounts = balances.filter((b: any) => b.category === '내 통장');
+function HomeView({ totalAssets, monthlySummary, transactions, addMyTransaction, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
+
+const mainAccounts = balances.filter((b: any) => b.category === '내 통장');
 const autoTransferAccount = mainAccounts.find((b: any) =>
   b.name.includes('자동이체')
 );
@@ -546,9 +578,12 @@ const quickAccounts = quickAccountKeywords
     return transactions.filter((t: any) => t.date === selectedDateStr);
   }, [transactions, selectedDateStr]);
 
-  const addTransaction = (tx: any) => {
-    setTransactions([tx, ...transactions]);
-  };
+
+
+const addTransaction = (tx: any) => {
+  addMyTransaction(tx);
+};
+  
 
   return (
     <motion.div 
