@@ -1289,46 +1289,50 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
           description={`${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월 연금 수익금 입력`}
         />
 
-        <div className="bg-brand-card border border-brand-border p-5 rounded-brand flex items-center gap-8 shadow-brand">
-          <div>
-            <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
-              이번 달 수익금
-            </p>
-            <p className="text-2xl font-black text-brand-primary tabular-nums">
-              {formatCurrency(totalProfit)}
-            </p>
-          </div>
 
-          <div className="w-[1px] h-10 bg-brand-border" />
+        
+<div className="grid grid-cols-1 gap-2 w-full md:w-[260px]">
+  <div className="bg-brand-card border border-brand-border px-4 py-3 rounded-xl shadow-brand">
+    <p className="text-[9px] font-black text-brand-text-sub uppercase tracking-widest mb-1">
+      이번 달 수익금
+    </p>
+    <p className="text-xl font-black text-brand-primary tabular-nums leading-tight">
+      {formatCurrency(totalProfit)}
+    </p>
+  </div>
 
-          <div>
-            <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
-              전달 수익금
-            </p>
-            <p className="text-base font-black text-brand-text-sub tabular-nums">
-              {formatCurrency(prevTotalProfit)}
-            </p>
-          </div>
+  <div className="bg-brand-card border border-brand-border px-4 py-3 rounded-xl shadow-brand">
+    <p className="text-[9px] font-black text-brand-text-sub uppercase tracking-widest mb-1">
+      전달 수익금
+    </p>
+    <p className="text-lg font-black text-brand-text-sub tabular-nums leading-tight">
+      {formatCurrency(prevTotalProfit)}
+    </p>
+  </div>
 
-          <div className="w-[1px] h-10 bg-brand-border" />
+  <div className="bg-brand-card border border-brand-border px-4 py-3 rounded-xl shadow-brand">
+    <p className="text-[9px] font-black text-brand-text-sub uppercase tracking-widest mb-1">
+      전달 대비
+    </p>
+    <div className="flex items-center justify-between gap-2">
+      <p className={`text-lg font-black tabular-nums leading-tight ${diff >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
+        {diff >= 0 ? '+' : ''}
+        {formatCurrency(diff)}
+      </p>
 
-          <div>
-            <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
-              전달 대비
-            </p>
-            <div className="flex items-center gap-2">
-              <p className={`text-base font-black tabular-nums ${diff >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
-                {diff >= 0 ? '+' : ''}
-                {formatCurrency(diff)}
-              </p>
-              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${diff >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
-                {diff >= 0 ? '+' : ''}
-                {rate.toFixed(2)}%
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded shrink-0 ${diff >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
+        {diff >= 0 ? '+' : ''}
+        {rate.toFixed(2)}%
+      </span>
+    </div>
+  </div>
+</div>
+
+        
+
+
+
+        
 
       {invAssets.length === 0 ? (
         <div className="bg-brand-card border border-brand-border rounded-brand p-10 text-center text-brand-text-sub font-bold">
