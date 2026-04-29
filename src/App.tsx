@@ -1093,32 +1093,46 @@ const updateYearStartBalance = (id: string, value: number) => {
           <div className="flex-1 overflow-y-auto divide-y divide-brand-border custom-scrollbar">
             {activeAccountTxs.length > 0 ? (
               activeAccountTxs.map((t: any) => (
-                <div key={t.id} className="px-6 py-4 hover:bg-white/5 transition-colors group">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-[10px] text-brand-text-sub font-black uppercase mb-0.5">
-                        {t.date}
-                      </p>
-                      <p className="text-xs font-black">
-                        {t.memo || t.category}
-                      </p>
-                    </div>
 
-                    <div className="text-right">
-                      <p
-                        className={`text-xs font-black tabular-nums ${
-                          t.type === '수입' ? 'text-brand-mint' : 'text-brand-pink'
-                        }`}
-                      >
-                        {t.type === '수입' ? '+' : '-'}
-                        {formatNumber(t.amount)}
-                      </p>
-                      <span className="text-[9px] font-bold text-brand-text-sub bg-brand-border/30 px-1.5 py-0.5 rounded">
-                        {t.category}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+<div key={t.id} className="px-6 py-4 hover:bg-white/5 transition-colors group">
+  <div className="flex justify-between items-start gap-3">
+    <div className="min-w-0">
+      <p className="text-[10px] text-brand-text-sub font-black uppercase mb-0.5">
+        {t.date}
+      </p>
+      <p className="text-xs font-black truncate">
+        {t.memo || t.category}
+      </p>
+    </div>
+
+    <div className="flex items-start gap-3 shrink-0">
+      <div className="text-right">
+        <p
+          className={`text-xs font-black tabular-nums ${
+            t.type === '수입' ? 'text-brand-mint' : 'text-brand-pink'
+          }`}
+        >
+          {t.type === '수입' ? '+' : '-'}
+          {formatNumber(t.amount)}
+        </p>
+        <span className="text-[9px] font-bold text-brand-text-sub bg-brand-border/30 px-1.5 py-0.5 rounded">
+          {t.category}
+        </span>
+      </div>
+
+      <button
+        onClick={() => deleteTransaction(t.id)}
+        className="w-7 h-7 rounded-full flex items-center justify-center text-brand-text-sub hover:text-white hover:bg-brand-pink transition-all"
+        title="삭제"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  </div>
+</div>
+
+
+                
               ))
             ) : (
               <div className="h-full flex flex-col items-center justify-center p-10 text-center space-y-2 opacity-20">
