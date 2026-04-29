@@ -1560,24 +1560,61 @@ const gamjaPensionTotal = balances
 
       {/* 감자 통장 선택 버튼 */}
 <div className="grid grid-cols-2 gap-3">
-  <div className="bg-brand-card border border-brand-border rounded-brand p-5 shadow-brand">
-    <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-2">
+
+
+{/* 감자 현금 / 연금 잔액 */}
+<div className="space-y-3">
+  <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand p-4">
+    <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-3">
       현금 전체
     </p>
-    <p className="text-2xl font-black text-brand-primary tabular-nums">
-      {formatCurrency(gamjaCashTotal)}
-    </p>
+
+    <div className="grid grid-cols-3 gap-2">
+      {balances
+        .filter((b: any) =>
+          b.name.includes('감자 생활비') ||
+          b.name.includes('감자 여유자금') ||
+          b.name.includes('감자 적금')
+        )
+        .map((b: any) => (
+          <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
+            <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
+              {b.name}
+            </p>
+            <p className="text-sm md:text-base font-black tabular-nums truncate">
+              {formatCurrency(b.currentBalance)}
+            </p>
+          </div>
+        ))}
+    </div>
   </div>
 
-  <div className="bg-brand-card border border-brand-border rounded-brand p-5 shadow-brand">
-    <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-2">
+  <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand p-4">
+    <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-3">
       연금
     </p>
-    <p className="text-2xl font-black text-brand-purple tabular-nums">
-      {formatCurrency(gamjaPensionTotal)}
-    </p>
+
+    <div className="grid grid-cols-2 gap-2">
+      {balances
+        .filter((b: any) =>
+          b.name.includes('감자 퇴직금') ||
+          b.name.includes('감자 개인연금')
+        )
+        .map((b: any) => (
+          <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
+            <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
+              {b.name}
+            </p>
+            <p className="text-sm md:text-base font-black tabular-nums truncate">
+              {formatCurrency(b.currentBalance)}
+            </p>
+          </div>
+        ))}
+    </div>
   </div>
 </div>
+
+  
       
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {orderedGamjaAccounts.map((accountName: string) => (
