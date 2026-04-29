@@ -30,7 +30,7 @@ export const MOCK_TRANSACTIONS: Transaction[] = [
     type: '지출',
     category: '식비',
     account: '생활비 통장',
-    amount: 15400,
+    amount: 0,
     memo: '돈까스 정식'
   },
   {
@@ -39,7 +39,7 @@ export const MOCK_TRANSACTIONS: Transaction[] = [
     type: '수입',
     category: '월급',
     account: '여유자금 통장',
-    amount: 3500000,
+    amount: 0,
     memo: '내 월급'
   }
 ];
