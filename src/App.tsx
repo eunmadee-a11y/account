@@ -573,11 +573,13 @@ const savingsAccounts = balances.filter((b: any) =>
 
 const homeCashWithSavings = [...homeCashAccounts, ...savingsAccounts];
 
+
 const homeCashTotal = homeCashWithSavings.reduce(
-  (sum: number, b: any) => sum + (b.currentBalance || 0),
+  (sum: number, b: any) => sum + (Number(b.currentBalance) || 0),
   0
 );
 
+  
 const pensionTotal = balances
   .filter((b: any) =>
     b.category === '투자/연금' &&
@@ -684,9 +686,12 @@ const addTransaction = (tx: any) => {
           <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
             {b.name}
           </p>
-          <p className="text-sm md:text-base font-black tabular-nums truncate">
-            {formatCurrency(b.currentBalance)}
-          </p>
+
+<p className="text-sm md:text-base font-black tabular-nums truncate">
+  {formatCurrency(Number(b.currentBalance) || 0)}
+</p>
+
+          
         </div>
       ))}
     </div>
