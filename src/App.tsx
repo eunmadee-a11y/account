@@ -2881,25 +2881,32 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
                 <ResponsiveContainer width="100%" height="100%">
                    <BarChart data={myChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#25282b" />
-                      <XAxis 
-                        dataKey="name" 
-                        fontSize={11} 
-                        fontWeight="black" 
-                        stroke="#9ca3af" 
-                        tickLine={false} 
-                        axisLine={false}
-                        interval={0}
-                        angle={-45}
-                        textAnchor="end"
-                      />
-                      <YAxis 
-                        tickFormatter={(value) => `${Math.round(value / 10000)}만`}
-                        fontSize={10}
-                        fontWeight="bold"
-                        stroke="#9ca3af"
-                        axisLine={false}
-                        tickLine={false}
-                      />
+                     <XAxis 
+  dataKey="name" 
+  fontSize={11} 
+  fontWeight="black" 
+  stroke="#9ca3af" 
+  tickLine={false} 
+  axisLine={false}
+  interval={0}
+  angle={-30}   // 👈 -45 → -30 (여백 줄이기 핵심)
+  textAnchor="end"
+  height={50}   // 👈 이거 추가 (짤림 방지 + 공간 최소화)
+  tickMargin={2}
+/>
+
+
+<YAxis 
+  width={35}   // 👈 이거 추가 (기본 60이라 여백 큼)
+  tickFormatter={(value) => `${Math.round(value / 10000)}만`}
+  fontSize={10}
+  fontWeight="bold"
+  stroke="#9ca3af"
+  axisLine={false}
+  tickLine={false}
+  tickMargin={2}
+/>
+                     
                       <Tooltip 
                          contentStyle={{ backgroundColor: '#1a1d22', border: '1px solid #25282b', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}
                          itemStyle={{ fontSize: '11px', fontWeight: 'black' }}
