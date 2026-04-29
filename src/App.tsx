@@ -506,8 +506,9 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, changeMonth, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, tabName: tabNames['내 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '내 지출': name })), categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true) }} />}
     {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, setBalances, currentDate, tabName: tabNames['연금/투자 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '연금/투자 관리': name })) }} />}
 
-    {activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances, tabName: tabNames['감자 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '감자 지출': name })), categories: gamjaCategories, setCategories: setGamjaCategories, onOpenEdit: () => setIsGamjaEditModalOpen(true) }} />}
+{activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances, setBalances, currentDate, tabName: tabNames['감자 지출'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '감자 지출': name })), categories: gamjaCategories, setCategories: setGamjaCategories, onOpenEdit: () => setIsGamjaEditModalOpen(true) }} />}
 
+    
     {activeTab === '월급 비교' && <SalaryView key="salary" {...{ salaries, setSalaries, tabName: tabNames['월급 비교'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '월급 비교': name })), salaryLabels, setSalaryLabels, currentDate }} />}
 
     {activeTab === '대출 관리' && <LoanManagementView key="loans" {...{ loans, setLoans, loanSummary, tabName: tabNames['대출 관리'], setTabName: (name: string) => setTabNames(prev => ({ ...prev, '대출 관리': name })) }} />}
@@ -1453,25 +1454,67 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
     
 
 
-function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, tabName, setTabName, categories, setCategories, onOpenEdit }: any) {
+
+function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, setBalances, currentDate, tabName, setTabName, categories, setCategories, onOpenEdit }: any) {
   const mainAccount = '감자 생활비 통장';
 
+  const year = currentDate.getFullYear();
+  const yearStartKey = `${year}-01`;
 
-const gamjaCashTotal = balances
-  .filter((b: any) =>
+  const gamjaBalanceKeywords = [
+    '감자 생활비',
+    '감자 여유자금',
+    '감자 적금',
+    '감자 퇴직금',
+    '감자 개인연금'
+  ];
+
+  const isGamjaBalanceAccount = (accountName: string) =>
+    gamjaBalanceKeywords.some(keyword => accountName?.includes(keyword));
+
+  const applyGamjaTxToBalance = (tx: any, reverse = false) => {
+    if (!tx || !isGamjaBalanceAccount(tx.account)) return;
+
+    const delta = tx.type === '수입' ? tx.amount : -tx.amount;
+
+    setBalances((prev: any[]) =>
+      prev.map((b: any) =>
+        b.name === tx.account
+          ? {
+              ...b,
+              currentBalance: b.currentBalance + (reverse ? -delta : delta)
+            }
+          : b
+      )
+    );
+  };
+
+  const gamjaStartAccounts = balances.filter((b: any) =>
     b.name.includes('감자 생활비') ||
     b.name.includes('감자 여유자금') ||
-    b.name.includes('감자 적금')
-  )
-  .reduce((sum: number, b: any) => sum + (b.currentBalance || 0), 0);
-
-const gamjaPensionTotal = balances
-  .filter((b: any) =>
+    b.name.includes('감자 적금') ||
     b.name.includes('감자 퇴직금') ||
     b.name.includes('감자 개인연금')
-  )
-  .reduce((sum: number, b: any) => sum + (b.currentBalance || 0), 0);
-  
+  );
+
+  const updateGamjaStartBalance = (id: string, value: number) => {
+    setBalances((prev: any[]) =>
+      prev.map((b: any) =>
+        b.id === id
+          ? {
+              ...b,
+              currentBalance: value,
+              previousBalance: b.previousBalance ?? value,
+              monthlyBalances: {
+                ...(b.monthlyBalances || {}),
+                [yearStartKey]: value
+              }
+            }
+          : b
+      )
+    );
+  };
+
   const orderedGamjaAccounts = [
     ...gamjaAccountNames.filter((name: string) => name === mainAccount),
     ...gamjaAccountNames.filter((name: string) => name !== mainAccount)
@@ -1503,6 +1546,7 @@ const gamjaPensionTotal = balances
     };
 
     setGamjaTransactions([tx, ...gamjaTransactions]);
+    applyGamjaTxToBalance(tx);
     setNewTx({ ...newTx, amount: 0, memo: '' });
   };
 
@@ -1558,87 +1602,103 @@ const gamjaPensionTotal = balances
         </div>
       </div>
 
+      {/* 감자 현금 / 연금 잔액 */}
+      <div className="space-y-3">
+        <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand p-4">
+          <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-3">
+            현금 전체
+          </p>
 
-
-
-
-{/* 감자 현금 / 연금 잔액 */}
-<div className="space-y-3">
-  <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand p-4">
-    <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-3">
-      현금 전체
-    </p>
-
-    <div className="grid grid-cols-3 gap-2">
-      {balances
-        .filter((b: any) =>
-          b.name.includes('감자 생활비') ||
-          b.name.includes('감자 여유자금') ||
-          b.name.includes('감자 적금')
-        )
-        .map((b: any) => (
-          <div
-            key={b.id}
-            className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0"
-          >
-            <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
-              {b.name}
-            </p>
-            <p className="text-sm md:text-base font-black tabular-nums truncate">
-              {formatCurrency(b.currentBalance)}
-            </p>
+          <div className="grid grid-cols-3 gap-2">
+            {balances
+              .filter((b: any) =>
+                b.name.includes('감자 생활비') ||
+                b.name.includes('감자 여유자금') ||
+                b.name.includes('감자 적금')
+              )
+              .map((b: any) => (
+                <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
+                  <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
+                    {b.name}
+                  </p>
+                  <p className="text-sm md:text-base font-black tabular-nums truncate">
+                    {formatCurrency(b.currentBalance)}
+                  </p>
+                </div>
+              ))}
           </div>
-        ))}
-    </div>
-  </div>
+        </div>
 
-  <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand p-4">
-    <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-3">
-      연금
-    </p>
+        <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand p-4">
+          <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-3">
+            연금
+          </p>
 
-    <div className="grid grid-cols-2 gap-2">
-      {balances
-        .filter((b: any) =>
-          b.name.includes('감자 퇴직금') ||
-          b.name.includes('감자 개인연금')
-        )
-        .map((b: any) => (
-          <div
-            key={b.id}
-            className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0"
-          >
-            <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
-              {b.name}
-            </p>
-            <p className="text-sm md:text-base font-black tabular-nums truncate">
-              {formatCurrency(b.currentBalance)}
-            </p>
+          <div className="grid grid-cols-2 gap-2">
+            {balances
+              .filter((b: any) =>
+                b.name.includes('감자 퇴직금') ||
+                b.name.includes('감자 개인연금')
+              )
+              .map((b: any) => (
+                <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
+                  <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
+                    {b.name}
+                  </p>
+                  <p className="text-sm md:text-base font-black tabular-nums truncate">
+                    {formatCurrency(b.currentBalance)}
+                  </p>
+                </div>
+              ))}
           </div>
+        </div>
+      </div>
+
+      {/* 감자 통장 선택 버튼 */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {orderedGamjaAccounts.map((accountName: string) => (
+          <button
+            key={accountName}
+            onClick={() => setActiveGamjaAccount(accountName)}
+            className={`py-3 px-3 rounded-xl border font-black text-xs md:text-sm transition-all active:scale-95 ${
+              activeGamjaAccount === accountName
+                ? 'bg-brand-purple text-white border-brand-purple shadow-lg shadow-brand-purple/20'
+                : 'bg-brand-card text-brand-text-main border-brand-border hover:border-brand-purple'
+            }`}
+          >
+            {accountName}
+          </button>
         ))}
-    </div>
-  </div>
-</div>
+      </div>
 
-{/* 감자 통장 선택 버튼 */}
-<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-  {orderedGamjaAccounts.map((accountName: string) => (
-    <button
-      key={accountName}
-      onClick={() => setActiveGamjaAccount(accountName)}
-      className={`py-3 px-3 rounded-xl border font-black text-xs md:text-sm transition-all active:scale-95 ${
-        activeGamjaAccount === accountName
-          ? 'bg-brand-purple text-white border-brand-purple shadow-lg shadow-brand-purple/20'
-          : 'bg-brand-card text-brand-text-main border-brand-border hover:border-brand-purple'
-      }`}
-    >
-      {accountName}
-    </button>
-  ))}
-</div>
+      {/* 감자 시작 잔액 입력 */}
+      <div className="bg-brand-card border border-brand-border rounded-brand p-6 shadow-brand space-y-5">
+        <div>
+          <h4 className="text-lg font-black text-brand-purple">
+            {year}년 1월 감자 시작 잔액
+          </h4>
+          <p className="text-xs font-bold text-brand-text-sub mt-1">
+            감자 생활비 / 여유자금 / 적금 / 퇴직금 / 개인연금 시작 잔액을 입력하세요.
+          </p>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {gamjaStartAccounts.map((account: any) => (
+            <div key={account.id} className="bg-brand-bg border border-brand-border rounded-xl p-4 space-y-3">
+              <p className="text-xs font-black text-brand-text-main">
+                {account.name}
+              </p>
 
-  
+              <NumericInput
+                label="1월 시작 잔액"
+                value={account.monthlyBalances?.[yearStartKey] ?? account.currentBalance ?? 0}
+                onChange={(v: number) => updateGamjaStartBalance(account.id, v)}
+                className="form-input text-sm font-black py-2 w-full"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* 선택된 감자 통장 */}
       <div className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand">
@@ -1685,7 +1745,7 @@ const gamjaPensionTotal = balances
             </div>
           </div>
 
-          {/* 입력창 - 날짜 칸 튀어나옴 수정 */}
+          {/* 입력창 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end bg-brand-bg/50 p-4 rounded-xl border border-brand-border/50 overflow-hidden">
             <div className="space-y-1.5 min-w-0">
               <label className="text-[9px] font-black text-brand-text-sub uppercase ml-1">날짜</label>
