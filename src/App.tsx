@@ -1897,18 +1897,25 @@ const [newRepayment, setNewRepayment] = useState({
   };
 
 
+
+
 const addRepayment = () => {
   if (!activeLoanId || !activeLoan) return;
 
-  const nextTurn =
-    activeLoan.repayments.length > 0
-      ? Math.max(...activeLoan.repayments.map((r: any) => Number(r.turn) || 0)) + 1
-      : 1;
+  if (newRepayment.principal <= 0 && newRepayment.interest <= 0) {
+    alert('원금 또는 이자 금액을 입력하세요.');
+    return;
+  }
+
+  const lastPrincipalTurn =
+    activeLoan.repayments
+      .filter((r: any) => Number(r.principal) > 0)
+      .reduce((max: number, r: any) => Math.max(max, Number(r.turn) || 0), 0);
 
   const repayment = {
     id: Math.random().toString(36).substr(2, 9),
     loanName: activeLoan.name,
-    turn: nextTurn,
+    turn: newRepayment.principal > 0 ? lastPrincipalTurn + 1 : '',
     ...newRepayment
   };
 
@@ -1925,6 +1932,7 @@ const addRepayment = () => {
     memo: ''
   });
 };
+  
 
   
 
