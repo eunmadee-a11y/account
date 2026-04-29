@@ -1327,7 +1327,7 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
     </div>
   </div>
 </div>
-
+</div>
         
 
 
