@@ -554,28 +554,40 @@ const autoTransferAccount = mainAccounts.find((b: any) =>
 );
 const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
-const pensionTotal = balances
-  .filter((b: any) => b.category === '투자/연금')
-  .reduce((sum: number, b: any) => {
-    const monthlyValue = b.monthlyBalances?.[monthKey];
-    return sum + (typeof monthlyValue === 'number' ? monthlyValue : b.currentBalance || 0);
-  }, 0);
 
 
 
-
-
-  const cashTotal = balances
-  .filter((b: any) =>
+const homeCashAccounts = balances.filter((b: any) =>
+  b.category === '내 통장' &&
+  (
     b.name.includes('생활비') ||
     b.name.includes('여유자금') ||
-    b.name.includes('자동이체') ||
-    b.name.includes('적금')
+    b.name.includes('자동이체')
+  )
+);
+
+const savingsAccounts = balances.filter((b: any) =>
+  b.category === '투자/연금' &&
+  b.name.includes('적금')
+);
+
+const homeCashWithSavings = [...homeCashAccounts, ...savingsAccounts];
+
+const homeCashTotal = homeCashWithSavings.reduce(
+  (sum: number, b: any) => sum + (b.currentBalance || 0),
+  0
+);
+
+const pensionTotal = balances
+  .filter((b: any) =>
+    b.category === '투자/연금' &&
+    !b.name.includes('적금')
   )
   .reduce((sum: number, b: any) => {
-    const monthlyValue = b.monthlyBalances?.[monthKey];
-    return sum + (typeof monthlyValue === 'number' ? monthlyValue : b.currentBalance || 0);
+    const monthlyProfit = b.monthlyPensionProfits?.[monthKey];
+    return sum + (typeof monthlyProfit === 'number' ? monthlyProfit : 0);
   }, 0);
+  
 
   
   
@@ -583,11 +595,7 @@ const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(null
 
 const quickAccountKeywords = ['생활비', '여유자금', '자동이체'];
 
-const quickAccounts = quickAccountKeywords
-  .map(keyword =>
-    mainAccounts.find((account: any) => account.name.includes(keyword))
-  )
-  .filter(Boolean);
+const quickAccounts = homeCashWithSavings;
 
   
   const selectedDateTransactions = useMemo(() => {
@@ -655,14 +663,22 @@ const addTransaction = (tx: any) => {
 
 
       
-{/* 2. Account Balances */}
+
+
+    {/* 2. Account Balances */}
 <div className="space-y-3">
   <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand p-4">
-    <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-3">
-      내 통장 잔액
-    </p>
+    <div className="flex items-baseline justify-between gap-3 mb-3">
+      <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">
+        내 통장 잔액
+      </p>
 
-    <div className="grid grid-cols-3 gap-2">
+      <p className="text-base md:text-lg font-black text-brand-primary tabular-nums">
+        {formatCurrency(homeCashTotal)}
+      </p>
+    </div>
+
+    <div className="grid grid-cols-4 gap-2">
       {quickAccounts.map((b: any) => (
         <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl px-3 py-3 min-w-0">
           <p className="text-[10px] font-bold text-brand-text-sub mb-1 truncate">
@@ -673,21 +689,6 @@ const addTransaction = (tx: any) => {
           </p>
         </div>
       ))}
-    </div>
-  </div>
-
-  <div className="bg-brand-card p-4 rounded-brand border border-brand-border shadow-brand flex items-center justify-between">
-    <div>
-      <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest mb-1">
-        현금 합계
-      </p>
-      <h2 className="text-xl font-black text-brand-primary">
-        {formatCurrency(cashTotal)}
-      </h2>
-    </div>
-
-    <div className="opacity-10">
-      <Wallet size={34} />
     </div>
   </div>
 
@@ -706,7 +707,6 @@ const addTransaction = (tx: any) => {
     </div>
   </div>
 </div>
-
 
       
 
