@@ -1362,7 +1362,7 @@ const irpLimit = 2000000;
 const personalPensionPercent = Math.min((personalPensionPaid / personalPensionLimit) * 100, 100);
 const irpPercent = Math.min((irpPaid / irpLimit) * 100, 100);
 
-const taxCreditRate = 0.165;
+const taxCreditRate = 0.132;
 const taxCreditAmount =
   Math.min(personalPensionPaid, personalPensionLimit) * taxCreditRate +
   Math.min(irpPaid, irpLimit) * taxCreditRate;
@@ -1486,7 +1486,7 @@ const limit = asset.name.includes('개인연금')
 
 const percent = limit > 0 ? Math.min((yearlyPaid / limit) * 100, 100) : 0;
 
-const taxCreditAmount = Math.min(yearlyPaid, limit) * 0.165;
+const taxCreditAmount = Math.min(yearlyPaid, limit) * 0.132;
 
 
           
