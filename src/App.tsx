@@ -2569,7 +2569,7 @@ const activeLoan = loans.find((l: any) => l.id === activeLoanId) || loans[0];
                         상환 기록이 없습니다.
                       </td>
                     </tr>
-                  ) : activeLoan.repayments.map((r: any) => (
+                  ) : (activeLoan.repayments || []).map((r: any) => (
                     <tr key={r.id} className="hover:bg-white/5 transition-colors group">
                       <td className="px-3 py-2.5 font-black text-brand-primary text-xs">
                         {r.turn}
