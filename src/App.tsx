@@ -586,8 +586,10 @@ const pensionTotal = balances
     !b.name.includes('적금')
   )
   .reduce((sum: number, b: any) => {
-    const monthlyProfit = b.monthlyPensionProfits?.[monthKey];
-    return sum + (typeof monthlyProfit === 'number' ? monthlyProfit : 0);
+    const monthlyProfit = Number(b.monthlyPensionProfits?.[monthKey] || 0);
+    const startBalance = Number(b.monthlyPensionStartBalances?.[monthKey] || 0);
+
+    return sum + monthlyProfit + startBalance;
   }, 0);
   
 
@@ -1307,6 +1309,15 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
     return asset.monthlyPensionProfits?.[monthKey] ?? 0;
   };
 
+const getStartBalance = (asset: any) => {
+  return asset.monthlyPensionStartBalances?.[monthKey] ?? 0;
+};
+
+const getMonthlyTotalValue = (asset: any) => {
+  return getStartBalance(asset) + getMonthlyAmount(asset);
+};
+
+  
   const getPreviousAmount = (asset: any) => {
     return asset.monthlyPensionProfits?.[prevMonthKey] ?? 0;
   };
@@ -1331,8 +1342,30 @@ const updateMonthlyProfit = (id: string, value: number) => {
     )
   );
 };
+
+
+const updateMonthlyStartBalance = (id: string, value: number) => {
+  setBalances((prev: any[]) =>
+    prev.map((b: any) =>
+      b.id === id
+        ? {
+            ...b,
+            monthlyPensionStartBalances: {
+              ...(b.monthlyPensionStartBalances || {}),
+              [monthKey]: value
+            }
+          }
+        : b
+    )
+  );
+};
+
+
   
-  const totalProfit = invAssets.reduce((sum: number, asset: any) => sum + getMonthlyAmount(asset), 0);
+  const totalProfit = invAssets.reduce(
+  (sum: number, asset: any) => sum + getMonthlyTotalValue(asset),
+  0
+);
   const prevTotalProfit = invAssets.reduce((sum: number, asset: any) => sum + getPreviousAmount(asset), 0);
   const diff = totalProfit - prevTotalProfit;
   const rate = prevTotalProfit !== 0 ? (diff / prevTotalProfit) * 100 : 0;
@@ -1424,7 +1457,8 @@ const GaugeBar = ({ label, paid, limit, percent, color }: any) => (
 <div className="grid grid-cols-1 gap-2 w-full md:w-[260px]">
   <div className="bg-brand-card border border-brand-border px-4 py-3 rounded-xl shadow-brand">
     <p className="text-[9px] font-black text-brand-text-sub uppercase tracking-widest mb-1">
-      이번 달 수익금
+이번 달 연금 총액
+    
     </p>
     <p className="text-xl font-black text-brand-primary tabular-nums leading-tight">
       {formatCurrency(totalProfit)}
