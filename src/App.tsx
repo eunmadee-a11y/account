@@ -1298,8 +1298,25 @@ const updateYearStartBalance = (id: string, value: number) => {
 
 
 function PensionView({ balances, setBalances, currentDate, tabName, setTabName }: any) {
-  const invAssets = balances.filter((b: any) => b.category === '투자/연금');
 
+
+const invAssets = balances
+  .filter((b: any) => b.category === '투자/연금')
+  .sort((a: any, b: any) => {
+    const getOrder = (name: string) => {
+      const lowerName = name.toLowerCase();
+
+      if (name.includes('개인연금')) return 1;
+      if (lowerName.includes('irp')) return 2;
+      if (lowerName.includes('isa')) return 3;
+
+      return 4;
+    };
+
+    return getOrder(a.name) - getOrder(b.name);
+  });
+
+  
   const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
   const prevDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
