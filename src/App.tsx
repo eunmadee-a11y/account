@@ -2807,34 +2807,8 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
       />
 
       {/* 1. TOP: Household Total Income Summary (Annual) */}
-
-      {/* 1. TOP: Household Total Income Summary (Annual) */}
-<div className="bg-brand-card p-4 rounded-xl border border-brand-border shadow-brand relative overflow-hidden">
-  <div className="relative z-10 space-y-3">
-    <div className="flex items-center justify-between gap-3">
-      <p className="text-[10px] font-black text-brand-text-sub">
-        {selectedYear}년 연간 총수입
-      </p>
-      <p className="text-lg font-black text-brand-text-main tabular-nums">
-        {formatCurrency(totalAnnual)}
-      </p>
-    </div>
-
-    <div className="grid grid-cols-2 gap-3">
-      <div className="bg-brand-bg/50 rounded-lg px-3 py-2">
-        <p className="text-[9px] font-bold text-brand-primary">내 비중</p>
-        <p className="text-sm font-black">{myAnnualRatio.toFixed(1)}%</p>
-      </div>
-
-      <div className="bg-brand-bg/50 rounded-lg px-3 py-2">
-        <p className="text-[9px] font-bold text-brand-purple">감자 비중</p>
-        <p className="text-sm font-black">{gamjaAnnualRatio.toFixed(1)}%</p>
-      </div>
-    </div>
-  </div>
-</div>
-      
-      <div className="absolute top-0 right-0 p-10 opacity-5 text-brand-primary">
+      <div className="bg-brand-card p-10 rounded-brand border border-brand-border shadow-brand relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-10 opacity-5 text-brand-primary">
            <ComparisonIcon size={120} />
         </div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
