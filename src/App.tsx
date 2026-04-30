@@ -1337,6 +1337,74 @@ const updateMonthlyProfit = (id: string, value: number) => {
   const diff = totalProfit - prevTotalProfit;
   const rate = prevTotalProfit !== 0 ? (diff / prevTotalProfit) * 100 : 0;
 
+
+
+const year = currentDate.getFullYear();
+
+const getYearlyPaidAmount = (keyword: string) => {
+  return invAssets
+    .filter((asset: any) => asset.name.includes(keyword))
+    .reduce((sum: number, asset: any) => {
+      const yearlyTotal = Object.entries(asset.monthlyPensionProfits || {})
+        .filter(([key]) => key.startsWith(`${year}-`))
+        .reduce((monthSum: number, [, value]: any) => monthSum + (Number(value) || 0), 0);
+
+      return sum + yearlyTotal;
+    }, 0);
+};
+
+const personalPensionPaid = getYearlyPaidAmount('개인연금');
+const irpPaid = getYearlyPaidAmount('IRP') || getYearlyPaidAmount('irp');
+
+const personalPensionLimit = 4000000;
+const irpLimit = 2000000;
+
+const personalPensionPercent = Math.min((personalPensionPaid / personalPensionLimit) * 100, 100);
+const irpPercent = Math.min((irpPaid / irpLimit) * 100, 100);
+
+const taxCreditRate = 0.165;
+const taxCreditAmount =
+  Math.min(personalPensionPaid, personalPensionLimit) * taxCreditRate +
+  Math.min(irpPaid, irpLimit) * taxCreditRate;
+
+const GaugeBar = ({ label, paid, limit, percent, color }: any) => (
+  <div className="bg-brand-card border border-brand-border rounded-brand p-5 shadow-brand space-y-3">
+    <div className="flex justify-between items-end gap-3">
+      <div>
+        <p className="text-sm font-black text-brand-text-main">{label}</p>
+        <p className="text-[10px] font-bold text-brand-text-sub mt-1">
+          {year}년 납입 기준 · 시작금액 제외
+        </p>
+      </div>
+
+      <div className="text-right">
+        <p className="text-sm font-black tabular-nums">
+          {formatCurrency(paid)}
+        </p>
+        <p className="text-[10px] font-bold text-brand-text-sub">
+          한도 {formatCurrency(limit)}
+        </p>
+      </div>
+    </div>
+
+    <div className="w-full h-4 bg-brand-bg rounded-full overflow-hidden border border-brand-border">
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${percent}%` }}
+        transition={{ duration: 0.8 }}
+        className={`h-full rounded-full ${color}`}
+      />
+    </div>
+
+    <div className="flex justify-between text-[10px] font-black text-brand-text-sub">
+      <span>{percent.toFixed(1)}%</span>
+      <span>남은 금액 {formatCurrency(Math.max(limit - paid, 0))}</span>
+    </div>
+  </div>
+);
+
+  
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -1392,7 +1460,43 @@ const updateMonthlyProfit = (id: string, value: number) => {
 </div>
         
 
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <GaugeBar
+    label="개인연금 세액공제 게이지"
+    paid={personalPensionPaid}
+    limit={personalPensionLimit}
+    percent={personalPensionPercent}
+    color="bg-brand-primary"
+  />
 
+  <GaugeBar
+    label="IRP 세액공제 게이지"
+    paid={irpPaid}
+    limit={irpLimit}
+    percent={irpPercent}
+    color="bg-brand-purple"
+  />
+
+  <div className="bg-brand-card border border-brand-border rounded-brand p-5 shadow-brand flex flex-col justify-between">
+    <div>
+      <p className="text-sm font-black text-brand-text-main">
+        연말정산 예상 세액공제
+      </p>
+      <p className="text-[10px] font-bold text-brand-text-sub mt-1">
+        개인연금 400만원 + IRP 200만원 한도 기준
+      </p>
+    </div>
+
+    <div className="mt-6">
+      <p className="text-2xl font-black text-brand-mint tabular-nums">
+        {formatCurrency(taxCreditAmount)}
+      </p>
+      <p className="text-[10px] font-bold text-brand-text-sub mt-2">
+        기본 공제율 16.5% 적용
+      </p>
+    </div>
+  </div>
+</div>
 
         
 
