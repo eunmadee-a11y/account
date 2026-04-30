@@ -2399,8 +2399,9 @@ const activeLoan = loans.find((l: any) => l.id === activeLoanId) || loans[0];
       </div>
 
       {/* 선택한 대출 상세정보 */}
-      {activeLoan ? (
-        <div className="space-y-4">
+
+      {activeLoan && activeLoan.repayments ? (
+      <div className="space-y-4">
           <div className="bg-brand-card p-4 border border-brand-border rounded-brand shadow-brand space-y-4">
             <div className="flex justify-between items-start gap-3">
               <div>
