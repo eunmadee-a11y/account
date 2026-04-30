@@ -1504,6 +1504,14 @@ const GaugeBar = ({ label, paid, limit, percent, color }: any) => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {invAssets.map((asset: any) => {
             const currentProfit = getMonthlyAmount(asset);
+
+const startBalance = getStartBalance(asset);
+const monthlyTotalValue = startBalance + currentProfit;
+
+const isTaxPension =
+  asset.name.includes('개인연금') ||
+  asset.name.toLowerCase().includes('irp');
+          
             const previousProfit = getPreviousAmount(asset);
             const diffVal = currentProfit - previousProfit;
             const diffRate = previousProfit !== 0 ? (diffVal / previousProfit) * 100 : 0;
@@ -1545,13 +1553,38 @@ const taxCreditAmount = Math.min(yearlyPaid, limit) * 0.132;
                 </div>
 
                 <div className="space-y-4">
-                  <NumericInput
-                    label="이번 달 수익금"
-                    value={currentProfit}
-                    onChange={(v: number) => updateMonthlyProfit(asset.id, v)}
-                    className="form-input text-lg font-black py-3 w-full"
-                    placeholder="0"
-                  />
+
+{isTaxPension && (
+  <NumericInput
+    label="이번 달 시작잔액"
+    value={startBalance}
+    onChange={(v: number) => updateMonthlyStartBalance(asset.id, v)}
+    className="form-input text-lg font-black py-3 w-full"
+    placeholder="0"
+  />
+)}
+
+<NumericInput
+  label="이번 달 수익금"
+  value={currentProfit}
+  onChange={(v: number) => updateMonthlyProfit(asset.id, v)}
+  className="form-input text-lg font-black py-3 w-full"
+  placeholder="0"
+/>
+
+{isTaxPension && (
+  <div className="p-3 bg-brand-bg/50 rounded-xl border border-brand-border flex justify-between items-center">
+    <span className="text-[10px] font-bold text-brand-text-sub">
+      시작잔액 + 이번 달 수익금
+    </span>
+    <span className="text-sm font-black text-brand-primary">
+      {formatCurrency(monthlyTotalValue)}
+    </span>
+  </div>
+)}
+
+
+                  
 
                   <div className="grid grid-cols-2 gap-2 pt-4 border-t border-brand-border">
                     <div>
