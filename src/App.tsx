@@ -1582,7 +1582,7 @@ const taxCreditAmount = Math.min(yearlyPaid, limit) * 0.132;
 )}
 
 <NumericInput
-  label="이번 달 수익금"
+  label="이번 달 추가금"
   value={currentProfit}
   onChange={(v: number) => updateMonthlyProfit(asset.id, v)}
   className="form-input text-lg font-black py-3 w-full"
@@ -1592,7 +1592,7 @@ const taxCreditAmount = Math.min(yearlyPaid, limit) * 0.132;
 {isTaxPension && (
   <div className="p-3 bg-brand-bg/50 rounded-xl border border-brand-border flex justify-between items-center">
     <span className="text-[10px] font-bold text-brand-text-sub">
-      시작잔액 + 이번 달 수익금
+      시작잔액 + 이번 달 추가금
     </span>
     <span className="text-sm font-black text-brand-primary">
       {formatCurrency(monthlyTotalValue)}
