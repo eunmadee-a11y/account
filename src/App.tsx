@@ -1470,46 +1470,46 @@ const GaugeBar = ({ label, paid, limit, percent, color }: any) => (
         />
 
 
-        
-<div className="grid grid-cols-1 gap-2 w-full md:w-[260px]">
-  <div className="bg-brand-card border border-brand-border px-4 py-3 rounded-xl shadow-brand">
-    <p className="text-[9px] font-black text-brand-text-sub uppercase tracking-widest mb-1">
-이번 달 연금 총액
-    
-    </p>
-    <p className="text-xl font-black text-brand-primary tabular-nums leading-tight">
-      {formatCurrency(totalProfit)}
-    </p>
-  </div>
+ <div className="grid grid-cols-1 gap-2 w-full md:w-[260px]">
+  <div className="bg-brand-card border border-brand-border rounded-xl shadow-brand px-3 py-2">
+    <div className="grid grid-cols-3 gap-2 text-center">
+      
+      <div>
+        <p className="text-[8px] font-black text-brand-text-sub mb-1">
+          이번달
+        </p>
+        <p className="text-[11px] font-black text-brand-primary tabular-nums leading-tight">
+          {formatCurrency(totalProfit)}
+        </p>
+      </div>
 
-  <div className="bg-brand-card border border-brand-border px-4 py-3 rounded-xl shadow-brand">
-    <p className="text-[9px] font-black text-brand-text-sub uppercase tracking-widest mb-1">
-      전달 수익금
-    </p>
-    <p className="text-lg font-black text-brand-text-sub tabular-nums leading-tight">
-      {formatCurrency(prevTotalProfit)}
-    </p>
-  </div>
+      <div>
+        <p className="text-[8px] font-black text-brand-text-sub mb-1">
+          전달
+        </p>
+        <p className="text-[11px] font-black text-brand-text-sub tabular-nums leading-tight">
+          {formatCurrency(prevTotalProfit)}
+        </p>
+      </div>
 
-  <div className="bg-brand-card border border-brand-border px-4 py-3 rounded-xl shadow-brand">
-    <p className="text-[9px] font-black text-brand-text-sub uppercase tracking-widest mb-1">
-      전달 대비
-    </p>
-    <div className="flex items-center justify-between gap-2">
-      <p className={`text-lg font-black tabular-nums leading-tight ${diff >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
-        {diff >= 0 ? '+' : ''}
-        {formatCurrency(diff)}
-      </p>
+      <div>
+        <p className="text-[8px] font-black text-brand-text-sub mb-1">
+          대비
+        </p>
+        <p className={`text-[11px] font-black tabular-nums leading-tight ${diff >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
+          {diff >= 0 ? '+' : ''}
+          {formatCurrency(diff)}
+        </p>
+        <p className={`text-[8px] font-black leading-tight ${diff >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
+          {diff >= 0 ? '+' : ''}
+          {rate.toFixed(2)}%
+        </p>
+      </div>
 
-      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded shrink-0 ${diff >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
-        {diff >= 0 ? '+' : ''}
-        {rate.toFixed(2)}%
-      </span>
     </div>
   </div>
 </div>
 </div>
-        
 
         
 
