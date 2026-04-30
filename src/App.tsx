@@ -2447,6 +2447,8 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
   );
 }
 
+
+
 function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName }: any) {
   const [activeLoanId, setActiveLoanId] = useState(loans[0]?.id || '');
   const activeLoan = loans.find((l: any) => l.id === activeLoanId) || loans[0];
@@ -2835,6 +2837,8 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
     </motion.div>
   );
 }
+
+
 
 
 
