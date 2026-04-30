@@ -2948,16 +2948,16 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
          <div className="flex items-center justify-between mb-12">
             <div className="flex items-center gap-3">
                <ComparisonIcon size={24} className="text-brand-primary" />
-               <h4 className="text-lg font-black uppercase tracking-tight text-brand-text-main">월간 월급 비교 분석 (TRENDS)</h4>
+               <h4 className="text-lg font-black uppercase tracking-tight text-brand-text-main">월급 그래프 </h4>
             </div>
             <div className="flex gap-4">
                <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-brand-primary" />
-                  <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">내 월급 현황</span>
+                  <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">은선</span>
                </div>
                <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-brand-purple" />
-                  <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">감자 월급 현황</span>
+                  <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">재형</span>
                </div>
             </div>
          </div>
