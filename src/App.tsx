@@ -2754,13 +2754,13 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
 
       return (
         <div className="bg-brand-card border border-brand-border p-5 rounded-2xl shadow-brand min-w-[240px]">
-          <p className="text-[10px] font-black text-brand-text-sub uppercase mb-4 border-b border-brand-border pb-2 tracking-[0.2em]">{label} SALARY REPORT</p>
+          <p className="text-[10px] font-black text-brand-text-sub uppercase mb-4 border-b border-brand-border pb-2 tracking-[0.2em]"> </p>
           
           <div className="space-y-6">
             {/* My Section */}
             <div className="space-y-3">
               <p className="text-[10px] font-black text-brand-primary uppercase tracking-widest flex items-center gap-2 border-l-2 border-brand-primary pl-3">
-                [MY INCOME]
+                [은선 월급]
               </p>
               <div className="space-y-2 pl-3">
                 {myComponents.map((p: any) => (
@@ -2782,11 +2782,11 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
             {gamjaComp && (
               <div className="space-y-3">
                 <p className="text-[10px] font-black text-brand-purple uppercase tracking-widest flex items-center gap-2 border-l-2 border-brand-purple pl-3">
-                  [GAMJA INCOME]
+                  [감자 월급]
                 </p>
                 <div className="space-y-2 pl-3">
                   <div className="flex justify-between items-center text-[11px] gap-6">
-                    <span className="text-brand-text-sub font-bold">Monthly Total</span>
+                    <span className="text-brand-text-sub font-bold">월급</span>
                     <span className="font-black text-brand-purple tabular-nums text-sm">{formatNumber(gamjaComp.value)}</span>
                   </div>
                 </div>
