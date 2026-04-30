@@ -1512,6 +1512,22 @@ const GaugeBar = ({ label, paid, limit, percent, color }: any) => (
             const diffVal = currentProfit - previousProfit;
             const diffRate = previousProfit !== 0 ? (diffVal / previousProfit) * 100 : 0;
 
+const yearlyPaid = Object.entries(asset.monthlyPensionProfits || {})
+  .filter(([key]) => key.startsWith(`${currentDate.getFullYear()}-`))
+  .reduce((sum: number, [, value]: any) => sum + (Number(value) || 0), 0);
+
+const limit = asset.name.includes('개인연금')
+  ? 4000000
+  : asset.name.toLowerCase().includes('irp')
+    ? 2000000
+    : 0;
+
+const percent = limit > 0 ? Math.min((yearlyPaid / limit) * 100, 100) : 0;
+
+const taxCreditAmount = Math.min(yearlyPaid, limit) * 0.165;
+
+
+          
             return (
               <div
                 key={asset.id}
@@ -1571,6 +1587,51 @@ const GaugeBar = ({ label, paid, limit, percent, color }: any) => (
                       {formatCurrency(diffVal)}
                     </span>
                   </div>
+
+
+
+
+{limit > 0 && (
+  <div className="p-3 bg-brand-bg/50 rounded-xl border border-brand-border space-y-3">
+    <div className="flex justify-between items-center">
+      <span className="text-[10px] font-black text-brand-text-sub">
+        {currentDate.getFullYear()}년 세액공제 한도
+      </span>
+      <span className="text-xs font-black tabular-nums">
+        {formatCurrency(yearlyPaid)} / {formatCurrency(limit)}
+      </span>
+    </div>
+
+    <div className="w-full h-3 bg-brand-border/40 rounded-full overflow-hidden">
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${percent}%` }}
+        transition={{ duration: 0.8 }}
+        className={`h-full rounded-full ${
+          asset.name.includes('개인연금') ? 'bg-brand-primary' : 'bg-brand-purple'
+        }`}
+      />
+    </div>
+
+    <div className="flex justify-between text-[10px] font-bold text-brand-text-sub">
+      <span>{percent.toFixed(1)}%</span>
+      <span>남은 금액 {formatCurrency(Math.max(limit - yearlyPaid, 0))}</span>
+    </div>
+
+    <div className="pt-2 border-t border-brand-border flex justify-between items-center">
+      <span className="text-[10px] font-black text-brand-text-sub">
+        예상 세액공제
+      </span>
+      <span className="text-sm font-black text-brand-mint">
+        {formatCurrency(taxCreditAmount)}
+      </span>
+    </div>
+  </div>
+)}
+
+
+
+                  
                 </div>
               </div>
             );
