@@ -1460,44 +1460,6 @@ const GaugeBar = ({ label, paid, limit, percent, color }: any) => (
 </div>
         
 
-<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-  <GaugeBar
-    label="개인연금 세액공제 게이지"
-    paid={personalPensionPaid}
-    limit={personalPensionLimit}
-    percent={personalPensionPercent}
-    color="bg-brand-primary"
-  />
-
-  <GaugeBar
-    label="IRP 세액공제 게이지"
-    paid={irpPaid}
-    limit={irpLimit}
-    percent={irpPercent}
-    color="bg-brand-purple"
-  />
-
-  <div className="bg-brand-card border border-brand-border rounded-brand p-5 shadow-brand flex flex-col justify-between">
-    <div>
-      <p className="text-sm font-black text-brand-text-main">
-        연말정산 예상 세액공제
-      </p>
-      <p className="text-[10px] font-bold text-brand-text-sub mt-1">
-        개인연금 400만원 + IRP 200만원 한도 기준
-      </p>
-    </div>
-
-    <div className="mt-6">
-      <p className="text-2xl font-black text-brand-mint tabular-nums">
-        {formatCurrency(taxCreditAmount)}
-      </p>
-      <p className="text-[10px] font-bold text-brand-text-sub mt-2">
-        기본 공제율 16.5% 적용
-      </p>
-    </div>
-  </div>
-</div>
-
         
 
       {invAssets.length === 0 ? (
