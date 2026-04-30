@@ -2273,6 +2273,15 @@ const activeLoan = loans.find((l: any) => l.id === activeLoanId) || loans[0];
     memo: ''
   });
 
+
+useEffect(() => {
+  if (!loans.find(l => l.id === activeLoanId)) {
+    setActiveLoanId(loans[0]?.id || '');
+  }
+}, [loans]);
+
+
+  
   const getLoanStats = (loan: any) => {
     const cumulativePrincipal = loan.repayments.reduce((sum: number, r: any) => sum + r.principal, 0);
     const cumulativeInterest = loan.repayments.reduce((sum: number, r: any) => sum + r.interest, 0);
