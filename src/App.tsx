@@ -2252,6 +2252,8 @@ const categories = ['내 통장', '투자/연금', '감자 자산', '기타 자�
                   </div>
                 </div>
               ))}
+
+              
             </div>
           </div>
         ))}
@@ -2262,190 +2264,6 @@ const categories = ['내 통장', '투자/연금', '감자 자산', '기타 자�
 
 
 
-
-function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName }: any) {
-  const [activeLoanId, setActiveLoanId] = useState(loans[0]?.id || '');
-
-  const activeLoan = loans.find((l: any) => l.id === activeLoanId);
-
-  const [newRepayment, setNewRepayment] = useState({
-    principal: 0,
-    interest: 0,
-    date: new Date().toISOString().split('T')[0],
-    memo: ''
-  });
-
-  const getLoanStats = (loan: any) => {
-    const cumulativePrincipal = loan.repayments.reduce((sum: number, r: any) => sum + r.principal, 0);
-    const cumulativeInterest = loan.repayments.reduce((sum: number, r: any) => sum + r.interest, 0);
-    return {
-      cumulativePrincipal,
-      cumulativeInterest,
-      totalPaid: cumulativePrincipal + cumulativeInterest,
-      remaining: loan.originalTotalAmount - cumulativePrincipal
-    };
-  };
-
-  const updateLoanOriginal = (id: string, amount: number) => {
-    setLoans(loans.map((l: any) => l.id === id ? { ...l, originalTotalAmount: amount } : l));
-  };
-
-  const addRepayment = () => {
-    if (!activeLoanId || !activeLoan) return;
-
-    if (newRepayment.principal <= 0 && newRepayment.interest <= 0) {
-      alert('원금 또는 이자 금액을 입력하세요.');
-      return;
-    }
-
-    const lastPrincipalTurn =
-      activeLoan.repayments
-        .filter((r: any) => Number(r.principal) > 0)
-        .reduce((max: number, r: any) => Math.max(max, Number(r.turn) || 0), 0);
-
-    const repayment = {
-      id: Math.random().toString(36).substr(2, 9),
-      loanName: activeLoan.name,
-      turn: newRepayment.principal > 0 ? lastPrincipalTurn + 1 : '',
-      ...newRepayment
-    };
-
-    setLoans(loans.map((l: any) =>
-      l.id === activeLoanId
-        ? { ...l, repayments: [repayment, ...l.repayments] }
-        : l
-    ));
-
-    setNewRepayment({
-      ...newRepayment,
-      principal: 0,
-      interest: 0,
-      memo: ''
-    });
-  };
-
-  const deleteRepayment = (loanId: string, repaymentId: string) => {
-    setLoans(loans.map((l: any) =>
-      l.id === loanId
-        ? { ...l, repayments: l.repayments.filter((r: any) => r.id !== repaymentId) }
-        : l
-    ));
-  };
-
-  const activeLoanStats = activeLoan ? getLoanStats(activeLoan) : null;
-
-  const repaymentProgress =
-    activeLoan && activeLoan.originalTotalAmount > 0
-      ? Math.min(
-          100,
-          (activeLoanStats!.cumulativePrincipal / activeLoan.originalTotalAmount) * 100
-        )
-      : 0;
-
-  return (
-    <motion.div className="max-w-5xl mx-auto space-y-5 pb-20">
-
-      {/* 상단 요약 */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-brand-card px-2.5 py-2 rounded-xl">
-          <p className="text-[9px]">남은 원금</p>
-          <p className="text-sm font-black">{formatCurrency(loanSummary.totalRemaining)}</p>
-        </div>
-        <div className="bg-brand-card px-2.5 py-2 rounded-xl">
-          <p className="text-[9px]">누적 원금</p>
-          <p className="text-sm font-black">{formatCurrency(loanSummary.totalPrincipalPaid)}</p>
-        </div>
-        <div className="bg-brand-card px-2.5 py-2 rounded-xl">
-          <p className="text-[9px]">누적 이자</p>
-          <p className="text-sm font-black">{formatCurrency(loanSummary.totalInterestPaid)}</p>
-        </div>
-      </div>
-
-      {/* 대출 선택 */}
-      <div className="grid grid-cols-3 gap-2">
-        {loans.map((loan: any) => {
-          const stats = getLoanStats(loan);
-          return (
-            <button
-              key={loan.id}
-              onClick={() => setActiveLoanId(loan.id)}
-              className={`px-2 py-2 text-xs rounded-xl ${
-                activeLoanId === loan.id
-                  ? 'bg-brand-primary text-white'
-                  : 'bg-brand-card'
-              }`}
-            >
-              {loan.name}
-              <div className="text-[10px]">
-                {formatNumber(stats.remaining)}원
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 상세 */}
-      {activeLoan && (
-        <>
-          <div className="bg-brand-card p-3 rounded-xl space-y-3">
-            <NumericInput
-              label="총 대출금"
-              value={activeLoan.originalTotalAmount}
-              onChange={(v: number) => updateLoanOriginal(activeLoan.id, v)}
-              className="form-input text-sm"
-            />
-
-            <div className="text-sm font-black">
-              남은 원금 {formatCurrency(activeLoanStats!.remaining)}
-            </div>
-
-            {/* 진행률 (0 방어 포함) */}
-            <div className="w-full h-2 bg-brand-bg">
-              <div
-                className="h-full bg-brand-primary"
-                style={{ width: `${repaymentProgress}%` }}
-              />
-            </div>
-          </div>
-
-          {/* 상환 입력 */}
-          <div className="bg-brand-card p-3 rounded-xl space-y-2">
-            <NumericInput
-              label="원금"
-              value={newRepayment.principal}
-              onChange={(v: number) => setNewRepayment({ ...newRepayment, principal: v })}
-              className="form-input text-sm"
-            />
-            <NumericInput
-              label="이자"
-              value={newRepayment.interest}
-              onChange={(v: number) => setNewRepayment({ ...newRepayment, interest: v })}
-              className="form-input text-sm"
-            />
-
-            <button
-              onClick={addRepayment}
-              className="w-full py-2 bg-brand-primary text-white text-xs rounded-xl"
-            >
-              추가
-            </button>
-          </div>
-
-          {/* 리스트 */}
-          <div className="bg-brand-card p-3 rounded-xl">
-            {(activeLoan.repayments || []).map((r: any) => (
-              <div key={r.id} className="flex justify-between text-xs py-1">
-                <span>{r.date}</span>
-                <span>{formatNumber(r.principal)}</span>
-                <span>{formatNumber(r.interest)}</span>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </motion.div>
-  );
-}
 
 
 
@@ -2837,9 +2655,6 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
     </motion.div>
   );
 }
-
-
-
 
 
 
