@@ -2277,7 +2277,6 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
   const getLoanStats = (loan: any) => {
     const cumulativePrincipal = loan.repayments.reduce((sum: number, r: any) => sum + r.principal, 0);
     const cumulativeInterest = loan.repayments.reduce((sum: number, r: any) => sum + r.interest, 0);
-
     return {
       cumulativePrincipal,
       cumulativeInterest,
@@ -2325,11 +2324,7 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
   };
 
   const deleteRepayment = (loanId: string, repaymentId: string) => {
-    setLoans(loans.map((l: any) =>
-      l.id === loanId
-        ? { ...l, repayments: l.repayments.filter((r: any) => r.id !== repaymentId) }
-        : l
-    ));
+    setLoans(loans.map((l: any) => l.id === loanId ? { ...l, repayments: l.repayments.filter((r: any) => r.id !== repaymentId) } : l));
   };
 
   return (
@@ -2337,12 +2332,14 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
       <EditableHeader 
         title={tabName} 
         setTitle={setTabName} 
+        description="상환 계획을 관리하고 부부의 총 부채 현황을 추적합니다."
       />
 
+      {/* 상단 전체 요약 박스 축소 */}
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-brand-card px-2.5 py-2 border border-brand-border rounded-xl shadow-brand">
           <p className="text-[8px] md:text-[9px] font-black text-brand-text-sub uppercase mb-1 truncate">
-            전체 대출 남은 원금
+            전체대출 남은 원금
           </p>
           <h4 className="text-xs md:text-sm font-black text-brand-pink tabular-nums truncate">
             {formatCurrency(loanSummary.totalRemaining)}
@@ -2351,7 +2348,7 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
 
         <div className="bg-brand-card px-2.5 py-2 border border-brand-border rounded-xl shadow-brand">
           <p className="text-[8px] md:text-[9px] font-black text-brand-text-sub uppercase mb-1 truncate">
-            전체 누적 상환액
+            전체누적상환액
           </p>
           <h4 className="text-xs md:text-sm font-black text-brand-mint tabular-nums truncate">
             {formatCurrency(loanSummary.totalPrincipalPaid)}
@@ -2360,7 +2357,7 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
 
         <div className="bg-brand-card px-2.5 py-2 border border-brand-border rounded-xl shadow-brand">
           <p className="text-[8px] md:text-[9px] font-black text-brand-text-sub uppercase mb-1 truncate">
-            전체 누적 상환액(이자)
+            전체누적 상환액(이자)
           </p>
           <h4 className="text-xs md:text-sm font-black text-brand-yellow tabular-nums truncate">
             {formatCurrency(loanSummary.totalInterestPaid)}
@@ -2368,7 +2365,8 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
         </div>
       </div>
 
-      <div className="space-y-3">
+      {/* 대출 목록 선택 */}
+      <div className="space-y-2">
         <h3 className="text-[10px] font-black text-brand-text-sub uppercase px-1 tracking-widest">
           대출 목록 선택
         </h3>
@@ -2401,12 +2399,13 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
         </div>
       </div>
 
-      {activeLoan && (
+      {/* 선택한 대출 상세정보 */}
+      {activeLoan ? (
         <div className="space-y-4">
           <div className="bg-brand-card p-4 border border-brand-border rounded-brand shadow-brand space-y-4">
             <div className="flex justify-between items-start gap-3">
               <div>
-                <h2 className="text-lg md:text-xl font-black text-brand-primary tracking-tighter">
+                <h2 className="text-lg md:text-xl font-black text-brand-primary uppercase tracking-tighter">
                   {activeLoan.name}
                 </h2>
                 <p className="text-[10px] text-brand-text-sub font-bold">
@@ -2423,7 +2422,6 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
                 onChange={(val: number) => updateLoanOriginal(activeLoan.id, val)}
                 className="form-input text-sm font-black tabular-nums py-2"
               />
-
               <div className="bg-brand-bg/50 p-3 rounded-xl flex flex-col justify-center border border-brand-border/30">
                 <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">
                   현재 남은 원금
@@ -2435,78 +2433,128 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
             </div>
           </div>
 
-          <div className="bg-brand-card p-4 border border-brand-border rounded-brand shadow-brand space-y-4">
-            <h3 className="text-xs font-black text-brand-primary">
-              상환내역 추가
-            </h3>
+          {/* 상환 추가 + 요약 */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <div className="bg-brand-card p-4 border border-brand-border rounded-brand shadow-brand space-y-4">
+              <h4 className="text-xs font-black flex items-center gap-2 uppercase tracking-widest border-b border-brand-border pb-2">
+                <Plus size={14} className="text-brand-primary" /> 상환 항목 추가
+              </h4>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <NumericInput
-                label="원금"
-                value={newRepayment.principal}
-                onChange={(val: number) => setNewRepayment({ ...newRepayment, principal: val })}
-                className="form-input text-sm font-black py-2"
-                placeholder="0"
-              />
-
-              <NumericInput
-                label="이자"
-                value={newRepayment.interest}
-                onChange={(val: number) => setNewRepayment({ ...newRepayment, interest: val })}
-                className="form-input text-sm font-black py-2"
-                placeholder="0"
-              />
-
-              <div className="space-y-1.5 flex flex-col w-full">
-                <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">
-                  날짜
-                </label>
-                <input
-                  type="date"
-                  value={newRepayment.date}
-                  onChange={e => setNewRepayment({ ...newRepayment, date: e.target.value })}
-                  className="form-input text-xs font-bold py-2"
+              <div className="grid grid-cols-2 gap-2">
+                <NumericInput 
+                  label="원금 상환액" 
+                  value={newRepayment.principal} 
+                  onChange={(v: number) => setNewRepayment({...newRepayment, principal: v})} 
+                  className="form-input text-sm font-black py-2" 
+                />
+                <NumericInput 
+                  label="이자 상환액" 
+                  value={newRepayment.interest} 
+                  onChange={(v: number) => setNewRepayment({...newRepayment, interest: v})} 
+                  className="form-input text-sm font-black py-2" 
                 />
               </div>
 
-              <div className="space-y-1.5 flex flex-col w-full">
-                <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">
-                  메모
-                </label>
-                <input
-                  type="text"
-                  value={newRepayment.memo}
-                  onChange={e => setNewRepayment({ ...newRepayment, memo: e.target.value })}
-                  className="form-input text-xs font-bold py-2"
-                  placeholder="메모"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">
+                    상환 날짜
+                  </label>
+                  <input 
+                    type="date" 
+                    value={newRepayment.date} 
+                    onChange={e => setNewRepayment({...newRepayment, date: e.target.value})} 
+                    className="form-input text-xs h-[38px]" 
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">
+                    메모
+                  </label>
+                  <input 
+                    type="text" 
+                    value={newRepayment.memo} 
+                    placeholder="메모" 
+                    onChange={e => setNewRepayment({...newRepayment, memo: e.target.value})} 
+                    className="form-input text-xs h-[38px]" 
+                  />
+                </div>
               </div>
+
+              <button
+                onClick={addRepayment}
+                className="w-full py-2.5 rounded-xl bg-brand-primary text-white text-xs font-black shadow-lg shadow-brand-primary/20 active:scale-95 transition-all"
+              >
+                상환내역 추가
+              </button>
             </div>
 
-            <button
-              onClick={addRepayment}
-              className="w-full py-2.5 bg-brand-primary text-white rounded-xl text-xs font-black shadow-lg shadow-brand-primary/20 active:scale-95 transition-all"
-            >
-              상환내역 추가
-            </button>
+            <div className="bg-brand-card p-4 border border-brand-border rounded-brand shadow-brand space-y-3">
+              <h4 className="text-xs font-black flex items-center gap-2 uppercase tracking-widest border-b border-brand-border pb-2">
+                <Activity size={14} className="text-brand-mint" /> 상환 요약
+              </h4>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-end">
+                  <span className="text-[10px] font-bold text-brand-text-sub uppercase">
+                    누적 원금 상환액
+                  </span>
+                  <span className="font-black text-sm text-brand-primary">
+                    {formatCurrency(getLoanStats(activeLoan).cumulativePrincipal)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-end">
+                  <span className="text-[10px] font-bold text-brand-text-sub uppercase">
+                    누적 이자 상환액
+                  </span>
+                  <span className="font-black text-sm text-brand-pink">
+                    {formatCurrency(getLoanStats(activeLoan).cumulativeInterest)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-end pt-3 border-t border-brand-border">
+                  <span className="text-[10px] font-black uppercase text-brand-mint">
+                    총 납부액
+                  </span>
+                  <span className="font-black text-base text-brand-mint">
+                    {formatCurrency(getLoanStats(activeLoan).totalPaid)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 space-y-1.5">
+                <p className="text-[9px] font-bold text-brand-text-sub uppercase text-right">
+                  상환 진행률 원금 기준
+                </p>
+                <div className="w-full h-2 bg-brand-bg border border-brand-border rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-brand-primary" 
+                    style={{ width: `${Math.min(100, (getLoanStats(activeLoan).cumulativePrincipal / activeLoan.originalTotalAmount) * 100)}%` }} 
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand overflow-hidden">
-            <div className="px-4 py-3 border-b border-brand-border bg-white/5 flex justify-between items-center">
-              <h3 className="text-xs font-black text-brand-text-main">
-                상환 기록
-              </h3>
-              <p className="text-[10px] font-bold text-brand-text-sub">
-                {activeLoan.repayments.length}건
-              </p>
+          {/* 상환 내역 */}
+          <div className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand">
+            <div className="px-4 py-3 border-b border-brand-border flex justify-between items-center bg-white/5">
+              <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <Activity size={14} className="text-brand-primary" /> 상환 내역
+              </h4>
+              <span className="text-[10px] font-bold text-brand-text-sub">
+                {activeLoan.repayments.length} 건
+              </span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-brand-bg/40 text-[9px] font-black text-brand-text-sub uppercase">
-                  <tr>
+                <thead>
+                  <tr className="border-b border-brand-border text-[9px] font-black text-brand-text-sub uppercase tracking-tighter">
                     <th className="px-3 py-2">회차</th>
-                    <th className="px-3 py-2 text-center">날짜</th>
+                    <th className="px-3 py-2 text-center">상환 날짜</th>
                     <th className="px-3 py-2 text-right">원금</th>
                     <th className="px-3 py-2 text-right">이자</th>
                     <th className="px-3 py-2">메모</th>
@@ -2517,7 +2565,7 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
                 <tbody className="divide-y divide-brand-border">
                   {activeLoan.repayments.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-xs font-bold text-brand-text-sub/50">
+                      <td colSpan={6} className="px-4 py-8 text-center text-xs font-bold text-brand-text-sub/50 uppercase tracking-widest">
                         상환 기록이 없습니다.
                       </td>
                     </tr>
@@ -2553,11 +2601,10 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </motion.div>
   );
 }
-
 
 
 
