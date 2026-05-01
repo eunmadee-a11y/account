@@ -1744,6 +1744,7 @@ function AssetStatusView({ balances, setBalances, tabName, setTabName }: any) {
 
 
 /*대출 현황*/
+
 function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName }: any) {
   const [activeLoanId, setActiveLoanId] = useState(loans[0]?.id || '');
   const activeLoan = loans.find((l: any) => l.id === activeLoanId);
@@ -1758,33 +1759,41 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
   const getLoanStats = (loan: any) => {
     const cumulativePrincipal = loan.repayments.reduce((sum: number, r: any) => sum + r.principal, 0);
     const cumulativeInterest = loan.repayments.reduce((sum: number, r: any) => sum + r.interest, 0);
+    const principalRepayments = loan.repayments.filter((r: any) => r.principal > 0);
     return {
       cumulativePrincipal,
       cumulativeInterest,
-      totalPaid: cumulativePrincipal + cumulativeInterest,
       remaining: loan.originalTotalAmount - cumulativePrincipal,
-      nextTurn: loan.repayments.length + 1 // 다음 회차 자동 계산
+      nextTurn: principalRepayments.length + 1
     };
   };
 
-  const updateLoanOriginal = (id: string, amount: number) => {
-    setLoans(loans.map((l: any) => l.id === id ? { ...l, originalTotalAmount: amount } : l));
+  const updateLoanField = (id: string, field: string, value: any) => {
+    setLoans(loans.map((l: any) => l.id === id ? { ...l, [field]: value } : l));
+  };
+
+  const addNewLoan = () => {
+    const newId = `loan-${Date.now()}`;
+    const newLoan = {
+      id: newId,
+      name: '새 대출',
+      originalTotalAmount: 0,
+      repayments: []
+    };
+    setLoans([...loans, newLoan]);
+    setActiveLoanId(newId);
   };
 
   const addRepayment = () => {
-    if (!activeLoanId) return;
-    
-    // 원금 상환액이 있을 때만 회차(turn)를 증가시킴
+    if (!activeLoanId || (newRepayment.principal === 0 && newRepayment.interest === 0)) return;
     const stats = getLoanStats(activeLoan);
     const repayment = {
       id: Math.random().toString(36).substr(2, 9),
-      loanName: activeLoan.name,
       ...newRepayment,
-      turn: newRepayment.principal > 0 ? stats.nextTurn : null // 원금 상환시에만 회차 부여
+      turn: newRepayment.principal > 0 ? stats.nextTurn : null
     };
-    
     setLoans(loans.map((l: any) => l.id === activeLoanId ? { ...l, repayments: [repayment, ...l.repayments] } : l));
-    setNewRepayment({ ...newEntry, principal: 0, interest: 0, memo: '' }); // 날짜 유지, 금액 리셋
+    setNewRepayment({ ...newRepayment, principal: 0, interest: 0, memo: '' });
   };
 
   const deleteRepayment = (loanId: string, repaymentId: string) => {
@@ -1795,103 +1804,118 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-4 pb-20 px-2">
       <EditableHeader title={tabName} setTitle={setTabName} />
 
-      {/* 1. 상단 요약 정보 (한 박스로 통합 및 글자 크기 축소) */}
-      <div className="bg-brand-card p-3 border border-brand-border rounded-2xl shadow-brand">
+      {/* 1. 상단 요약 한 박스 */}
+      <div className="bg-brand-card p-4 border border-brand-border rounded-2xl shadow-brand">
         <div className="grid grid-cols-3 divide-x divide-brand-border">
           <div className="text-center">
-            <p className="text-[9px] font-black text-brand-text-sub uppercase mb-0.5">남은 원금</p>
+            <p className="text-[9px] font-black text-brand-text-sub uppercase mb-1">남은원금</p>
             <p className="text-sm font-black text-brand-pink">{formatNumber(loanSummary.totalRemaining)}</p>
           </div>
           <div className="text-center">
-            <p className="text-[9px] font-black text-brand-text-sub uppercase mb-0.5">누적 원금</p>
+            <p className="text-[9px] font-black text-brand-text-sub uppercase mb-1">누적원금</p>
             <p className="text-sm font-black text-brand-mint">{formatNumber(loanSummary.totalPrincipalPaid)}</p>
           </div>
           <div className="text-center">
-            <p className="text-[9px] font-black text-brand-text-sub uppercase mb-0.5">누적 이자</p>
+            <p className="text-[9px] font-black text-brand-text-sub uppercase mb-1">누적이자</p>
             <p className="text-sm font-black text-brand-yellow">{formatNumber(loanSummary.totalInterestPaid)}</p>
           </div>
         </div>
       </div>
 
-      {/* 2. 대출 목록 선택 (아이폰용 가로 롤링) */}
-      <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-hide snap-x">
-        {loans.map((loan: any) => {
-          const stats = getLoanStats(loan);
-          return (
-            <button 
-              key={loan.id}
-              onClick={() => setActiveLoanId(loan.id)}
-              className={`shrink-0 snap-start min-w-[120px] p-3 text-left border rounded-xl transition-all ${activeLoanId === loan.id ? 'bg-brand-primary border-brand-primary text-white' : 'bg-brand-card border-brand-border'}`}
-            >
-              <p className="text-[11px] font-black truncate">{loan.name}</p>
-              <p className={`text-[9px] font-bold mt-1 ${activeLoanId === loan.id ? 'text-white/80' : 'text-brand-pink'}`}>
-                {formatNumber(stats.remaining)}원
-              </p>
-            </button>
-          );
-        })}
+      {/* 2. 대출 목록 롤링 + 추가 버튼 */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x">
+        {loans.map((loan: any) => (
+          <button 
+            key={loan.id}
+            onClick={() => setActiveLoanId(loan.id)}
+            className={`shrink-0 snap-start px-5 py-3 rounded-xl border font-black text-xs transition-all ${activeLoanId === loan.id ? 'bg-brand-primary border-brand-primary text-white shadow-lg' : 'bg-brand-card border-brand-border text-brand-text-sub'}`}
+          >
+            {loan.name}
+          </button>
+        ))}
+        <button onClick={addNewLoan} className="shrink-0 p-3 rounded-xl border border-dashed border-brand-primary text-brand-primary bg-brand-primary/5">
+          <Plus size={16} />
+        </button>
       </div>
 
-      {/* 3. 대출 상세 & 상환 입력 (하나의 박스로 통합) */}
+      {/* 3. 상세 설정 및 입력 통합 박스 */}
       {activeLoan ? (
         <div className="bg-brand-card border border-brand-border rounded-3xl overflow-hidden shadow-brand">
-          <div className="p-5 space-y-4">
-            {/* 남은 원금 강조 (최상단) */}
-            <div className="bg-brand-bg/50 p-4 rounded-2xl border border-brand-border text-center">
-              <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1">현재 남은 원금</p>
-              <p className="text-2xl font-black text-brand-pink">{formatCurrency(getLoanStats(activeLoan).remaining)}</p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
+          <div className="p-5 space-y-5">
+            {/* 이름 수정 & 원금 수정 */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-brand-text-sub uppercase ml-1">대출 이름 수정</label>
+                <input 
+                  type="text" 
+                  value={activeLoan.name} 
+                  onChange={(e) => updateLoanField(activeLoan.id, 'name', e.target.value)}
+                  className="form-input text-sm font-black h-[44px] bg-brand-bg"
+                />
+              </div>
               <NumericInput 
-                label="대출 원금 (수정 가능)"
+                label="최초 대출 금액"
                 value={activeLoan.originalTotalAmount}
-                onChange={(val: number) => updateLoanOriginal(activeLoan.id, val)}
-                className="form-input text-sm font-black h-[40px]"
+                onChange={(val: number) => updateLoanField(activeLoan.id, 'originalTotalAmount', val)}
+                className="form-input text-sm font-black h-[44px] bg-brand-bg"
               />
-              
-              <div className="grid grid-cols-2 gap-3">
-                <NumericInput label="원금 상환액" value={newRepayment.principal} onChange={(v: number) => setNewRepayment({...newRepayment, principal: v})} className="form-input text-sm font-black text-brand-mint h-[42px]" />
-                <NumericInput label="이자 상환액" value={newRepayment.interest} onChange={(v: number) => setNewRepayment({...newRepayment, interest: v})} className="form-input text-sm font-black text-brand-yellow h-[42px]" />
-              </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <input type="date" value={newRepayment.date} onChange={e => setNewRepayment({...newRepayment, date: e.target.value})} className="form-input text-[14px] font-bold h-[42px] bg-brand-bg" />
-                <input type="text" value={newRepayment.memo} placeholder="메모" onChange={e => setNewRepayment({...newRepayment, memo: e.target.value})} className="form-input text-[14px] h-[42px] bg-brand-bg" />
+            {/* 상환액 입력 */}
+            <div className="grid grid-cols-2 gap-3">
+              <NumericInput label="원금 상환액" value={newRepayment.principal} onChange={(v: number) => setNewRepayment({...newRepayment, principal: v})} className="form-input text-sm font-black text-brand-mint h-[44px] bg-brand-bg" />
+              <NumericInput label="이자 상환액" value={newRepayment.interest} onChange={(v: number) => setNewRepayment({...newRepayment, interest: v})} className="form-input text-sm font-black text-brand-yellow h-[44px] bg-brand-bg" />
+            </div>
+
+            {/* 날짜 & 메모 (디자인 통일) */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-brand-text-sub uppercase ml-1">상환 날짜</label>
+                <input type="date" value={newRepayment.date} onChange={e => setNewRepayment({...newRepayment, date: e.target.value})} className="form-input text-xs font-bold h-[44px] bg-brand-bg" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-brand-text-sub uppercase ml-1">메모</label>
+                <input type="text" value={newRepayment.memo} placeholder="메모 입력" onChange={e => setNewRepayment({...newRepayment, memo: e.target.value})} className="form-input text-xs h-[44px] bg-brand-bg" />
               </div>
             </div>
 
-            <button onClick={addRepayment} className="w-full bg-brand-primary text-white font-black py-4 rounded-2xl active:scale-95 transition-all text-sm shadow-lg shadow-brand-primary/20">
-              상환 내역 추가하기
+            <button onClick={addRepayment} className="w-full bg-brand-primary text-white font-black py-4 rounded-2xl active:scale-[0.98] transition-all text-sm">
+              상환 내역 추가
             </button>
           </div>
 
-          {/* 하단 내역 리스트 */}
-          <div className="border-t border-brand-border max-h-[300px] overflow-y-auto custom-scrollbar bg-white/5">
-            {activeLoan.repayments.map((r: any) => (
-              <div key={r.id} className="px-5 py-3 flex items-center justify-between border-b border-brand-border/50">
-                <div className="flex flex-col">
-                  <p className="text-[11px] font-black text-white">
-                    {r.turn ? `${r.turn}회차 ` : ''}{r.memo || '상환'}
-                  </p>
-                  <p className="text-[9px] text-brand-text-sub">{r.date}</p>
+          {/* 4. 내역 표 형식 (아이폰 최적화) */}
+          <div className="border-t border-brand-border bg-white/5">
+            <div className="grid grid-cols-12 gap-1 px-4 py-2 border-b border-brand-border bg-brand-bg/50 text-[9px] font-black text-brand-text-sub uppercase">
+              <div className="col-span-2 text-center">회차</div>
+              <div className="col-span-4 text-right">상환원금</div>
+              <div className="col-span-3 text-right">이자</div>
+              <div className="col-span-3 text-right">삭제</div>
+            </div>
+            <div className="max-h-[250px] overflow-y-auto custom-scrollbar divide-y divide-brand-border/30">
+              {activeLoan.repayments.length === 0 ? (
+                <p className="p-8 text-center text-[10px] font-bold opacity-30 uppercase">내역 없음</p>
+              ) : activeLoan.repayments.map((r: any) => (
+                <div key={r.id} className="grid grid-cols-12 gap-1 px-4 py-3 items-center hover:bg-white/5">
+                  <div className="col-span-2 text-center text-[11px] font-black text-brand-primary">{r.turn || '-'}</div>
+                  <div className="col-span-4 text-right text-[11px] font-bold tabular-nums">{formatNumber(r.principal)}</div>
+                  <div className="col-span-3 text-right text-[11px] font-bold text-brand-pink tabular-nums">{formatNumber(r.interest)}</div>
+                  <div className="col-span-3 text-right">
+                    <button onClick={() => deleteRepayment(activeLoan.id, r.id)} className="p-1 text-brand-text-sub hover:text-brand-pink transition-colors">
+                      <X size={14} className="ml-auto" />
+                    </button>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs font-black">원금: {formatNumber(r.principal)}</p>
-                  <p className="text-[10px] font-bold text-brand-pink">이자: {formatNumber(r.interest)}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       ) : (
-        <div className="p-10 text-center opacity-30 font-black">대출 항목을 선택하세요</div>
+        <div className="p-20 text-center opacity-30 font-black">대출 항목을 추가하거나 선택하세요</div>
       )}
     </motion.div>
   );
 }
-
-
 
 function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
   const [newTx, setNewTx] = useState({
