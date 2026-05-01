@@ -2108,6 +2108,7 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
   );
 }
 
+/*월급 비교*/
 
 function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, setSalaryLabels, currentDate, transactions, setTransactions, gamjaTransactions, setGamjaTransactions, balances, setBalances }: any) {
   const [newEntry, setNewEntry] = useState({
@@ -2119,19 +2120,23 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
   });
 
   const [isMemoActive, setIsMemoActive] = useState(false);
-  const [isLabelSettingsOpen, setIsLabelSettingsOpen] = useState(false); // 1번 요청: 설정 아코디언 상태
+  const [isLabelSettingsOpen, setIsLabelSettingsOpen] = useState(false);
   const selectedYear = currentDate.getFullYear();
 
-  // 2번 요청: 내 연봉과 감자 연봉 개별 합계 계산
+  // 연봉 상세 합계 계산
   const totalMyAnnual = useMemo(() => salaries.mySalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0), [salaries, selectedYear]);
   const totalGamjaAnnual = useMemo(() => salaries.gamjaSalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0), [salaries, selectedYear]);
   const totalAnnual = totalMyAnnual + totalGamjaAnnual;
 
-  // 3번 요청: 그래프 데이터 (월 단위에서 '월' 제외 및 상세 리스트 구성)
+  // 비율 계산 (게이지 바용)
+  const myRatio = totalAnnual > 0 ? (totalMyAnnual / totalAnnual) * 100 : 0;
+  const gamjaRatio = totalAnnual > 0 ? (totalGamjaAnnual / totalAnnual) * 100 : 0;
+
+  // 12개월 데이터 구성 (0부터 11까지 반복하여 1월부터 12월까지 생성)
   const monthlySalaryData = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
-      const monthNum = i + 1;
-      const entry: any = { name: `${monthNum}`, details: [] }; // '월' 삭제
+      const monthNum = i + 1; // 1월부터 시작
+      const entry: any = { name: `${monthNum}`, details: [] };
       
       let meMonthTotal = 0;
       salaries.mySalaryRecords.filter((r: any) => {
@@ -2178,13 +2183,13 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
     setIsMemoActive(false);
   };
 
-  // 3번 요청: 그래프 툴팁 커스텀 (상세 리스트 및 월 합계 표시)
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      if (data.details.length === 0) return null;
       return (
         <div className="bg-brand-card border border-brand-border p-4 rounded-xl shadow-xl min-w-[200px]">
-          <p className="text-[11px] font-black text-brand-text-sub mb-2 border-b border-brand-border pb-1">{data.name}월 급여 상세</p>
+          <p className="text-[11px] font-black text-brand-text-sub mb-2 border-b border-brand-border pb-1">{data.name}월 상세</p>
           <div className="space-y-2">
             {data.details.map((d: any, idx: number) => (
               <div key={idx} className="flex justify-between items-center gap-4">
@@ -2192,9 +2197,9 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
                 <span className="text-[11px] font-black tabular-nums">{formatNumber(d.amount)}원</span>
               </div>
             ))}
-            <div className="pt-2 border-t border-brand-border flex justify-between items-center">
-              <span className="text-[11px] font-black text-brand-mint">월 합계</span>
-              <span className="text-[12px] font-black text-brand-mint">{formatNumber(data['합계'])}원</span>
+            <div className="pt-2 border-t border-brand-border flex justify-between items-center text-brand-mint">
+              <span className="text-[11px] font-black">월 합계</span>
+              <span className="text-[12px] font-black">{formatNumber(data['합계'])}원</span>
             </div>
           </div>
         </div>
@@ -2207,25 +2212,33 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-4 pb-20 px-2">
       <EditableHeader title={tabName} setTitle={setTabName} />
       
-      {/* 2번 요청: 상단 연봉 상세 박스 (나/감자 개별 합계 포함) */}
-      <div className="bg-brand-card p-5 rounded-2xl border border-brand-border shadow-sm space-y-3">
-        <div className="flex justify-between items-center border-b border-brand-border pb-2">
+      {/* 상단 연봉 요약 및 가로 게이지 바 추가 */}
+      <div className="bg-brand-card p-5 rounded-2xl border border-brand-border shadow-sm space-y-4">
+        <div className="flex justify-between items-center">
           <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">{selectedYear} 가구 총수입</span>
           <span className="text-xl font-black tabular-nums">{formatCurrency(totalAnnual)}</span>
         </div>
-        <div className="grid grid-cols-2 gap-4 pt-1">
-          <div className="flex flex-col">
-            <span className="text-[9px] font-bold text-brand-primary uppercase">내 총연봉</span>
-            <span className="text-sm font-black tabular-nums">{formatCurrency(totalMyAnnual)}</span>
+        
+        {/* 연봉 비율 게이지 바 */}
+        <div className="space-y-2">
+          <div className="h-2.5 w-full bg-brand-bg rounded-full overflow-hidden flex border border-brand-border/30">
+            <motion.div initial={{ width: 0 }} animate={{ width: `${myRatio}%` }} className="h-full bg-brand-primary" />
+            <motion.div initial={{ width: 0 }} animate={{ width: `${gamjaRatio}%` }} className="h-full bg-brand-purple" />
           </div>
-          <div className="flex flex-col text-right border-l border-brand-border pl-4">
-            <span className="text-[9px] font-bold text-brand-purple uppercase">감자 총연봉</span>
-            <span className="text-sm font-black tabular-nums">{formatCurrency(totalGamjaAnnual)}</span>
+          <div className="flex justify-between text-[10px] font-black">
+            <div className="flex flex-col">
+              <span className="text-brand-primary">나 {myRatio.toFixed(1)}%</span>
+              <span className="text-sm font-black tabular-nums">{formatCurrency(totalMyAnnual)}</span>
+            </div>
+            <div className="flex flex-col text-right">
+              <span className="text-brand-purple">감자 {gamjaRatio.toFixed(1)}%</span>
+              <span className="text-sm font-black tabular-nums">{formatCurrency(totalGamjaAnnual)}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 등록창 구간 (수입/지출 버튼 스타일 통일) */}
+      {/* 등록창 (감자 지출 디자인 적용) */}
       <div className="bg-brand-card p-5 rounded-3xl border border-brand-border space-y-5 shadow-brand">
         <div className="flex items-center justify-between">
           <h4 className="text-xs font-black text-brand-primary uppercase tracking-widest flex items-center gap-2"><Plus size={14} /> 급여 입력</h4>
@@ -2251,7 +2264,7 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
 
         <div className="space-y-3">
           <div className="p-3 bg-brand-primary/5 border border-brand-primary/30 rounded-xl">
-            <NumericInput label="입금 금액" value={newEntry.amount} onChange={(v: number) => setNewEntry({...newEntry, amount: v})} className="form-input text-[18px] md:text-lg font-black py-1 h-[42px] bg-transparent text-brand-primary" />
+            <NumericInput label="금액 입력" value={newEntry.amount} onChange={(v: number) => setNewEntry({...newEntry, amount: v})} className="form-input text-[18px] md:text-lg font-black py-1 h-[42px] bg-transparent text-brand-primary" />
           </div>
           <div className="space-y-1.5">
             <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">메모</label>
@@ -2265,10 +2278,10 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
         <button onClick={handleAddSalary} className="w-full bg-brand-primary text-white font-black py-4 rounded-xl text-[15px] shadow-lg shadow-brand-primary/20 active:scale-95 transition-all">등록 및 지출 탭 연동</button>
       </div>
 
-      {/* 3번 요청: 그래프 가로 확장 및 월 표시 간소화 */}
+      {/* 1월 포함 12개월 그래프 및 상세 툴팁 */}
       <div className="bg-brand-card p-4 rounded-brand border border-brand-border shadow-brand overflow-hidden">
-        <h4 className="text-[11px] font-black uppercase mb-4 flex items-center gap-2 text-brand-text-sub px-1"><BarChart2 size={14} className="text-brand-primary" /> Monthly Salary Comparison</h4>
-        <div className="h-[250px] w-full -mx-2"> {/* 마진 제거로 가로 확장 */}
+        <h4 className="text-[11px] font-black uppercase mb-4 flex items-center gap-2 text-brand-text-sub px-1"><BarChart2 size={14} className="text-brand-primary" /> 1월-12월 급여 비교</h4>
+        <div className="h-[250px] w-full -mx-2">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthlySalaryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#25282b" />
@@ -2282,7 +2295,7 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
         </div>
       </div>
 
-      {/* 1번 요청: 항목 명칭 설정 아코디언 수정 */}
+      {/* 설정 아코디언 */}
       <div className="bg-brand-card border border-brand-border rounded-2xl overflow-hidden shadow-sm">
         <button 
           onClick={() => setIsLabelSettingsOpen(!isLabelSettingsOpen)}
@@ -2293,7 +2306,6 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
           </span>
           <ChevronRight size={18} className={`text-brand-text-sub transition-transform ${isLabelSettingsOpen ? 'rotate-90' : ''}`} />
         </button>
-        
         <AnimatePresence>
           {isLabelSettingsOpen && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
@@ -2312,6 +2324,8 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
     </motion.div>
   );
 }
+
+
 
 function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabName, setTabName }: any) {
   const myChartData = useMemo(() => {
