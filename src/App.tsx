@@ -555,7 +555,11 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
   const customInvestment = homePensionTotal;     // 투자/연금 = 연금/투자 탭 총액
   const customTotalAsset = customCashLike + customInvestment; // 오직 현금과 투자만 합산
 
-  const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(null);
+  // 홈 탭 진입 시 '생활비'가 포함된 통장이 있으면 기본으로 열어둠
+  const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(() => {
+    const defaultAcc = mainAccounts.find((a: any) => a.name.includes('생활비'));
+    return defaultAcc ? defaultAcc.name : null;
+  });
 
   const quickAccountKeywords = ['생활비', '여유자금', '자동이체'];
 
@@ -2024,16 +2028,18 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
 }
 
 
+
+
 function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
   const [newTx, setNewTx] = useState({
     date: new Date().toISOString().split('T')[0],
     type: '지출' as TransactionType,
-    category: categories.expense[0], // 항상 지출 항목이 기본으로 뜨도록 설정
+    category: categories.expense[0], // 기본값을 지출 항목으로 고정
     amount: 0,
     memo: ''
   });
 
-  // 유형(수입/지출)이 바뀔 때 카테고리도 알맞게 변경해주는 함수
+  // 유형(수입/지출)이 바뀔 때 카테고리도 알맞게 변경
   const handleTypeChange = (newType: TransactionType) => {
     setNewTx({
       ...newTx,
@@ -2042,7 +2048,6 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
     });
   };
 
-  // 단일 입력 버튼 동작
   const handleAdd = () => {
     if (newTx.amount <= 0) return;
     onAdd({
@@ -2050,7 +2055,7 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
       ...newTx,
       account
     });
-    // 입력 후 다시 기본값(지출)으로 초기화
+    // 입력 완료 후 다시 기본값(지출)으로 리셋
     setNewTx({ 
       ...newTx, 
       type: '지출', 
@@ -2059,6 +2064,8 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
       memo: '' 
     });
   };
+
+  const currentCategories = newTx.type === '지출' ? categories.expense : categories.income;
 
   return (
     <div className="space-y-4">
@@ -2076,44 +2083,84 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-3 mb-3">
-         <div className="space-y-1.5">
-            <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">유형</label>
-            <select value={newTx.type} onChange={e => handleTypeChange(e.target.value as TransactionType)} className="form-select text-[16px] md:text-[11px] py-2 h-[42px] font-black">
-               <option value="지출">지출</option>
-               <option value="수입">수입</option>
-            </select>
-         </div>
-         <div className="space-y-1.5">
-            <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">항목</label>
-            <select value={newTx.category} onChange={e => setNewTx({...newTx, category: e.target.value})} className="form-select text-[16px] md:text-[11px] py-2 h-[42px] font-black">
-               {(newTx.type === '지출' ? categories.expense : categories.income).map((c: string) => <option key={c} value={c}>{c}</option>)}
-            </select>
+      {/* 1. 유형 선택 (감자탭과 동일한 토글 버튼) */}
+      <div className="space-y-1.5">
+         <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">유형</label>
+         <div className="flex bg-brand-bg rounded-lg p-0.5 border border-brand-border">
+            <button
+              onClick={() => handleTypeChange('지출')}
+              className={`flex-1 py-1.5 rounded-md text-[14px] font-black transition-colors ${newTx.type === '지출' ? 'bg-brand-pink text-white' : 'text-brand-text-sub'}`}
+            >
+              지출
+            </button>
+            <button
+              onClick={() => handleTypeChange('수입')}
+              className={`flex-1 py-1.5 rounded-md text-[14px] font-black transition-colors ${newTx.type === '수입' ? 'bg-brand-mint text-white' : 'text-brand-text-sub'}`}
+            >
+              수입
+            </button>
          </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-         <NumericInput 
-           label="금액 입력"
-           value={newTx.amount} 
-           placeholder="0" 
-           onChange={(val: number) => setNewTx({...newTx, amount: val})} 
-           className="form-input text-[16px] md:text-sm font-black py-2 h-[42px]" 
-         />
+      {/* 2. 항목 선택 (팝업 없이 좌우로 스크롤하여 바로 터치하는 칩 스타일) */}
+      <div className="space-y-1.5 pt-1">
+         <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">항목 (좌우로 밀어서 선택)</label>
+         <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide snap-x">
+            {currentCategories.map((c: string) => (
+              <button
+                key={c}
+                onClick={() => setNewTx({...newTx, category: c})}
+                className={`shrink-0 snap-start px-4 py-2 rounded-xl text-[13px] font-black transition-all ${
+                  newTx.category === c 
+                    ? (newTx.type === '지출' ? 'bg-brand-pink/20 text-brand-pink border border-brand-pink/50' : 'bg-brand-mint/20 text-brand-mint border border-brand-mint/50')
+                    : 'bg-brand-bg text-brand-text-sub border border-brand-border'
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+         </div>
+      </div>
+
+      {/* 3. 금액(강조) 및 메모 영역 */}
+      <div className="space-y-3 mt-1">
+         {/* 금액 창 붉은 톤 하이라이트 */}
+         <div className="space-y-1.5 p-3 bg-brand-pink/5 border border-brand-pink/30 rounded-xl">
+           <NumericInput 
+             label="금액 입력"
+             value={newTx.amount} 
+             placeholder="0" 
+             onChange={(val: number) => setNewTx({...newTx, amount: val})} 
+             className="form-input text-[16px] md:text-lg font-black py-2 h-[42px] bg-transparent text-brand-pink" 
+           />
+         </div>
+
+         {/* 메모 창 위치 아래로 이동 */}
          <div className="space-y-1.5">
             <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">메모</label>
-            <input type="text" value={newTx.memo} placeholder="메모 입력" onChange={e => setNewTx({...newTx, memo: e.target.value})} className="form-input text-[16px] md:text-[11px] py-2 h-[42px]" />
+            <input 
+              type="text" 
+              value={newTx.memo} 
+              placeholder="메모를 입력하세요" 
+              onChange={e => setNewTx({...newTx, memo: e.target.value})} 
+              className="form-input text-[16px] md:text-[11px] py-2 h-[42px]" 
+            />
          </div>
       </div>
 
-      <div className="mt-4">
-         <button onClick={handleAdd} className="w-full bg-brand-primary text-white text-[14px] font-black py-3.5 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all uppercase tracking-widest shadow-lg shadow-brand-primary/20">
-            입력하기
+      {/* 단일 입력 버튼 */}
+      <div className="mt-5">
+         <button 
+           onClick={handleAdd} 
+           className="w-full bg-brand-primary text-white text-[15px] font-black py-3.5 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all uppercase tracking-widest shadow-lg shadow-brand-primary/20"
+         >
+            내역 추가하기
          </button>
       </div>
     </div>
   );
 }
+
 
 function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, setSalaryLabels, currentDate }: any) {
   const [newMySalary, setNewMySalary] = useState({
