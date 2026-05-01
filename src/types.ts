@@ -11,7 +11,7 @@ export interface Transaction {
   memo: string;
 }
 
-export type TabName = '홈' | '내 지출' | '연금/투자 관리' | '감자 지출' | '월급 비교' | '전체 자금 현황' | '대출 관리' | '1년 결산';
+export type TabName = '홈' | '내 지출' | '연금/투자 관리' | '감자 지출' | '월급 비교' | '대출 관리' | '1년 결산';
 
 export interface BalanceEntry {
   id: string;
