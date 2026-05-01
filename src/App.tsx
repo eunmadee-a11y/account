@@ -2109,429 +2109,119 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
 }
 
 
-function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, setSalaryLabels, currentDate }: any) {
-  const [newMySalary, setNewMySalary] = useState({
+
+
+function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, setSalaryLabels, currentDate, setTransactions, setGamjaTransactions }: any) {
+  // 통합 입력 상태
+  const [newEntry, setNewEntry] = useState({
+    target: '나' as '나' | '감자',
     date: new Date().toISOString().split('T')[0],
     type: SALARY_TYPES[0] as SalaryType,
     amount: 0,
     memo: ''
   });
 
-  const [newGamjaSalary, setNewGamjaSalary] = useState({
-    date: new Date().toISOString().split('T')[0],
-    amount: 0,
-    memo: ''
-  });
-
-  const total = salaries.mySalary + salaries.gamjaSalary;
-  const myRatio = total > 0 ? (salaries.mySalary / total) * 100 : 0;
-  const gamjaRatio = total > 0 ? (salaries.gamjaSalary / total) * 100 : 0;
-
-  const handleAddMySalary = () => {
-    if (newMySalary.amount <= 0) return;
-    const record: SalaryRecord = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...newMySalary
-    };
-    setSalaries({
-      ...salaries,
-      mySalaryRecords: [record, ...salaries.mySalaryRecords],
-      mySalary: salaries.mySalary + record.amount
-    });
-    setNewMySalary({ ...newMySalary, amount: 0, memo: '' });
-  };
-
-  const handleAddGamjaSalary = () => {
-    if (newGamjaSalary.amount <= 0) return;
-    const record: any = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...newGamjaSalary,
-      type: '감자 월급'
-    };
-    setSalaries({
-      ...salaries,
-      gamjaSalaryRecords: [record, ...salaries.gamjaSalaryRecords],
-      gamjaSalary: salaries.gamjaSalary + record.amount
-    });
-    setNewGamjaSalary({ ...newGamjaSalary, amount: 0, memo: '' });
-  };
-
-  const deleteMySalary = (id: string) => {
-    const record = salaries.mySalaryRecords.find((r: any) => r.id === id);
-    if (!record) return;
-    setSalaries({
-      ...salaries,
-      mySalaryRecords: salaries.mySalaryRecords.filter((r: any) => r.id !== id),
-      mySalary: salaries.mySalary - record.amount
-    });
-  };
-
-  const deleteGamjaSalary = (id: string) => {
-    const record = salaries.gamjaSalaryRecords.find((r: any) => r.id === id);
-    if (!record) return;
-    setSalaries({
-      ...salaries,
-      gamjaSalaryRecords: salaries.gamjaSalaryRecords.filter((r: any) => r.id !== id),
-      gamjaSalary: salaries.gamjaSalary - record.amount
-    });
-  };
-
-  // Annual Salary aggregation for selected year from currentDate
   const selectedYear = currentDate.getFullYear();
+  const totalAnnual = useMemo(() => {
+    const my = salaries.mySalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0);
+    const gamja = salaries.gamjaSalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0);
+    return my + gamja;
+  }, [salaries, selectedYear]);
 
-  // Monthly data for the full year comparison
-  const monthlySalaryData = useMemo(() => {
-    const months = Array.from({ length: 12 }, (_, i) => i + 1);
-    
-    return months.map(month => {
-      const entry: any = { name: `${month}월` };
-      
-      // Me: Breakdown by salary type
-      let meMonthTotal = 0;
-      SALARY_TYPES.forEach(t => {
-        const label = salaryLabels[t] || t;
-        const sum = salaries.mySalaryRecords
-          .filter((r: any) => {
-            const rd = new Date(r.date);
-            return rd.getMonth() === month - 1 && rd.getFullYear() === selectedYear && r.type === t;
-          })
-          .reduce((s: number, r: any) => s + r.amount, 0);
-        entry[label] = (entry[label] || 0) + sum;
-        meMonthTotal += sum;
-      });
-      entry['내 월급 합계'] = meMonthTotal;
-      
-      // Gamja: Total
-      const gamjaSum = salaries.gamjaSalaryRecords
-        .filter((r: any) => {
-          const rd = new Date(r.date);
-          return rd.getMonth() === month - 1 && rd.getFullYear() === selectedYear;
-        })
-        .reduce((s: number, r: any) => s + r.amount, 0);
-      entry['감자 월급'] = gamjaSum;
-      
-      return entry;
-    });
-  }, [salaries, salaryLabels, selectedYear]);
+  // 상단 날짜와 연동된 등록 로직
+  const handleAddSalary = () => {
+    if (newEntry.amount <= 0) return;
+    const recordId = Math.random().toString(36).substr(2, 9);
+    const newRecord = { ...newEntry, id: recordId };
 
-  const totalMyAnnual = useMemo(() => {
-    return salaries.mySalaryRecords
-      .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
-      .reduce((s: number, r: any) => s + r.amount, 0);
-  }, [salaries.mySalaryRecords, selectedYear]);
-
-  const totalGamjaAnnual = useMemo(() => {
-    return salaries.gamjaSalaryRecords
-      .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
-      .reduce((s: number, r: any) => s + r.amount, 0);
-  }, [salaries.gamjaSalaryRecords, selectedYear]);
-
-  const totalAnnual = totalMyAnnual + totalGamjaAnnual;
-  const myAnnualRatio = totalAnnual > 0 ? (totalMyAnnual / totalAnnual) * 100 : 0;
-  const gamjaAnnualRatio = totalAnnual > 0 ? (totalGamjaAnnual / totalAnnual) * 100 : 0;
-
-  // Soft Pastel Palette derived from primary blue (#94d5ff)
-  const COLORS = ['#94D5FF', '#A5D8FF', '#D0BFFF', '#B2F2BB', '#FFC9C9', '#FFF3BF', '#E9ECEF'];
-  
-  // Filter out components that have zero total amount for the selected year
-  const ME_COMPONENTS_FILTERED = useMemo(() => {
-    const labels = SALARY_TYPES
-      .filter(t => {
-        return salaries.mySalaryRecords.some(r => 
-          new Date(r.date).getFullYear() === selectedYear && r.type === t && r.amount > 0
-        );
-      })
-      .map(t => salaryLabels[t] || t);
-    return Array.from(new Set(labels));
-  }, [salaries.mySalaryRecords, salaryLabels, selectedYear]);
-
-  // Custom Tooltip for separated display
-  const SalaryChartTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const myComponents = payload.filter((p: any) => p.dataKey !== '감자 월급');
-      const gamjaComp = payload.find((p: any) => p.dataKey === '감자 월급');
-      const myTotal = myComponents.reduce((sum: number, p: any) => sum + p.value, 0);
-
-      return (
-        <div className="bg-brand-card border border-brand-border p-5 rounded-2xl shadow-brand min-w-[240px]">
-          <p className="text-[10px] font-black text-brand-text-sub uppercase mb-4 border-b border-brand-border pb-2 tracking-[0.2em]">{label} SALARY REPORT</p>
-          
-          <div className="space-y-6">
-            {/* My Section */}
-            <div className="space-y-3">
-              <p className="text-[10px] font-black text-brand-primary uppercase tracking-widest flex items-center gap-2 border-l-2 border-brand-primary pl-3">
-                [MY INCOME]
-              </p>
-              <div className="space-y-2 pl-3">
-                {myComponents.map((p: any) => (
-                  p.value > 0 && (
-                    <div key={p.dataKey} className="flex justify-between items-center text-[10px] gap-6">
-                      <span className="text-brand-text-sub font-bold">{p.name || p.dataKey}</span>
-                      <span className="font-black text-brand-primary tabular-nums">{formatNumber(p.value)}</span>
-                    </div>
-                  )
-                ))}
-                <div className="flex justify-between items-center text-[11px] pt-3 border-t border-brand-border mt-1">
-                  <span className="font-black text-brand-text-main uppercase tracking-tighter">TOTAL:</span>
-                  <span className="font-black text-brand-primary tabular-nums text-sm">{formatNumber(myTotal)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Gamja Section */}
-            {gamjaComp && (
-              <div className="space-y-3">
-                <p className="text-[10px] font-black text-brand-purple uppercase tracking-widest flex items-center gap-2 border-l-2 border-brand-purple pl-3">
-                  [GAMJA INCOME]
-                </p>
-                <div className="space-y-2 pl-3">
-                  <div className="flex justify-between items-center text-[11px] gap-6">
-                    <span className="text-brand-text-sub font-bold">Monthly Total</span>
-                    <span className="font-black text-brand-purple tabular-nums text-sm">{formatNumber(gamjaComp.value)}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      );
+    if (newEntry.target === '나') {
+      setSalaries({ ...salaries, mySalaryRecords: [newRecord, ...salaries.mySalaryRecords] });
+      // 내 지출 탭 '여유자금 통장' 수입 연동
+      setTransactions((prev: any) => [{
+        id: `auto-${recordId}`,
+        date: newEntry.date,
+        type: '수입',
+        category: salaryLabels[newEntry.type] || newEntry.type,
+        account: '내 여유자금 통장', // 정확한 통장 명칭 확인 필요
+        amount: newEntry.amount,
+        memo: `[월급연동] ${newEntry.memo}`
+      }, ...prev]);
+    } else {
+      setSalaries({ ...salaries, gamjaSalaryRecords: [newRecord, ...salaries.gamjaSalaryRecords] });
+      // 감자 지출 탭 '생활비 통장' 수입 연동
+      setGamjaTransactions((prev: any) => [{
+        id: `auto-gamja-${recordId}`,
+        date: newEntry.date,
+        type: '수입',
+        category: '월급',
+        account: '감자 생활비 통장', // 정확한 통장 명칭 확인 필요
+        amount: newEntry.amount,
+        memo: `[감자연동] ${newEntry.memo}`
+      }, ...prev]);
     }
-    return null;
+    setNewEntry({ ...newEntry, amount: 0, memo: '' });
   };
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="max-w-6xl mx-auto space-y-12 pb-20">
-      <EditableHeader 
-        title={tabName} 
-        setTitle={setTabName} 
-      />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-4 pb-10 px-2">
+      <EditableHeader title={tabName} setTitle={setTabName} />
+      
+      {/* 1. 슬림해진 상단 요약 박스 (애플 스타일) */}
+      <div className="bg-brand-card p-6 rounded-2xl border border-brand-border shadow-sm">
+        <p className="text-[10px] font-bold text-brand-text-sub uppercase tracking-widest text-center">Annual Household Income ({selectedYear})</p>
+        <h4 className="text-3xl font-black text-center mt-1">{formatCurrency(totalAnnual)}</h4>
+      </div>
 
-      {/* 1. TOP: Household Total Income Summary (Annual) */}
-      <div className="bg-brand-card p-10 rounded-brand border border-brand-border shadow-brand relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-10 opacity-5 text-brand-primary">
-           <ComparisonIcon size={120} />
+      {/* 2. 통합 월급 등록창 (홈 탭 디자인) */}
+      <div className="bg-brand-card p-5 rounded-2xl border border-brand-border space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-black text-brand-primary">월급/상여 등록</span>
+          <input type="date" value={newEntry.date} onChange={e => setNewEntry({...newEntry, date: e.target.value})} className="bg-brand-bg border border-brand-border rounded-lg px-2 py-1 text-[13px] font-bold outline-none" />
         </div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-           <div className="flex-1">
-              <p className="text-xs font-bold text-brand-text-sub uppercase mb-2 tracking-[0.2em]">{selectedYear}년 연간 가구 총수입</p>
-              <h4 className="text-5xl font-black text-brand-text-main tabular-nums mb-8">{formatCurrency(totalAnnual)}</h4>
-              
-              <div className="flex gap-10">
-                 <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold text-brand-primary uppercase tracking-widest">내 비중</span>
-                    <span className="text-xl font-black text-brand-text-main">{myAnnualRatio.toFixed(1)}%</span>
-                 </div>
-                 <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold text-brand-purple uppercase tracking-widest">감자 비중</span>
-                    <span className="text-xl font-black text-brand-text-main">{gamjaAnnualRatio.toFixed(1)}%</span>
-                 </div>
-              </div>
-           </div>
-           
-           <div className="flex-1 space-y-6 max-w-md">
-              <div className="space-y-2">
-                 <div className="flex justify-between text-[11px] font-black uppercase tracking-tight">
-                    <span className="text-brand-primary">나 (TOTAL)</span>
-                    <span className="text-brand-text-main">{formatCurrency(totalMyAnnual)}</span>
-                 </div>
-                 <div className="h-2 bg-brand-bg rounded-full overflow-hidden flex border border-brand-border">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${myAnnualRatio}%` }} className="h-full bg-brand-primary" />
-                 </div>
-              </div>
-              <div className="space-y-2">
-                 <div className="flex justify-between text-[11px] font-black uppercase tracking-tight">
-                    <span className="text-brand-purple">감자 (TOTAL)</span>
-                    <span className="text-brand-text-main">{formatCurrency(totalGamjaAnnual)}</span>
-                 </div>
-                 <div className="h-2 bg-brand-bg rounded-full overflow-hidden flex border border-brand-border">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${gamjaAnnualRatio}%` }} className="h-full bg-brand-purple" />
-                 </div>
-              </div>
-           </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-         {/* My Salary Section */}
-         <div className="space-y-6">
-            <div className="bg-brand-card p-6 border border-brand-border rounded-brand shadow-brand">
-               <h4 className="text-sm font-black mb-4 flex items-center gap-2 text-brand-primary uppercase tracking-widest">
-                  <Plus size={16} /> 내 월급 등록
-               </h4>
-               <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                     <div className="space-y-1.5 focus-within:text-brand-primary">
-                        <label className="text-[10px] font-black text-brand-text-sub uppercase ml-1 tracking-widest">날짜</label>
-                        <input type="date" value={newMySalary.date} onChange={e => setNewMySalary({...newMySalary, date: e.target.value})} className="form-input text-[11px] py-1.5 h-[42px] bg-brand-bg/50 border-brand-border focus:border-brand-primary" />
-                     </div>
-                     <div className="space-y-1.5 focus-within:text-brand-primary">
-                        <label className="text-[10px] font-black text-brand-text-sub uppercase ml-1 tracking-widest">월급 종류</label>
-                        <select value={newMySalary.type} onChange={e => setNewMySalary({...newMySalary, type: e.target.value as any})} className="form-select text-[11px] py-1.5 h-[42px] bg-brand-bg/50 border-brand-border focus:border-brand-primary">
-                           {SALARY_TYPES.map(t => <option key={t} value={t}>{salaryLabels[t] || t}</option>)}
-                        </select>
-                     </div>
-                  </div>
-                  <NumericInput label="금액" value={newMySalary.amount} onChange={(v: number) => setNewMySalary({...newMySalary, amount: v})} className="form-input text-sm font-black py-1.5 h-[42px] bg-brand-bg/50 border-brand-border focus:border-brand-primary" />
-                  <div className="space-y-1.5 focus-within:text-brand-primary">
-                     <label className="text-[10px] font-black text-brand-text-sub uppercase ml-1 tracking-widest">메모</label>
-                     <input type="text" value={newMySalary.memo} placeholder="MEMO" onChange={e => setNewMySalary({...newMySalary, memo: e.target.value})} className="form-input text-[11px] py-1.5 h-[42px] bg-brand-bg/50 border-brand-border focus:border-brand-primary" />
-                  </div>
-                  <button onClick={handleAddMySalary} className="w-full bg-brand-primary text-white font-black py-3 rounded-xl shadow-lg shadow-brand-primary/10 hover:brightness-105 active:scale-[0.98] transition-all text-xs mt-2 uppercase tracking-widest">저장하기</button>
-               </div>
-            </div>
-
-            <div className="bg-brand-card rounded-brand border border-brand-border overflow-hidden shadow-brand">
-               <div className="px-4 py-3 bg-brand-bg/50 border-b border-brand-border text-[9px] font-black uppercase tracking-[0.2em] text-brand-text-sub">내 월급 기록 (HISTORY)</div>
-               <div className="max-h-[300px] overflow-y-auto divide-y divide-brand-border custom-scrollbar">
-                  {salaries.mySalaryRecords.map((r: any) => (
-                     <div key={r.id} className="p-4 flex justify-between items-center group hover:bg-brand-bg/30 transition-colors">
-                        <div>
-                           <p className="text-[11px] font-black text-brand-text-main">{salaryLabels[r.type] || r.type} <span className="text-brand-text-sub font-normal ml-2">{r.date}</span></p>
-                           <p className="text-[10px] text-brand-text-sub mt-0.5 uppercase tracking-tighter">{r.memo || 'INCOME'}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                           <p className="text-xs font-black text-brand-primary tabular-nums">{formatNumber(r.amount)}원</p>
-                           <button onClick={() => deleteMySalary(r.id)} className="opacity-0 group-hover:opacity-100 text-brand-text-sub hover:text-brand-pink transition-all"><Trash2 size={14} /></button>
-                        </div>
-                     </div>
-                  ))}
-                  {salaries.mySalaryRecords.length === 0 && <div className="p-8 text-center text-[10px] text-brand-text-sub italic text-brand-text-sub/50 uppercase">NO RECORDS</div>}
-               </div>
-            </div>
-         </div>
-
-         {/* Gamja Salary Section */}
-         <div className="space-y-6">
-            <div className="bg-brand-card p-6 border border-brand-border rounded-brand shadow-brand">
-               <h4 className="text-sm font-black mb-4 flex items-center gap-2 text-brand-purple uppercase tracking-widest">
-                  <Plus size={16} /> 감자 월급 등록
-               </h4>
-               <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                     <div className="space-y-1.5 focus-within:text-brand-purple">
-                        <label className="text-[10px] font-black text-brand-text-sub uppercase ml-1 tracking-widest">날짜</label>
-                        <input type="date" value={newGamjaSalary.date} onChange={e => setNewGamjaSalary({...newGamjaSalary, date: e.target.value})} className="form-input text-[11px] py-1.5 h-[42px] bg-brand-bg/50 border-brand-border focus:border-brand-purple" />
-                     </div>
-                  </div>
-                  <NumericInput label="금액" value={newGamjaSalary.amount} onChange={(v: number) => setNewGamjaSalary({...newGamjaSalary, amount: v})} className="form-input text-sm font-black py-1.5 h-[42px] bg-brand-bg/50 border-brand-border focus:border-brand-purple" />
-                  <div className="space-y-1.5 focus-within:text-brand-purple">
-                     <label className="text-[10px] font-black text-brand-text-sub uppercase ml-1 tracking-widest">메모</label>
-                     <input type="text" value={newGamjaSalary.memo} placeholder="MEMO" onChange={e => setNewGamjaSalary({...newGamjaSalary, memo: e.target.value})} className="form-input text-[11px] py-1.5 h-[42px] bg-brand-bg/50 border-brand-border focus:border-brand-purple" />
-                  </div>
-                  <button onClick={handleAddGamjaSalary} className="w-full bg-brand-purple text-white font-black py-3 rounded-xl shadow-lg shadow-brand-purple/10 hover:brightness-105 active:scale-[0.98] transition-all text-xs mt-2 uppercase tracking-widest">저장하기</button>
-               </div>
-            </div>
-
-            <div className="bg-brand-card rounded-brand border border-brand-border overflow-hidden shadow-brand">
-               <div className="px-4 py-3 bg-brand-bg/50 border-b border-brand-border text-[9px] font-black uppercase tracking-[0.2em] text-brand-text-sub">감자 월급 기록 (HISTORY)</div>
-               <div className="max-h-[300px] overflow-y-auto divide-y divide-brand-border custom-scrollbar">
-                  {salaries.gamjaSalaryRecords.map((r: any) => (
-                     <div key={r.id} className="p-4 flex justify-between items-center group hover:bg-brand-bg/30 transition-colors">
-                        <div>
-                           <p className="text-[11px] font-black text-brand-text-main">{r.date} 월급</p>
-                           <p className="text-[10px] text-brand-text-sub mt-0.5 uppercase tracking-tighter">{r.memo || 'INCOME'}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                           <p className="text-xs font-black text-brand-purple tabular-nums">{formatNumber(r.amount)}원</p>
-                           <button onClick={() => deleteGamjaSalary(r.id)} className="opacity-0 group-hover:opacity-100 text-brand-text-sub hover:text-brand-pink transition-all"><Trash2 size={14} /></button>
-                        </div>
-                     </div>
-                  ))}
-                  {salaries.gamjaSalaryRecords.length === 0 && <div className="p-8 text-center text-[10px] text-brand-text-sub italic text-brand-text-sub/50 uppercase">NO RECORDS</div>}
-               </div>
-            </div>
-         </div>
-      </div>
-
-      {/* 3. BOTTOM: Monthly Salary Comparison Chart (Segmented vs Simple) */}
-      <div className="bg-brand-card p-10 rounded-brand border border-brand-border shadow-brand">
-         <div className="flex items-center justify-between mb-12">
-            <div className="flex items-center gap-3">
-               <ComparisonIcon size={24} className="text-brand-primary" />
-               <h4 className="text-lg font-black uppercase tracking-tight text-brand-text-main">월간 월급 비교 분석 (TRENDS)</h4>
-            </div>
-            <div className="flex gap-4">
-               <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-brand-primary" />
-                  <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">내 월급 현황</span>
-               </div>
-               <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-brand-purple" />
-                  <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">감자 월급 현황</span>
-               </div>
-            </div>
-         </div>
-         
-         <div className="h-[500px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-               <BarChart data={monthlySalaryData} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#25282b" />
-                  <XAxis 
-                     dataKey="name" 
-                     axisLine={false} 
-                     tickLine={false} 
-                     tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 'bold' }} 
-                     dy={15}
-                  />
-                  <YAxis hide />
-                  <Tooltip 
-                     content={<SalaryChartTooltip />}
-                     cursor={{ fill: 'rgba(255,255,255,0.02)' }}
-                  />
-                  <Legend 
-                     verticalAlign="bottom" 
-                     align="center" 
-                     iconType="circle" 
-                     wrapperStyle={{ paddingTop: '50px', fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }}
-                  />
-                  
-                  {/* My Salary Components (Stacked) */}
-                  {ME_COMPONENTS_FILTERED.map((label, idx) => (
-                     <Bar 
-                        key={label} 
-                        dataKey={label} 
-                        stackId="me" 
-                        fill={COLORS[idx % COLORS.length]} 
-                        barSize={28}
-                     />
-                  ))}
-                  
-                  {/* Gamja Salary (Single Bar) */}
-                  <Bar 
-                     dataKey="감자 월급" 
-                     fill="#b7a8e5" 
-                     barSize={28} 
-                     radius={[2, 2, 0, 0]}
-                  />
-               </BarChart>
-            </ResponsiveContainer>
-         </div>
-      </div>
-
-      {/* 4. Salary Label Settings Section */}
-      <div className="bg-brand-card p-10 rounded-brand border border-brand-border shadow-brand">
-         <div className="flex items-center gap-3 mb-8">
-            <Edit2 size={18} className="text-brand-primary" />
-            <h4 className="text-sm font-black uppercase tracking-[0.2em] text-brand-text-main">항목 명칭 설정 (CUSTOM LABELS)</h4>
-         </div>
-         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6">
-            {SALARY_TYPES.map((type) => (
-               <div key={type} className="space-y-3">
-                  <span className="text-[9px] font-black text-brand-text-sub px-2 uppercase tracking-widest">{type}</span>
-                  <input 
-                    type="text" 
-                    value={salaryLabels[type]} 
-                    onChange={(e) => setSalaryLabels({ ...salaryLabels, [type]: e.target.value })}
-                    className="form-input text-xs font-black py-2.5 bg-brand-bg/30 border-brand-border focus:border-brand-primary text-brand-text-main transition-all"
-                    placeholder="LABEL"
-                  />
-               </div>
+        {/* 대상 선택 롤링 칩 */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black text-brand-text-sub ml-1">입금 대상</label>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {(['나', '감자'] as const).map(t => (
+              <button key={t} onClick={() => setNewEntry({...newEntry, target: t})} className={`shrink-0 px-5 py-2 rounded-xl text-xs font-black border transition-all ${newEntry.target === t ? 'bg-brand-primary border-brand-primary text-white' : 'bg-brand-bg border-brand-border text-brand-text-sub'}`}>{t === '나' ? '내 월급' : '감자 월급'}</button>
             ))}
-         </div>
+          </div>
+        </div>
+
+        {/* 종류 선택 롤링 칩 (항목 설정 연동) */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black text-brand-text-sub ml-1">급여 종류</label>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+            {SALARY_TYPES.map(type => (
+              <button key={type} onClick={() => setNewEntry({...newEntry, type: type as SalaryType})} className={`shrink-0 px-4 py-2 rounded-xl text-xs font-black border transition-all ${newEntry.type === type ? 'bg-brand-mint border-brand-mint text-white' : 'bg-brand-bg border-brand-border text-brand-text-sub'}`}>{salaryLabels[type] || type}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
+          <NumericInput label="입금 금액" value={newEntry.amount} onChange={(v: number) => setNewEntry({...newEntry, amount: v})} className="form-input text-lg font-black py-2 h-[42px] bg-brand-bg/50 border-brand-border text-brand-primary" />
+          <input type="text" placeholder="메모 (자동 연동됩니다)" value={newEntry.memo} onChange={e => setNewEntry({...newEntry, memo: e.target.value})} className="form-input text-[13px] h-[42px] bg-brand-bg/50 border-brand-border rounded-xl px-3 outline-none" />
+        </div>
+
+        <button onClick={handleAddSalary} className="w-full bg-brand-primary text-white font-black py-3.5 rounded-xl text-sm shadow-lg shadow-brand-primary/10 active:scale-95 transition-all">등록 및 지출 탭 연동</button>
+      </div>
+
+      {/* 3. 명칭 설정 (활성화) */}
+      <div className="bg-brand-card p-4 rounded-2xl border border-brand-border grid grid-cols-4 gap-2">
+        {SALARY_TYPES.map(type => (
+          <div key={type} className="flex flex-col gap-1">
+            <span className="text-[8px] font-bold text-brand-text-sub px-1">{type}</span>
+            <input type="text" value={salaryLabels[type]} onChange={e => setSalaryLabels({...salaryLabels, [type]: e.target.value})} className="bg-brand-bg border border-brand-border rounded-lg text-[10px] p-1.5 font-bold outline-none focus:border-brand-primary" />
+          </div>
+        ))}
       </div>
     </motion.div>
   );
 }
+
+
+
 
 function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabName, setTabName }: any) {
   const myChartData = useMemo(() => {
