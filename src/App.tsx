@@ -2280,172 +2280,124 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
 
 
 function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabName, setTabName }: any) {
-  const myChartData = useMemo(() => {
-    const expenseTxs = transactions.filter((t: any) => t.type === '지출');
+  const selectedYear = new Date().getFullYear();
+
+  // 데이터 가공 로직
+  const processData = (txs: any[], salaryRecords: any[]) => {
+    const annualSalary = salaryRecords
+      .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
+      .reduce((s: number, r: any) => s + r.amount, 0);
+
+    const expenseTxs = txs.filter((t: any) => t.type === '지출' && new Date(t.date).getFullYear() === selectedYear);
+    const totalExpense = expenseTxs.reduce((sum, t) => sum + t.amount, 0);
+
     const categoryTotals: Record<string, number> = {};
     expenseTxs.forEach((t: any) => {
       categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
     });
-    return Object.entries(categoryTotals)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [transactions]);
 
-  const gamjaChartData = useMemo(() => {
-    const expenseTxs = gamjaTransactions.filter((t: any) => t.type === '지출');
-    const categoryTotals: Record<string, number> = {};
-    expenseTxs.forEach((t: any) => {
-      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-    });
-    return Object.entries(categoryTotals)
-      .map(([name, value]) => ({ name, value }))
+    const chartData = Object.entries(categoryTotals)
+      .map(([name, value]) => ({
+        name,
+        value: value as number,
+        percent: totalExpense > 0 ? ((value as number / totalExpense) * 100).toFixed(1) : '0'
+      }))
       .sort((a, b) => b.value - a.value);
-  }, [gamjaTransactions]);
 
-  const totalMySalary = salaries.mySalaryRecords.reduce((s: number, r: any) => s + r.amount, 0);
-  const totalGamjaSalary = salaries.gamjaSalaryRecords.reduce((s: number, r: any) => s + r.amount, 0);
-  const totalMyExpense = myChartData.reduce((sum, d) => sum + d.value, 0);
-  const totalGamjaExpense = gamjaChartData.reduce((sum, d) => sum + d.value, 0);
-  
-  const myRemaining = totalMySalary - totalMyExpense;
-  const gamjaRemaining = totalGamjaSalary - totalGamjaExpense;
+    return { annualSalary, totalExpense, remaining: annualSalary - totalExpense, chartData };
+  };
+
+  const myData = processData(transactions, salaries.mySalaryRecords);
+  const gamjaData = processData(gamjaTransactions, salaries.gamjaSalaryRecords);
+
+  const totalAnnualSalary = myData.annualSalary + gamjaData.annualSalary;
+  const totalAnnualExpense = myData.totalExpense + gamjaData.totalExpense;
+  const totalRemaining = myData.remaining + gamjaData.remaining;
 
   const COLORS = ['#94D5FF', '#AEE7E6', '#C9C7F5', '#A0E1F0', '#B7A8E5', '#B2D8D8', '#D1C4E9', '#BBDEFB', '#B2EBF2', '#E1BEE7'];
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-6xl mx-auto space-y-12 pb-20">
-      <EditableHeader title={tabName} setTitle={setTabName}  />
-      
-      {/* 내 지출 영역 */}
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           <SummarySmallCard label="내 월급 총 금액" value={totalMySalary} color="text-brand-primary" />
-           <SummarySmallCard label="내 지출 현황 총액" value={totalMyExpense} color="text-brand-pink" />
-           <SummarySmallCard label="내 남은 자산" value={myRemaining} color="text-brand-mint" />
-        </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-4 pb-20 px-1">
+      <EditableHeader title={tabName} setTitle={setTabName} />
 
-        <div className="bg-brand-card p-6 rounded-brand border border-brand-border shadow-brand">
-           <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl font-black text-brand-primary flex items-center gap-2 uppercase tracking-tight">
-                 <BarChart2 size={24} /> 내 지출 현황 (ITEMS)
-              </h3>
-           </div>
-           
-           {myChartData.length === 0 ? (
-             <div className="p-12 text-center text-brand-text-sub font-bold italic">데이터가 존재하지 않습니다.</div>
-           ) : (
-             <div className="h-[450px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                   <BarChart data={myChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#25282b" />
-                      <XAxis 
-                        dataKey="name" 
-                        fontSize={11} 
-                        fontWeight="black" 
-                        stroke="#9ca3af" 
-                        tickLine={false} 
-                        axisLine={false}
-                        interval={0}
-                        angle={-45}
-                        textAnchor="end"
-                      />
-                      <YAxis 
-                        tickFormatter={(value) => `${Math.round(value / 10000)}만`}
-                        fontSize={10}
-                        fontWeight="bold"
-                        stroke="#9ca3af"
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip 
-                         contentStyle={{ backgroundColor: '#1a1d22', border: '1px solid #25282b', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}
-                         itemStyle={{ fontSize: '11px', fontWeight: 'black' }}
-                         labelStyle={{ color: '#9ca3af', marginBottom: '8px', fontSize: '10px' }}
-                         formatter={(value: number) => `${formatNumber(value)}원`}
-                         cursor={{ fill: 'rgba(255,255,255,0.01)' }}
-                      />
-                      <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>
-                        {myChartData.map((entry, index) => (
-                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Bar>
-                   </BarChart>
-                </ResponsiveContainer>
-             </div>
-           )}
+      {/* 1. 가계 전체 요약 (연봉/지출/자산 합계) */}
+      <div className="bg-brand-card p-4 border border-brand-border rounded-2xl shadow-brand">
+        <p className="text-[10px] font-black text-brand-primary uppercase mb-2 tracking-widest text-center">{selectedYear}년 가계 총결산</p>
+        <div className="grid grid-cols-3 divide-x divide-brand-border text-center">
+          <div><p className="text-[9px] font-bold text-brand-text-sub mb-1">총 연봉</p><p className="text-xs font-black tabular-nums">{formatNumber(totalAnnualSalary)}</p></div>
+          <div><p className="text-[9px] font-bold text-brand-text-sub mb-1">총 지출</p><p className="text-xs font-black text-brand-pink tabular-nums">{formatNumber(totalAnnualExpense)}</p></div>
+          <div><p className="text-[9px] font-bold text-brand-text-sub mb-1">남은자산</p><p className="text-xs font-black text-brand-mint tabular-nums">{formatNumber(totalRemaining)}</p></div>
         </div>
       </div>
 
-      {/* 감자 지출 영역 */}
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           <SummarySmallCard label="감자 월급 총 금액" value={totalGamjaSalary} color="text-brand-purple" />
-           <SummarySmallCard label="감자 지출 현황 총액" value={totalGamjaExpense} color="text-brand-pink" />
-           <SummarySmallCard label="감자 남은 자산" value={gamjaRemaining} color="text-brand-mint" />
+      {/* 2. 개별 결산 섹션 (나 / 감자) */}
+      {[ { label: '나', data: myData, color: 'brand-primary' }, { label: '감자', data: gamjaData, color: 'brand-purple' } ].map((user) => (
+        <div key={user.label} className="space-y-3">
+          {/* 개인별 요약 박스 */}
+          <div className="bg-brand-card p-4 border border-brand-border rounded-2xl">
+            <div className="flex justify-between items-center mb-3">
+              <span className={`px-2 py-0.5 rounded-md bg-${user.color}/10 text-${user.color} text-[10px] font-black`}>{user.label} 결산</span>
+              <span className="text-[9px] font-bold text-brand-text-sub">{selectedYear}년 기준</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-brand-bg/50 p-2 rounded-xl text-center">
+                <p className="text-[8px] font-bold text-brand-text-sub mb-0.5">연봉</p>
+                <p className="text-[11px] font-black tabular-nums">{formatNumber(user.data.annualSalary)}</p>
+              </div>
+              <div className="bg-brand-bg/50 p-2 rounded-xl text-center">
+                <p className="text-[8px] font-bold text-brand-text-sub mb-0.5">총 지출</p>
+                <p className="text-[11px] font-black text-brand-pink tabular-nums">{formatNumber(user.data.totalExpense)}</p>
+              </div>
+              <div className="bg-brand-bg/50 p-2 rounded-xl text-center">
+                <p className="text-[8px] font-bold text-brand-text-sub mb-0.5">남은 자산</p>
+                <p className="text-[11px] font-black text-brand-mint tabular-nums">{formatNumber(user.data.remaining)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 지출 현황 그래프 (아이폰 최적화) */}
+          <div className="bg-brand-card p-4 border border-brand-border rounded-2xl">
+            <h4 className="text-[10px] font-black mb-4 flex justify-between items-center px-1">
+              <span>항목별 지출 (많이 쓴 순)</span>
+              <span className="text-brand-text-sub text-[9px]">단위: 원</span>
+            </h4>
+            
+            <div className="space-y-4">
+              {user.data.chartData.length > 0 ? (
+                user.data.chartData.map((item, idx) => (
+                  <div key={item.name} className="space-y-1">
+                    <div className="flex justify-between items-end">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-black">{item.name}</span>
+                        <span className="text-[8px] font-bold text-brand-text-sub opacity-70">{item.percent}%</span>
+                      </div>
+                      <span className="text-[9px] font-black tabular-nums">{formatNumber(item.value)}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-brand-bg rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }} 
+                        animate={{ width: `${item.percent}%` }} 
+                        transition={{ duration: 1, delay: idx * 0.05 }}
+                        className="h-full rounded-full" 
+                        style={{ backgroundColor: COLORS[idx % COLORS.length] }} 
+                      />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="py-10 text-center text-[10px] font-bold opacity-20 uppercase tracking-widest">데이터 없음</p>
+              )}
+            </div>
+          </div>
         </div>
-
-        <div className="bg-brand-card p-6 rounded-brand border border-brand-border shadow-brand">
-           <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl font-black text-brand-purple flex items-center gap-2 uppercase tracking-tight">
-                 <BarChart2 size={24} /> 감자 지출 현황 (ITEMS)
-              </h3>
-           </div>
-
-           {gamjaChartData.length === 0 ? (
-             <div className="p-12 text-center text-brand-text-sub font-bold italic">데이터가 존재하지 않습니다.</div>
-           ) : (
-             <div className="h-[450px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                   <BarChart data={gamjaChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#25282b" />
-                      <XAxis 
-                        dataKey="name" 
-                        fontSize={11} 
-                        fontWeight="black" 
-                        stroke="#9ca3af" 
-                        tickLine={false} 
-                        axisLine={false}
-                        interval={0}
-                        angle={-45}
-                        textAnchor="end"
-                      />
-                      <YAxis 
-                        tickFormatter={(value) => `${Math.round(value / 10000)}만`}
-                        fontSize={10}
-                        fontWeight="bold"
-                        stroke="#9ca3af"
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip 
-                         contentStyle={{ backgroundColor: '#1a1d22', border: '1px solid #25282b', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}
-                         itemStyle={{ fontSize: '11px', fontWeight: 'black' }}
-                         labelStyle={{ color: '#9ca3af', marginBottom: '8px', fontSize: '10px' }}
-                         formatter={(value: number) => `${formatNumber(value)}원`}
-                         cursor={{ fill: 'rgba(255,255,255,0.01)' }}
-                      />
-                      <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>
-                        {gamjaChartData.map((entry, index) => (
-                           <Cell key={`cell-gamja-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
-                        ))}
-                      </Bar>
-
-                
-                   </BarChart>
-                </ResponsiveContainer>
-
-                 <button onClick={() => exportCSV(transactions)}>
-  엑셀 다운로드
-</button>
-               
-             </div>
-           )}
-        </div>
+      ))}
+      
+      <div className="flex justify-center py-4">
+        <button onClick={() => exportCSV(transactions)} className="text-[10px] font-black text-brand-text-sub border-b border-brand-text-sub/30 pb-0.5 opacity-50">엑셀 데이터 다운로드</button>
       </div>
     </motion.div>
   );
 }
-
 
 
 function TransactionEditModal({ 
