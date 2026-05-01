@@ -483,28 +483,30 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 }
 
 // --- TAB VIEWS ---
-/*홈 탭 */
-function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
+
+// --- TAB VIEWS ---
+/* 홈 탭 */
+function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, setBalances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
   const mainAccounts = balances.filter((b: any) => b.category === '내 통장');
 
+  // 날짜 연동 키 (YYYY-MM)
+  const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
-const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-
-const homePensionTotal = balances
-  .filter((b: any) => b.category === '투자/연금' && !b.name.includes('적금'))
-  .reduce((sum: number, b: any) => {
-    return sum + (b.monthlyBalances?.[monthKey] ?? b.currentBalance ?? 0);
-  }, 0);
-  
+  // 생활비, 여유자금, 자동이체, 적금의 합계 계산
+  const quickSum = useMemo(() => {
+    const targetKeywords = ['생활비', '여유자금', '자동이체', '적금'];
+    return mainAccounts
+      .filter((acc: any) => targetKeywords.some(key => acc.name.includes(key)))
+      .reduce((sum: number, acc: any) => sum + (acc.monthlyBalances?.[monthKey] ?? acc.currentBalance ?? 0), 0);
+  }, [mainAccounts, monthKey]);
 
   const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(null);
 
-  const quickAccountKeywords = ['생활비', '여유자금', '자동이체'];
+  // 퀵 버튼 리스트 (적금 추가)
+  const quickAccountKeywords = ['생활비', '여유자금', '자동이체', '적금'];
 
   const quickAccounts = quickAccountKeywords
-    .map(keyword =>
-      mainAccounts.find((account: any) => account.name.includes(keyword))
-    )
+    .map(keyword => mainAccounts.find((account: any) => account.name.includes(keyword)))
     .filter(Boolean);
 
   const selectedDateTransactions = useMemo(() => {
@@ -514,6 +516,24 @@ const homePensionTotal = balances
 
   const addTransaction = (tx: any) => {
     setTransactions([tx, ...transactions]);
+  };
+
+  // 잔액 직접 수정 함수 (날짜 연동)
+  const updateMonthlyBalance = (id: string, value: number) => {
+    setBalances((prev: any[]) =>
+      prev.map((b: any) =>
+        b.id === id
+          ? {
+              ...b,
+              currentBalance: value,
+              monthlyBalances: {
+                ...(b.monthlyBalances || {}),
+                [monthKey]: value
+              }
+            }
+          : b
+      )
+    );
   };
 
   return (
@@ -527,9 +547,9 @@ const homePensionTotal = balances
         setTitle={setTabName}
       />
 
-      {/* 홈 상단 통장 입력 버튼 */}
+      {/* 홈 상단 퀵 입력 버튼 */}
       <div className="space-y-3">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {quickAccounts.map((account: any) => (
             <button
               key={account.id}
@@ -538,7 +558,7 @@ const homePensionTotal = balances
                   activeQuickAccount === account.name ? null : account.name
                 )
               }
-              className={`py-2.5 px-2 rounded-xl border font-black text-xs md:text-sm transition-all active:scale-95 ${
+              className={`py-2.5 px-1 rounded-xl border font-black text-[11px] md:text-sm transition-all active:scale-95 ${
                 activeQuickAccount === account.name
                   ? 'bg-brand-primary text-white border-brand-primary shadow-lg shadow-brand-primary/20'
                   : 'bg-brand-card text-brand-text-main border-brand-border hover:border-brand-primary'
@@ -561,39 +581,46 @@ const homePensionTotal = balances
         )}
       </div>
 
-      {/* 통장 잔액 한 박스 */}
+      {/* 내 통장 잔액 박스 (합계 금액 및 적금 항목 포함) */}
       <div className="bg-brand-card rounded-brand border border-brand-border shadow-brand overflow-hidden">
-        <div className="px-4 py-3 border-b border-brand-border bg-white/5">
+        <div className="px-4 py-3 border-b border-brand-border bg-white/5 flex justify-between items-center">
           <h3 className="text-sm font-black flex items-center gap-2">
             <Wallet size={16} className="text-brand-primary" />
             내 통장 잔액
           </h3>
+          <p className="text-sm font-black text-brand-primary">
+            합계: {formatCurrency(quickSum)}
+          </p>
         </div>
 
         <div className="divide-y divide-brand-border">
           {mainAccounts.map((b: any) => (
-            <div key={b.id} className="px-4 py-3 flex items-center justify-between gap-3">
-              <p className="text-xs md:text-sm font-black text-brand-text-sub shrink-0">
-                {b.name.replace('내 ', '').replace(' 통장', '')}
-              </p>
-
-              <div className="flex items-center justify-end gap-2 min-w-0">
-                <p className="text-base md:text-xl font-black tabular-nums">
-                  {formatCurrency(b.currentBalance)}
+            <div key={b.id} className="px-4 py-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-black text-brand-text-sub">
+                  {b.name.replace('내 ', '').replace(' 통장', '')}
                 </p>
-                <span className={`text-[10px] font-bold whitespace-nowrap ${
-                  b.currentBalance >= b.previousBalance ? 'text-brand-mint' : 'text-brand-pink'
-                }`}>
-                  {b.currentBalance >= b.previousBalance ? '+' : ''}
-                  {formatCurrency(b.currentBalance - b.previousBalance)}
-                </span>
+                <div className="flex items-center gap-2">
+                   <span className={`text-[10px] font-bold ${
+                    (b.monthlyBalances?.[monthKey] ?? b.currentBalance) >= b.previousBalance ? 'text-brand-mint' : 'text-brand-pink'
+                  }`}>
+                    { (b.monthlyBalances?.[monthKey] ?? b.currentBalance) >= b.previousBalance ? '+' : ''}
+                    {formatCurrency((b.monthlyBalances?.[monthKey] ?? b.currentBalance) - b.previousBalance)}
+                  </span>
+                </div>
               </div>
+              <NumericInput
+                value={b.monthlyBalances?.[monthKey] ?? b.currentBalance ?? 0}
+                onChange={(v: number) => updateMonthlyBalance(b.id, v)}
+                className="bg-transparent border-none p-0 text-xl font-black text-brand-text-main tabular-nums focus:ring-0 w-full text-right"
+                placeholder="0"
+              />
             </div>
           ))}
         </div>
       </div>
 
-      {/* 메인 대시보드 */}
+      {/* 메인 대시보드 (기존 카드들) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -625,18 +652,10 @@ const homePensionTotal = balances
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px] font-bold text-brand-text-sub">
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-brand-primary" />현금성
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-brand-mint" />투자/연금
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-brand-purple" />감자 자산
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-brand-yellow" />기타 자산
-                </span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-primary" />현금성</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-mint" />투자/연금</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-purple" />감자 자산</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-yellow" />기타 자산</span>
               </div>
             </div>
           </div>
@@ -657,13 +676,11 @@ const homePensionTotal = balances
                 <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1">전체 남은 대출 금액</p>
                 <p className="text-3xl font-black text-brand-pink">{formatCurrency(loanSummary.totalRemaining)}</p>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-brand-bg border border-brand-border rounded-xl">
                   <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">상환한 원금</p>
                   <p className="text-sm font-black text-brand-mint">{formatCurrency(loanSummary.totalPrincipalPaid)}</p>
                 </div>
-
                 <div className="p-4 bg-brand-bg border border-brand-border rounded-xl">
                   <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">상환한 이자</p>
                   <p className="text-sm font-black text-brand-pink">{formatCurrency(loanSummary.totalInterestPaid)}</p>
@@ -679,7 +696,6 @@ const homePensionTotal = balances
                 지출 캘린더
               </h3>
             </div>
-
             <Calendar
               currentDate={currentDate}
               transactions={transactions}
@@ -707,30 +723,20 @@ const homePensionTotal = balances
                   <div key={t.id} className="px-5 py-4 flex items-center justify-between hover:bg-white/5 transition-colors group">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        t.type === '수입'
-                          ? 'bg-brand-mint/10 text-brand-mint'
-                          : 'bg-brand-pink/10 text-brand-pink'
+                        t.type === '수입' ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'
                       }`}>
                         {t.type === '수입' ? <Plus size={14} /> : <Minus size={14} />}
                       </div>
-
                       <div>
                         <p className="text-sm font-bold">{t.memo || t.category}</p>
                         <p className="text-[10px] text-brand-text-sub">{t.account}</p>
                       </div>
                     </div>
-
                     <div className="flex items-center gap-3">
-                      <p className={`text-sm font-black ${
-                        t.type === '수입' ? 'text-brand-mint' : 'text-brand-text-main'
-                      }`}>
+                      <p className={`text-sm font-black ${t.type === '수입' ? 'text-brand-mint' : 'text-brand-text-main'}`}>
                         {t.type === '수입' ? '+' : '-'}{formatCurrency(t.amount)}
                       </p>
-
-                      <button
-                        onClick={() => deleteTransaction(t.id)}
-                        className="p-2 text-brand-text-sub hover:text-brand-pink transition-all"
-                      >
+                      <button onClick={() => deleteTransaction(t.id)} className="p-2 text-brand-text-sub hover:text-brand-pink transition-all">
                         <X size={15} />
                       </button>
                     </div>
@@ -749,6 +755,7 @@ const homePensionTotal = balances
     </motion.div>
   );
 }
+
 
 /*내 지출*/
 
