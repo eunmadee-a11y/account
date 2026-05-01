@@ -487,21 +487,20 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 }
 
 // --- TAB VIEWS ---
-
+/*홈 탭 */
 function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
   const mainAccounts = balances.filter((b: any) => b.category === '내 통장');
 
-const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(null);
+  const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(null);
 
-const quickAccountKeywords = ['생활비', '여유자금', '자동이체'];
+  const quickAccountKeywords = ['생활비', '여유자금', '자동이체'];
 
-const quickAccounts = quickAccountKeywords
-  .map(keyword =>
-    mainAccounts.find((account: any) => account.name.includes(keyword))
-  )
-  .filter(Boolean);
+  const quickAccounts = quickAccountKeywords
+    .map(keyword =>
+      mainAccounts.find((account: any) => account.name.includes(keyword))
+    )
+    .filter(Boolean);
 
-  
   const selectedDateTransactions = useMemo(() => {
     if (!selectedDateStr) return [];
     return transactions.filter((t: any) => t.date === selectedDateStr);
@@ -512,81 +511,86 @@ const quickAccounts = quickAccountKeywords
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      className="space-y-8"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
     >
-      <EditableHeader 
-        title={tabName} 
-        
-       
+      <EditableHeader
+        title={tabName}
+        setTitle={setTabName}
       />
-      {/* 1. Quick Entry Forms - Only for Gamja if preferred, but user said "Remove from My Expense section" */}
 
+      {/* 홈 상단 통장 입력 버튼 */}
+      <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          {quickAccounts.map((account: any) => (
+            <button
+              key={account.id}
+              onClick={() =>
+                setActiveQuickAccount(
+                  activeQuickAccount === account.name ? null : account.name
+                )
+              }
+              className={`py-2.5 px-2 rounded-xl border font-black text-xs md:text-sm transition-all active:scale-95 ${
+                activeQuickAccount === account.name
+                  ? 'bg-brand-primary text-white border-brand-primary shadow-lg shadow-brand-primary/20'
+                  : 'bg-brand-card text-brand-text-main border-brand-border hover:border-brand-primary'
+              }`}
+            >
+              {account.name.replace('내 ', '').replace(' 통장', '')}
+            </button>
+          ))}
+        </div>
 
-
-
-{/* 1. 홈 상단 통장 입력 버튼 */}
-<div className="space-y-4">
-  <div className="grid grid-cols-3 gap-3">
-    {quickAccounts.map((account: any) => (
-      <button
-        key={account.id}
-        onClick={() =>
-          setActiveQuickAccount(
-            activeQuickAccount === account.name ? null : account.name
-          )
-        }
-        className={`py-3 px-3 rounded-xl border font-black text-xs md:text-sm transition-all active:scale-95 ${
-          activeQuickAccount === account.name
-            ? 'bg-brand-primary text-white border-brand-primary shadow-lg shadow-brand-primary/20'
-            : 'bg-brand-card text-brand-text-main border-brand-border hover:border-brand-primary'
-        }`}
-      >
-        {account.name}
-      </button>
-    ))}
-  </div>
-
-  {activeQuickAccount && (
-    <div className="bg-brand-card p-6 border border-brand-border rounded-brand shadow-brand">
-      <QuickEntryBox
-        account={activeQuickAccount}
-        onAdd={addTransaction}
-        categories={categories}
-        setCategories={setCategories}
-      />
-    </div>
-  )}
-</div>
-
-
-
-      
-
-      {/* 2. Account Balances */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {mainAccounts.map((b: any) => (
-          <div key={b.id} className="group relative bg-brand-card p-6 rounded-brand shadow-brand border border-brand-border overflow-hidden hover:border-brand-primary/50 transition-all">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-              <Wallet size={48} />
-            </div>
-            <p className="text-xs font-bold text-brand-text-sub uppercase tracking-wider mb-2">{b.name} 잔액</p>
-            <h2 className="text-2xl font-black">{formatCurrency(b.currentBalance)}</h2>
-            <div className="mt-4 flex items-center gap-2">
-              <span className={`text-[10px] font-semibold ${b.currentBalance >= b.previousBalance ? 'text-brand-mint' : 'text-brand-pink'}`}>
-                전달 대비 {b.currentBalance >= b.previousBalance ? '+' : ''}{formatCurrency(b.currentBalance - b.previousBalance)}
-              </span>
-            </div>
+        {activeQuickAccount && (
+          <div className="bg-brand-card p-4 border border-brand-border rounded-brand shadow-brand">
+            <QuickEntryBox
+              account={activeQuickAccount}
+              onAdd={addTransaction}
+              categories={categories}
+              setCategories={setCategories}
+            />
           </div>
-        ))}
+        )}
       </div>
 
-      {/* 3. Main Dashboard Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* 통장 잔액 한 박스 */}
+      <div className="bg-brand-card rounded-brand border border-brand-border shadow-brand overflow-hidden">
+        <div className="px-4 py-3 border-b border-brand-border bg-white/5">
+          <h3 className="text-sm font-black flex items-center gap-2">
+            <Wallet size={16} className="text-brand-primary" />
+            내 통장 잔액
+          </h3>
+        </div>
+
+        <div className="divide-y divide-brand-border">
+          {mainAccounts.map((b: any) => (
+            <div key={b.id} className="px-4 py-3 flex items-center justify-between gap-3">
+              <p className="text-xs md:text-sm font-black text-brand-text-sub shrink-0">
+                {b.name.replace('내 ', '').replace(' 통장', '')}
+              </p>
+
+              <div className="flex items-center justify-end gap-2 min-w-0">
+                <p className="text-base md:text-xl font-black tabular-nums">
+                  {formatCurrency(b.currentBalance)}
+                </p>
+                <span className={`text-[10px] font-bold whitespace-nowrap ${
+                  b.currentBalance >= b.previousBalance ? 'text-brand-mint' : 'text-brand-pink'
+                }`}>
+                  {b.currentBalance >= b.previousBalance ? '+' : ''}
+                  {formatCurrency(b.currentBalance - b.previousBalance)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 메인 대시보드 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <SummarySmallCard label="이번 달 총수입" value={monthlySummary.income} color="text-brand-mint" />
             <SummarySmallCard label="이번 달 총지출" value={monthlySummary.expense} color="text-brand-pink" />
             <SummarySmallCard label="이번 달 저축" value={monthlySummary.savings} color="text-brand-yellow" />
@@ -600,118 +604,140 @@ const quickAccounts = quickAccountKeywords
                 자산 현황 요약
               </h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <p className="text-xs font-bold text-brand-text-sub uppercase">총 자산</p>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-bold text-brand-text-sub uppercase mb-2">총 자산</p>
                 <h4 className="text-3xl font-black">{formatCurrency(totalAssets.total)}</h4>
-                <div className="h-1.5 bg-brand-border rounded-full overflow-hidden flex">
-                  <div className="h-full bg-brand-primary" style={{ width: `${(totalAssets.cashLike / totalAssets.total) * 100}%` }} />
-                  <div className="h-full bg-brand-mint" style={{ width: `${(totalAssets.investment / totalAssets.total) * 100}%` }} />
-                  <div className="h-full bg-brand-purple" style={{ width: `${(totalAssets.husband / totalAssets.total) * 100}%` }} />
-                </div>
-                <div className="flex gap-4 text-[10px] font-bold text-brand-text-sub">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-primary" />현금성</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-mint" />투자/연금</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-purple" />남편</span>
-                </div>
               </div>
-              <div className="grid grid-cols-1 gap-2">
-                 <div className="p-4 bg-brand-bg rounded-xl border border-brand-border flex justify-between items-center">
-                    <span className="text-xs font-bold text-brand-text-sub">이번 달 대출 상환</span>
-                    <span className="font-black text-brand-purple">{formatCurrency(loanSummary.monthRepayment)}</span>
-                 </div>
-                 <div className="p-4 bg-brand-bg rounded-xl border border-brand-border flex justify-between items-center">
-                    <span className="text-xs font-bold text-brand-text-sub">누적 대출 상환</span>
-                    <span className="font-black text-brand-primary">{formatCurrency(loanSummary.globalPrincipal + loanSummary.globalInterest)}</span>
-                 </div>
+
+              <div className="h-1.5 bg-brand-border rounded-full overflow-hidden flex">
+                <div className="h-full bg-brand-primary" style={{ width: `${totalAssets.total ? (totalAssets.cashLike / totalAssets.total) * 100 : 0}%` }} />
+                <div className="h-full bg-brand-mint" style={{ width: `${totalAssets.total ? (totalAssets.investment / totalAssets.total) * 100 : 0}%` }} />
+                <div className="h-full bg-brand-purple" style={{ width: `${totalAssets.total ? (totalAssets.gamja / totalAssets.total) * 100 : 0}%` }} />
+                <div className="h-full bg-brand-yellow" style={{ width: `${totalAssets.total ? (totalAssets.others / totalAssets.total) * 100 : 0}%` }} />
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px] font-bold text-brand-text-sub">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-brand-primary" />현금성
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-brand-mint" />투자/연금
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-brand-purple" />감자 자산
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-brand-yellow" />기타 자산
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 오른쪽: 대출 요약 + 캘린더 + 날짜 내역 */}
+        <div className="space-y-6">
+          <div className="bg-brand-card p-6 border border-brand-border rounded-brand">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold flex items-center gap-2 text-brand-purple text-lg uppercase">
+                <LayoutDashboard size={20} />
+                대출 요약
+              </h3>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-5 bg-brand-bg border border-brand-border rounded-xl">
+                <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1">전체 남은 대출 금액</p>
+                <p className="text-3xl font-black text-brand-pink">{formatCurrency(loanSummary.totalRemaining)}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-brand-bg border border-brand-border rounded-xl">
+                  <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">상환한 원금</p>
+                  <p className="text-sm font-black text-brand-mint">{formatCurrency(loanSummary.totalPrincipalPaid)}</p>
+                </div>
+
+                <div className="p-4 bg-brand-bg border border-brand-border rounded-xl">
+                  <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">상환한 이자</p>
+                  <p className="text-sm font-black text-brand-pink">{formatCurrency(loanSummary.totalInterestPaid)}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Selected Date Details */}
-          <div className="bg-brand-card rounded-brand border border-brand-border overflow-hidden">
-             <div className="px-6 py-4 border-b border-brand-border flex justify-between items-center bg-white/5">
-                <h3 className="font-bold flex items-center gap-2">
-                   <CalendarIcon size={18} className="text-brand-primary" />
-                   {selectedDateStr ? `${selectedDateStr} 내역` : '날짜를 선택하세요'}
-                </h3>
-                {selectedDateStr && <span className="text-xs font-bold text-brand-text-sub">{selectedDateTransactions.length}건</span>}
-             </div>
-             <div className="divide-y divide-brand-border min-h-[100px]">
-               {selectedDateTransactions.length > 0 ? (
-                 selectedDateTransactions.map((t: any) => (
-                   <div key={t.id} className="px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors group">
-                     <div className="flex items-center gap-4">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${t.type === '수입' ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
-                           {t.type === '수입' ? <Plus size={14} /> : <Minus size={14} />}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold">{t.memo || t.category}</p>
-                          <p className="text-[10px] text-brand-text-sub">{t.account}</p>
-                        </div>
-                     </div>
-                     <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className={`text-sm font-black ${t.type === '수입' ? 'text-brand-mint' : 'text-brand-text-main'}`}>
-                             {t.type === '수입' ? '+' : '-'}{formatCurrency(t.amount)}
-                          </p>
-                        </div>
-                        <button onClick={() => deleteTransaction(t.id)} className="p-2 text-brand-text-sub hover:text-brand-pink opacity-0 group-hover:opacity-100 transition-all">
-                           <Trash2 size={16} />
-                        </button>
-                     </div>
-                   </div>
-                 ))
-               ) : (
-                 <div className="p-12 text-center text-brand-text-sub font-bold flex flex-col items-center gap-2">
-                    <CheckCircle2 size={32} className="opacity-20" />
-                    {selectedDateStr ? '내역 없음 (무지출)' : '캘린더에서 날짜를 클릭하세요'}
-                 </div>
-               )}
-             </div>
+          <div className="bg-brand-card p-6 border border-brand-border rounded-brand">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold flex items-center gap-2 text-brand-purple">
+                <CalendarIcon size={20} />
+                지출 캘린더
+              </h3>
+            </div>
+
+            <Calendar
+              currentDate={currentDate}
+              transactions={transactions}
+              selectedDateStr={selectedDateStr}
+              onDateClick={(d: string) => setSelectedDateStr(d)}
+            />
           </div>
-        </div>
 
-        {/* Home Right Column - Calendar */}
-        <div className="space-y-6">
-           <div className="bg-brand-card p-6 border border-brand-border h-fit">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold flex items-center gap-2 text-brand-purple text-lg uppercase">
-                  <LayoutDashboard size={20} />대출 요약
-                </h3>
-              </div>
-              <div className="space-y-4">
-                 <div className="p-5 bg-brand-bg border border-brand-border">
-                    <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1">전체 남은 대출 금액</p>
-                    <p className="text-3xl font-black text-brand-pink">{formatCurrency(loanSummary.totalRemaining)}</p>
-                 </div>
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-brand-bg border border-brand-border">
-                       <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">상환한 원금</p>
-                       <p className="text-sm font-black text-brand-mint">{formatCurrency(loanSummary.totalPrincipalPaid)}</p>
-                    </div>
-                    <div className="p-4 bg-brand-bg border border-brand-border">
-                       <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">상환한 이자</p>
-                       <p className="text-sm font-black text-brand-pink">{formatCurrency(loanSummary.totalInterestPaid)}</p>
-                    </div>
-                 </div>
-              </div>
-           </div>
+          <div className="bg-brand-card rounded-brand border border-brand-border overflow-hidden">
+            <div className="px-5 py-4 border-b border-brand-border flex justify-between items-center bg-white/5">
+              <h3 className="font-bold flex items-center gap-2 text-sm">
+                <CalendarIcon size={16} className="text-brand-primary" />
+                {selectedDateStr ? `${selectedDateStr} 내역` : '날짜를 선택하세요'}
+              </h3>
+              {selectedDateStr && (
+                <span className="text-xs font-bold text-brand-text-sub">
+                  {selectedDateTransactions.length}건
+                </span>
+              )}
+            </div>
 
-           <div className="bg-brand-card p-6 border border-brand-border">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold flex items-center gap-2 text-brand-purple">
-                  <CalendarIcon size={20} />
-                  지출 캘린더
-                </h3>
-              </div>
-              <Calendar 
-                currentDate={currentDate} 
-                transactions={transactions} 
-                selectedDateStr={selectedDateStr} 
-                onDateClick={(d: string) => setSelectedDateStr(d)} 
-              />
-           </div>
+            <div className="divide-y divide-brand-border min-h-[100px] max-h-[360px] overflow-y-auto custom-scrollbar">
+              {selectedDateTransactions.length > 0 ? (
+                selectedDateTransactions.map((t: any) => (
+                  <div key={t.id} className="px-5 py-4 flex items-center justify-between hover:bg-white/5 transition-colors group">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        t.type === '수입'
+                          ? 'bg-brand-mint/10 text-brand-mint'
+                          : 'bg-brand-pink/10 text-brand-pink'
+                      }`}>
+                        {t.type === '수입' ? <Plus size={14} /> : <Minus size={14} />}
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-bold">{t.memo || t.category}</p>
+                        <p className="text-[10px] text-brand-text-sub">{t.account}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <p className={`text-sm font-black ${
+                        t.type === '수입' ? 'text-brand-mint' : 'text-brand-text-main'
+                      }`}>
+                        {t.type === '수입' ? '+' : '-'}{formatCurrency(t.amount)}
+                      </p>
+
+                      <button
+                        onClick={() => deleteTransaction(t.id)}
+                        className="p-2 text-brand-text-sub hover:text-brand-pink transition-all"
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-10 text-center text-brand-text-sub font-bold flex flex-col items-center gap-2">
+                  <CheckCircle2 size={32} className="opacity-20" />
+                  {selectedDateStr ? '내역 없음 (무지출)' : '캘린더에서 날짜를 클릭하세요'}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>
