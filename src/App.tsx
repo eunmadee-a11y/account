@@ -563,7 +563,6 @@ const homePensionTotal = balances
         )}
       </div>
 
-
 {/* 통장 잔액 한 박스 */}
 <div className="bg-brand-card rounded-brand border border-brand-border shadow-brand overflow-hidden">
 
@@ -574,9 +573,18 @@ const homePensionTotal = balances
       내 통장 잔액
     </h3>
 
-    {/* ✅ 4개 통장 합계 */}
+    {/* ✅ 합계 (적금 포함) */}
     <p className="text-sm font-black tabular-nums">
-      {mainAccounts
+      {[
+        ...mainAccounts,
+        ...(mainAccounts.some((b: any) => b.name.includes('적금'))
+          ? []
+          : [{
+              id: 'saving-temp',
+              name: '내 적금',
+              currentBalance: 0
+            }])
+      ]
         .reduce((sum: number, b: any) => sum + (b.currentBalance || 0), 0)
         .toLocaleString()}
     </p>
@@ -584,28 +592,63 @@ const homePensionTotal = balances
 
   {/* 리스트 */}
   <div className="divide-y divide-brand-border">
-    {mainAccounts.map((b: any) => (
-      <div key={b.id} className="px-4 py-3 flex items-center justify-between">
+    {[
+      ...mainAccounts,
+      ...(mainAccounts.some((b: any) => b.name.includes('적금'))
+        ? []
+        : [{
+            id: 'saving-temp',
+            name: '내 적금',
+            category: '내 통장',
+            currentBalance: 0
+          }])
+    ].map((b: any) => {
 
-        {/* 통장명 */}
-        <p className="text-xs md:text-sm font-black text-brand-text-sub">
-          {b.name.replace('내 ', '').replace(' 통장', '')}
-        </p>
+      const isSaving = b.name.includes('적금');
 
-        {/* 금액 영역 */}
-        <div className="w-[55%] flex justify-end">
+      return (
+        <div key={b.id} className="px-4 py-3 flex items-center justify-between">
 
-          {/* ✅ 핵심: 정렬 맞추는 부분 */}
-          <p className="text-base md:text-xl font-black tabular-nums text-right w-full">
-            {(b.currentBalance || 0).toLocaleString()}
+          {/* 통장명 */}
+          <p className="text-xs md:text-sm font-black text-brand-text-sub">
+            {b.name.replace('내 ', '').replace(' 통장', '')}
           </p>
 
+          {/* 금액 영역 */}
+          <div className="w-[55%] flex justify-end">
+
+            {isSaving ? (
+              <NumericInput
+                value={b.currentBalance || 0}
+                onChange={(v: number) => {
+                  setBalances((prev: any[]) => {
+                    const exists = prev.some((x: any) => x.id === b.id);
+
+                    if (exists) {
+                      return prev.map((x: any) =>
+                        x.id === b.id ? { ...x, currentBalance: v } : x
+                      );
+                    }
+
+                    return [...prev, { ...b, currentBalance: v }];
+                  });
+                }}
+                className="text-right font-black tabular-nums w-full"
+                placeholder="0"
+              />
+            ) : (
+              <p className="text-base md:text-xl font-black tabular-nums text-right w-full">
+                {(b.currentBalance || 0).toLocaleString()}
+              </p>
+            )}
+
+          </div>
         </div>
-      </div>
-    ))}
+      );
+    })}
   </div>
 </div>
-      
+
 
       {/* 메인 대시보드 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
