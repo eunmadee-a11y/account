@@ -2024,6 +2024,8 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
     </motion.div>
   );
 }
+
+
 function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
   const [newTx, setNewTx] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -2032,12 +2034,6 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
     amount: 0,
     memo: ''
   });
-
-  const handleDayShift = (days: number) => {
-    const d = new Date(newTx.date);
-    d.setDate(d.getDate() + days);
-    setNewTx({ ...newTx, date: d.toISOString().split('T')[0] });
-  };
 
   const handleAdd = (type: TransactionType) => {
     if (newTx.amount <= 0) return;
@@ -2050,31 +2046,20 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
     setNewTx({ ...newTx, amount: 0, memo: '' });
   };
 
-  const editCategories = () => {
-    const type = newTx.type === '지출' ? 'expense' : 'income';
-    const current = categories[type].join(', ');
-    const result = prompt(`${newTx.type === '지출' ? '지출' : '수입'} 항목들을 수정하세요 (쉼표로 구분):`, current);
-    if (result !== null) {
-      const newList = result.split(',').map(s => s.trim()).filter(Boolean);
-      if (newList.length > 0) {
-        setCategories({ ...categories, [type]: newList });
-        if (!newList.includes(newTx.category)) {
-          setNewTx({ ...newTx, category: newList[0] });
-        }
-      }
-    }
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-2">
          <h4 className="text-sm font-black text-brand-primary flex items-center gap-2 uppercase tracking-widest">
             <Plus size={14} /> {account}
          </h4>
-        <div className="flex items-center gap-2 bg-brand-card border border-brand-border p-1 rounded-xl">
-           <button onClick={() => handleDayShift(-1)} className="p-2 hover:bg-brand-primary/20 rounded-lg transition-colors"><ChevronLeft size={14} /></button>
-           <span className="text-[10px] font-black px-2">{newTx.date}</span>
-           <button onClick={() => handleDayShift(1)} className="p-2 hover:bg-brand-primary/20 rounded-lg transition-colors"><ChevronRight size={14} /></button>
+        <div className="flex items-center bg-brand-card border border-brand-border rounded-xl px-2 py-1">
+           {/* 날짜 화살표 제거하고 감자탭처럼 캘린더(date) 입력창으로 변경 */}
+           <input
+             type="date"
+             value={newTx.date}
+             onChange={e => setNewTx({...newTx, date: e.target.value})}
+             className="bg-transparent border-none text-[16px] md:text-xs font-black outline-none focus:ring-0 text-brand-text-main h-[28px]"
+           />
         </div>
       </div>
       
@@ -2083,7 +2068,8 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
             <div className="flex items-center justify-between ml-1">
                <label className="text-[11px] font-black text-brand-text-sub uppercase">항목</label>
             </div>
-            <select value={newTx.category} onChange={e => setNewTx({...newTx, category: e.target.value})} className="form-select text-[11px] py-2 h-[42px]">
+            {/* iOS 줌 방지를 위해 모바일에서 text-[16px] 강제 적용 */}
+            <select value={newTx.category} onChange={e => setNewTx({...newTx, category: e.target.value})} className="form-select text-[16px] md:text-[11px] py-2 h-[42px]">
                {(newTx.type === '지출' ? categories.expense : categories.income).map((c: string) => <option key={c} value={c}>{c}</option>)}
             </select>
          </div>
@@ -2092,13 +2078,13 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
            value={newTx.amount} 
            placeholder="0" 
            onChange={(val: number) => setNewTx({...newTx, amount: val})} 
-           className="form-input text-sm font-black py-2 h-[42px]" 
+           className="form-input text-[16px] md:text-sm font-black py-2 h-[42px]" 
          />
       </div>
 
       <div className="space-y-1.5">
          <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">메모</label>
-         <input type="text" value={newTx.memo} placeholder="메모 입력" onChange={e => setNewTx({...newTx, memo: e.target.value})} className="form-input text-[11px] py-2 h-[42px]" />
+         <input type="text" value={newTx.memo} placeholder="메모 입력" onChange={e => setNewTx({...newTx, memo: e.target.value})} className="form-input text-[16px] md:text-[11px] py-2 h-[42px]" />
       </div>
 
       <div className="grid grid-cols-2 gap-4 mt-4">
@@ -2909,7 +2895,7 @@ function Calendar({ currentDate, transactions, selectedDateStr, onDateClick }: a
   return (
     <div className="grid grid-cols-7 gap-px bg-brand-border border border-brand-border rounded-brand overflow-hidden shadow-brand">
       {['일', '월', '화', '수', '목', '금', '토'].map(d => (
-        <div key={d} className="text-[10px] text-center font-black text-brand-text-sub py-3 bg-brand-card border-b border-brand-border uppercase tracking-widest">{d}</div>
+        <div key={d} className="text-[10px] text-center font-black text-brand-text-sub py-2 bg-brand-card border-b border-brand-border uppercase tracking-widest">{d}</div>
       ))}
       {days.map((day, idx) => {
         if (!day) return <div key={`empty-${idx}`} className="bg-brand-bg/20" />;
@@ -2925,19 +2911,21 @@ function Calendar({ currentDate, transactions, selectedDateStr, onDateClick }: a
           <button 
             key={idx} 
             onClick={() => onDateClick(dateStr)}
-            className={`min-h-[60px] md:min-h-[90px] p-2 border transition-all flex flex-col items-start gap-1 relative ${
+            /* p-2를 p-1로 줄이고, overflow-hidden을 주어 칸을 넘어가지 않게 함 */
+            className={`min-h-[55px] md:min-h-[80px] p-1 border transition-all flex flex-col items-start gap-1 relative overflow-hidden ${
               isSelected ? 'bg-brand-primary/10 border-brand-primary z-10' :
               isToday ? 'bg-white/5 border-white/20' : 
               'bg-brand-card border-transparent hover:bg-white/5'
             }`}
           >
-            <span className={`text-[10px] font-black ${isSelected ? 'text-brand-primary' : isToday ? 'text-white' : 'text-brand-text-sub/60'}`}>{day}</span>
-            <div className="flex flex-col gap-0.5 w-full">
+            <span className={`text-[10px] font-black pl-0.5 ${isSelected ? 'text-brand-primary' : isToday ? 'text-white' : 'text-brand-text-sub/60'}`}>{day}</span>
+            <div className="flex flex-col gap-0.5 w-full px-0.5">
+               {/* 금액 폰트를 8px로 살짝 줄이고, truncate를 추가해 넘칠 경우 ...으로 생략되게 처리 */}
                {dayIncome > 0 && (
-                 <span className="text-[8px] font-black text-brand-mint tabular-nums">+{formatNumber(dayIncome)}</span>
+                 <span className="text-[8px] md:text-[9px] font-black text-brand-mint tabular-nums truncate w-full text-left">+{formatNumber(dayIncome)}</span>
                )}
                {dayExpense > 0 && (
-                 <span className="text-[8px] font-black text-brand-pink tabular-nums">-{formatNumber(dayExpense)}</span>
+                 <span className="text-[8px] md:text-[9px] font-black text-brand-pink tabular-nums truncate w-full text-left">-{formatNumber(dayExpense)}</span>
                )}
             </div>
           </button>
