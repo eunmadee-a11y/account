@@ -653,6 +653,7 @@ const addTransaction = (tx: any) => {
   {activeQuickAccount && (
     <div className="bg-brand-card p-6 border border-brand-border rounded-brand shadow-brand">
       <QuickEntryBox
+        key={activeQuickAccount}
         account={activeQuickAccount}
         onAdd={addTransaction}
         categories={categories}
