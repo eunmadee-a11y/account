@@ -482,13 +482,7 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
   );
 }
 
-// --- TAB VIEWS ---
 
-// --- TAB VIEWS ---
-
-
-
-// --- TAB VIEWS ---
 
 // --- TAB VIEWS ---
 /* 홈 탭 */
@@ -539,7 +533,6 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
     localStorage.setItem('mySavingsValues', JSON.stringify(newTotalData));
   };
 
-  // 추가된 모든 적금 항목의 이번 달 총합계
   const totalSavingsAmount = savingsList.reduce((sum, s) => sum + (currentMonthSavings[s.id] || 0), 0);
 
   // --- 2. 생활비, 여유자금, 자동이체 + 적금(전체) 합계 ---
@@ -551,18 +544,16 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
     return accountsSum + totalSavingsAmount;
   }, [mainAccounts, totalSavingsAmount]);
 
-  // --- 3. 자산 현황 요약 커스텀 데이터 (감자 제외, 현금성=totalSum) ---
+  // --- 3. 자산 현황 요약 커스텀 데이터 (감자자산, 기타자산 모두 제외) ---
   const homePensionTotal = balances
     .filter((b: any) => b.category === '투자/연금')
     .reduce((sum: number, b: any) => {
-      // 투자/연금 탭의 합산 로직과 동일하게 연동
       return sum + (b.monthlyBalances?.[monthKey] ?? b.currentBalance ?? 0);
     }, 0);
 
   const customCashLike = totalSum;               // 현금성 = 내 통장 합계(적금 포함)
   const customInvestment = homePensionTotal;     // 투자/연금 = 연금/투자 탭 총액
-  const customOthers = totalAssets.others || 0;  // 기타 자산
-  const customTotalAsset = customCashLike + customInvestment + customOthers; // 감자 자산 제외 총합
+  const customTotalAsset = customCashLike + customInvestment; // 오직 현금과 투자만 합산
 
   const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(null);
 
@@ -712,26 +703,29 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
 
             <div className="space-y-4">
               <div>
-                <p className="text-xs font-bold text-brand-text-sub uppercase mb-2">총 자산 (감자 자산 제외)</p>
+                <p className="text-xs font-bold text-brand-text-sub uppercase mb-2">총 자산 (현금 + 투자)</p>
                 <h4 className="text-3xl font-black">{formatCurrency(customTotalAsset)}</h4>
               </div>
 
               <div className="h-1.5 bg-brand-border rounded-full overflow-hidden flex">
                 <div className="h-full bg-brand-primary" style={{ width: `${customTotalAsset ? (customCashLike / customTotalAsset) * 100 : 0}%` }} />
                 <div className="h-full bg-brand-mint" style={{ width: `${customTotalAsset ? (customInvestment / customTotalAsset) * 100 : 0}%` }} />
-                <div className="h-full bg-brand-yellow" style={{ width: `${customTotalAsset ? (customOthers / customTotalAsset) * 100 : 0}%` }} />
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-[10px] font-bold text-brand-text-sub">
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-brand-primary" />현금성
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-brand-mint" />투자/연금
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-brand-yellow" />기타 자산
-                </span>
+              {/* 금액 텍스트가 추가된 인덱스 부분 */}
+              <div className="grid grid-cols-2 gap-4 text-[10px] font-bold text-brand-text-sub">
+                <div className="flex flex-col gap-1">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-brand-primary" />현금성
+                  </span>
+                  <span className="pl-3 tabular-nums">{formatCurrency(customCashLike)}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-brand-mint" />투자/연금
+                  </span>
+                  <span className="pl-3 tabular-nums">{formatCurrency(customInvestment)}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -844,6 +838,7 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
     </motion.div>
   );
 }
+
 
 /*내 지출*/
 
