@@ -2123,19 +2123,17 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
   const [isLabelSettingsOpen, setIsLabelSettingsOpen] = useState(false);
   const selectedYear = currentDate.getFullYear();
 
-  // 연봉 상세 합계 계산
+  // 연봉 상세 합계 및 비율 계산
   const totalMyAnnual = useMemo(() => salaries.mySalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0), [salaries, selectedYear]);
   const totalGamjaAnnual = useMemo(() => salaries.gamjaSalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0), [salaries, selectedYear]);
   const totalAnnual = totalMyAnnual + totalGamjaAnnual;
-
-  // 비율 계산 (게이지 바용)
   const myRatio = totalAnnual > 0 ? (totalMyAnnual / totalAnnual) * 100 : 0;
   const gamjaRatio = totalAnnual > 0 ? (totalGamjaAnnual / totalAnnual) * 100 : 0;
 
-  // 12개월 데이터 구성 (0부터 11까지 반복하여 1월부터 12월까지 생성)
+  // 1월(index 0)부터 12월(index 11)까지 데이터 유실 없이 생성
   const monthlySalaryData = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
-      const monthNum = i + 1; // 1월부터 시작
+      const monthNum = i + 1;
       const entry: any = { name: `${monthNum}`, details: [] };
       
       let meMonthTotal = 0;
@@ -2212,14 +2210,12 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-4 pb-20 px-2">
       <EditableHeader title={tabName} setTitle={setTabName} />
       
-      {/* 상단 연봉 요약 및 가로 게이지 바 추가 */}
+      {/* 1. 상단 연봉 요약 및 게이지 바 */}
       <div className="bg-brand-card p-5 rounded-2xl border border-brand-border shadow-sm space-y-4">
         <div className="flex justify-between items-center">
           <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">{selectedYear} 가구 총수입</span>
           <span className="text-xl font-black tabular-nums">{formatCurrency(totalAnnual)}</span>
         </div>
-        
-        {/* 연봉 비율 게이지 바 */}
         <div className="space-y-2">
           <div className="h-2.5 w-full bg-brand-bg rounded-full overflow-hidden flex border border-brand-border/30">
             <motion.div initial={{ width: 0 }} animate={{ width: `${myRatio}%` }} className="h-full bg-brand-primary" />
@@ -2238,13 +2234,12 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
         </div>
       </div>
 
-      {/* 등록창 (감자 지출 디자인 적용) */}
+      {/* 2. 급여 입력창 */}
       <div className="bg-brand-card p-5 rounded-3xl border border-brand-border space-y-5 shadow-brand">
         <div className="flex items-center justify-between">
           <h4 className="text-xs font-black text-brand-primary uppercase tracking-widest flex items-center gap-2"><Plus size={14} /> 급여 입력</h4>
           <input type="date" value={newEntry.date} onChange={e => setNewEntry({...newEntry, date: e.target.value})} className="bg-brand-bg border border-brand-border rounded-xl px-2 py-1 text-[14px] font-bold outline-none text-brand-text-main" />
         </div>
-
         <div className="space-y-1.5">
           <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">대상 선택</label>
           <div className="flex bg-brand-bg rounded-lg p-0.5 border border-brand-border">
@@ -2252,7 +2247,6 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
             <button onClick={() => setNewEntry({...newEntry, target: '감자'})} className={`flex-1 py-1.5 rounded-md text-[14px] font-black transition-colors ${newEntry.target === '감자' ? 'bg-brand-purple text-white' : 'text-brand-text-sub'}`}>감자 월급</button>
           </div>
         </div>
-
         <div className="space-y-1.5 pt-1">
           <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">항목 선택 (롤링)</label>
           <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-hide snap-x">
@@ -2261,7 +2255,6 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
             ))}
           </div>
         </div>
-
         <div className="space-y-3">
           <div className="p-3 bg-brand-primary/5 border border-brand-primary/30 rounded-xl">
             <NumericInput label="금액 입력" value={newEntry.amount} onChange={(v: number) => setNewEntry({...newEntry, amount: v})} className="form-input text-[18px] md:text-lg font-black py-1 h-[42px] bg-transparent text-brand-primary" />
@@ -2278,12 +2271,12 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
         <button onClick={handleAddSalary} className="w-full bg-brand-primary text-white font-black py-4 rounded-xl text-[15px] shadow-lg shadow-brand-primary/20 active:scale-95 transition-all">등록 및 지출 탭 연동</button>
       </div>
 
-      {/* 1월 포함 12개월 그래프 및 상세 툴팁 */}
+      {/* 3. 급여 비교 그래프 (1월 추가 및 너비 최적화) */}
       <div className="bg-brand-card p-4 rounded-brand border border-brand-border shadow-brand overflow-hidden">
-        <h4 className="text-[11px] font-black uppercase mb-4 flex items-center gap-2 text-brand-text-sub px-1"><BarChart2 size={14} className="text-brand-primary" /> 1월-12월 급여 비교</h4>
-        <div className="h-[250px] w-full -mx-2">
+        <h4 className="text-[11px] font-black uppercase mb-4 flex items-center gap-2 text-brand-text-sub px-1"><BarChart2 size={14} className="text-brand-primary" /> 1-12월 급여 비교</h4>
+        <div className="h-[250px] w-full"> {/* 마진 제거 및 컨테이너 너비 확보 */}
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlySalaryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <BarChart data={monthlySalaryData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#25282b" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11, fontWeight: 'bold' }} />
               <YAxis hide />
@@ -2295,15 +2288,10 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
         </div>
       </div>
 
-      {/* 설정 아코디언 */}
+      {/* 4. 설정 아코디언 */}
       <div className="bg-brand-card border border-brand-border rounded-2xl overflow-hidden shadow-sm">
-        <button 
-          onClick={() => setIsLabelSettingsOpen(!isLabelSettingsOpen)}
-          className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/5 transition-all"
-        >
-          <span className="text-[11px] font-black text-brand-text-sub uppercase tracking-widest flex items-center gap-2">
-            <Edit2 size={14} /> 항목 명칭 설정
-          </span>
+        <button onClick={() => setIsLabelSettingsOpen(!isLabelSettingsOpen)} className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/5 transition-all">
+          <span className="text-[11px] font-black text-brand-text-sub uppercase tracking-widest flex items-center gap-2"><Edit2 size={14} /> 항목 명칭 설정</span>
           <ChevronRight size={18} className={`text-brand-text-sub transition-transform ${isLabelSettingsOpen ? 'rotate-90' : ''}`} />
         </button>
         <AnimatePresence>
@@ -2324,7 +2312,6 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
     </motion.div>
   );
 }
-
 
 
 function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabName, setTabName }: any) {
