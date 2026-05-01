@@ -380,24 +380,70 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
       {/* Navigation Rail / Header */}
 
 
-{/* iOS Style Simple Header */}
-<header className="sticky top-0 bg-white/80 backdrop-blur-xl z-50 border-b border-gray-100 px-6 pt-12 pb-4">
-  <div className="flex flex-col items-center gap-3">
-    <div className="w-10 h-10 rounded-2xl bg-sky-400 flex items-center justify-center shadow-lg shadow-sky-100">
-      <Wallet size={22} className="text-white" />
-    </div>
-    <span className="text-[10px] font-black tracking-[0.2em] text-gray-400 uppercase">ACCOUNT</span>
+{/* Navigation Rail / Header */}
+<header className="sticky top-0 bg-brand-bg/80 backdrop-blur-md z-50 border-b border-brand-border">
+  <div className="px-4 md:px-6 py-3 flex flex-col gap-3">
+    
+    {/* 1줄: 제목 / 월 이동 */}
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/10 shrink-0">
+          <Activity size={18} className="text-white" />
+        </div>
+        <span className="text-sm md:text-lg font-blod tracking-tight text-brand-text-main truncate">
+          Account
+        </span>
+      </div>
 
-    {/* 월 선택 UI */}
-    <div className="flex items-center gap-6 bg-gray-100/80 px-4 py-1.5 rounded-full mt-2">
-      <button onClick={() => changeMonth(-1)} className="text-gray-400"><ChevronLeft size={18} /></button>
-      <span className="text-sm font-black min-w-[80px] text-center">
-        {currentDate.getFullYear()}. {currentDate.getMonth() + 1}
-      </span>
-      <button onClick={() => changeMonth(1)} className="text-gray-400"><ChevronRight size={18} /></button>
+      <div className="flex items-center gap-2 bg-brand-card/50 border border-brand-border px-2.5 py-1.5 rounded-full shrink-0">
+        <button
+          onClick={() => changeMonth(-1)}
+          className="p-1 hover:text-brand-primary transition-colors"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <span className="text-xs md:text-sm font-bold min-w-[88px] md:min-w-[100px] text-center">
+          {currentMonthDisplay}
+        </span>
+        <button
+          onClick={() => changeMonth(1)}
+          className="p-1 hover:text-brand-primary transition-colors"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+
+    {/* 2줄: 모바일 가로 롤링 메뉴 */}
+    <div className="relative -mx-4 md:mx-0">
+      <nav className="flex gap-2 overflow-x-auto px-4 md:px-0 scrollbar-hide snap-x snap-mandatory">
+        <div className="shrink-0 snap-start">
+          <TabButton name="홈" icon={Home} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="내 지출" icon={CreditCard} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="연금/투자 관리" icon={TrendingUp} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="감자 지출" icon={User} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="월급 비교" icon={ComparisonIcon} />
+        </div>
+        
+        <div className="shrink-0 snap-start">
+          <TabButton name="대출 관리" icon={LoanIcon} />
+        </div>
+        <div className="shrink-0 snap-start">
+          <TabButton name="1년 결산" icon={BarChart2} />
+        </div>
+      </nav>
     </div>
   </div>
 </header>
+
       
 
       {/* Main Content Area */}
