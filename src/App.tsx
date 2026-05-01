@@ -2108,7 +2108,6 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
   );
 }
 
-
 function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, setSalaryLabels, currentDate, transactions, setTransactions, gamjaTransactions, setGamjaTransactions, balances, setBalances }: any) {
   const [newEntry, setNewEntry] = useState({
     target: '나' as '나' | '감자',
@@ -2118,13 +2117,38 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
     memo: ''
   });
 
+  const [isMemoActive, setIsMemoActive] = useState(false);
   const selectedYear = currentDate.getFullYear();
-  const totalAnnual = useMemo(() => {
-    const my = salaries.mySalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0);
-    const gamja = salaries.gamjaSalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0);
-    return my + gamja;
-  }, [salaries, selectedYear]);
 
+  // 상단 요약 데이터 계산
+  const totalMyAnnual = useMemo(() => salaries.mySalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0), [salaries, selectedYear]);
+  const totalGamjaAnnual = useMemo(() => salaries.gamjaSalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0), [salaries, selectedYear]);
+  const totalAnnual = totalMyAnnual + totalGamjaAnnual;
+
+  // 그래프용 월별 데이터 가공 (기존 로직 유지)
+  const monthlySalaryData = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const month = i + 1;
+      const entry: any = { name: `${month}월` };
+      let meTotal = 0;
+      SALARY_TYPES.forEach(t => {
+        const sum = salaries.mySalaryRecords.filter((r: any) => {
+          const d = new Date(r.date);
+          return d.getMonth() === i && d.getFullYear() === selectedYear && r.type === t;
+        }).reduce((s: number, r: any) => s + r.amount, 0);
+        entry[salaryLabels[t] || t] = sum;
+        meTotal += sum;
+      });
+      entry['나'] = meTotal;
+      entry['감자'] = salaries.gamjaSalaryRecords.filter((r: any) => {
+        const d = new Date(r.date);
+        return d.getMonth() === i && d.getFullYear() === selectedYear;
+      }).reduce((s: number, r: any) => s + r.amount, 0);
+      return entry;
+    });
+  }, [salaries, salaryLabels, selectedYear]);
+
+  // 등록 및 자동 연동 핸들러
   const handleAddSalary = () => {
     if (newEntry.amount <= 0) return;
     const recordId = Math.random().toString(36).substr(2, 9);
@@ -2132,58 +2156,107 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
 
     if (newEntry.target === '나') {
       setSalaries({ ...salaries, mySalaryRecords: [record, ...salaries.mySalaryRecords] });
-      // 내 지출 탭 연동 (여유자금 통장 수입 추가 및 잔액 반영)
-      const autoTx = { id: `auto-${recordId}`, date: newEntry.date, type: '수입' as TransactionType, category: salaryLabels[newEntry.type] || newEntry.type, account: '내 여유자금 통장', amount: newEntry.amount, memo: `[급여] ${newEntry.memo}` };
+      const autoTx = { id: `salary-${recordId}`, date: newEntry.date, type: '수입' as TransactionType, category: salaryLabels[newEntry.type] || newEntry.type, account: '내 여유자금 통장', amount: newEntry.amount, memo: `[급여연동] ${newEntry.memo}` };
       setTransactions([autoTx, ...transactions]);
       setBalances((prev: any) => prev.map((b: any) => b.name === '내 여유자금 통장' ? { ...b, currentBalance: b.currentBalance + newEntry.amount } : b));
     } else {
       setSalaries({ ...salaries, gamjaSalaryRecords: [record, ...salaries.gamjaSalaryRecords] });
-      // 감자 지출 탭 연동 (생활비 통장 수입 추가 및 잔액 반영)
-      const autoGamjaTx = { id: `auto-g-${recordId}`, date: newEntry.date, type: '수입' as TransactionType, category: '월급', account: '감자 생활비 통장', amount: newEntry.amount, memo: `[급여] ${newEntry.memo}` };
+      const autoGamjaTx = { id: `salary-g-${recordId}`, date: newEntry.date, type: '수입' as TransactionType, category: '월급', account: '감자 생활비 통장', amount: newEntry.amount, memo: `[급여연동] ${newEntry.memo}` };
       setGamjaTransactions([autoGamjaTx, ...gamjaTransactions]);
       setBalances((prev: any) => prev.map((b: any) => b.name === '감자 생활비 통장' ? { ...b, currentBalance: b.currentBalance + newEntry.amount } : b));
     }
     setNewEntry({ ...newEntry, amount: 0, memo: '' });
+    setIsMemoActive(false);
   };
+
+  const COLORS = ['#94D5FF', '#AEE7E6', '#C9C7F5', '#A0E1F0', '#B7A8E5', '#B2D8D8', '#D1C4E9'];
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-4 pb-20 px-2">
-      <div className="bg-brand-card py-4 px-6 rounded-2xl border border-brand-border flex justify-between items-center shadow-sm">
-        <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">{selectedYear} 가구 총수입</span>
-        <span className="text-xl font-black tabular-nums">{formatCurrency(totalAnnual)}</span>
+      <EditableHeader title={tabName} setTitle={setTabName} />
+      
+      {/* 1. 상단 요약 (슬림 박스) */}
+      <div className="bg-brand-card p-5 rounded-2xl border border-brand-border shadow-sm flex justify-between items-center">
+        <span className="text-[11px] font-black text-brand-text-sub uppercase tracking-widest">{selectedYear} 가구 총수입</span>
+        <span className="text-2xl font-black tabular-nums">{formatCurrency(totalAnnual)}</span>
       </div>
 
-      <div className="bg-brand-card p-5 rounded-3xl border border-brand-border space-y-5">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-          {(['나', '감자'] as const).map(t => (
-            <button key={t} onClick={() => setNewEntry({...newEntry, target: t})} className={`shrink-0 px-6 py-2 rounded-xl text-xs font-black border ${newEntry.target === t ? 'bg-brand-primary border-brand-primary text-white' : 'bg-brand-bg border-brand-border text-brand-text-sub'}`}>{t === '나' ? '내 급여' : '감자 급여'}</button>
-          ))}
+      {/* 2. 월급 등록 (감자 지출 디자인 적용) */}
+      <div className="bg-brand-card p-5 rounded-3xl border border-brand-border space-y-5 shadow-brand">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-black text-brand-primary uppercase tracking-widest flex items-center gap-2"><Plus size={14} /> 급여 입력</h4>
+          <input type="date" value={newEntry.date} onChange={e => setNewEntry({...newEntry, date: e.target.value})} className="bg-brand-bg border border-brand-border rounded-xl px-2 py-1 text-[14px] font-bold outline-none text-brand-text-main" />
         </div>
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-          {SALARY_TYPES.map(type => (
-            <button key={type} onClick={() => setNewEntry({...newEntry, type: type as SalaryType})} className={`shrink-0 px-4 py-2 rounded-xl text-[11px] font-black border ${newEntry.type === type ? 'bg-brand-mint border-brand-mint text-white' : 'bg-brand-bg border-brand-border text-brand-text-sub'}`}>{salaryLabels[type] || type}</button>
-          ))}
-        </div>
-        <div className="space-y-3">
-          <NumericInput label="금액" value={newEntry.amount} onChange={(v: number) => setNewEntry({...newEntry, amount: v})} className="form-input text-lg font-black py-2 bg-transparent text-brand-primary border-b border-brand-border" />
-          <input type="text" placeholder="메모" value={newEntry.memo} onChange={e => setNewEntry({...newEntry, memo: e.target.value})} className="form-input text-[16px] h-[44px] bg-transparent border-b border-brand-border w-full outline-none" />
-          <input type="date" value={newEntry.date} onChange={e => setNewEntry({...newEntry, date: e.target.value})} className="form-input text-xs h-[40px] bg-brand-bg rounded-lg px-3" />
-        </div>
-        <button onClick={handleAddSalary} className="w-full bg-brand-primary text-white font-black py-4 rounded-2xl text-sm active:scale-95 transition-all">등록 및 지출탭 연동</button>
-      </div>
 
-      <div className="bg-brand-card p-4 rounded-2xl border border-brand-border grid grid-cols-2 gap-3">
-        {SALARY_TYPES.map(type => (
-          <div key={type} className="flex flex-col gap-1">
-            <span className="text-[8px] font-bold text-brand-text-sub px-1">{type}</span>
-            <input type="text" value={salaryLabels[type]} onChange={e => setSalaryLabels({...salaryLabels, [type]: e.target.value})} className="w-full bg-brand-bg border border-brand-border rounded-lg text-[11px] p-2 font-bold outline-none" />
+        {/* 나/감자 선택 버튼 (감자지출 수입/지출 버튼과 폭 동일하게) */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">대상 선택</label>
+          <div className="flex bg-brand-bg rounded-lg p-0.5 border border-brand-border">
+            <button onClick={() => setNewEntry({...newEntry, target: '나'})} className={`flex-1 py-1.5 rounded-md text-[14px] font-black transition-colors ${newEntry.target === '나' ? 'bg-brand-primary text-white' : 'text-brand-text-sub'}`}>내 월급</button>
+            <button onClick={() => setNewEntry({...newEntry, target: '감자'})} className={`flex-1 py-1.5 rounded-md text-[14px] font-black transition-colors ${newEntry.target === '감자' ? 'bg-brand-purple text-white' : 'text-brand-text-sub'}`}>감자 월급</button>
           </div>
-        ))}
+        </div>
+
+        {/* 급여 종류 선택 (가로 롤링) */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">항목 선택</label>
+          <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-hide snap-x">
+            {SALARY_TYPES.map(type => (
+              <button key={type} onClick={() => setNewEntry({...newEntry, type: type as SalaryType})} className={`shrink-0 snap-start px-4 py-2 rounded-xl text-[13px] font-black transition-all ${newEntry.type === type ? 'bg-brand-mint/20 text-brand-mint border border-brand-mint/50' : 'bg-brand-bg text-brand-text-sub border border-brand-border'}`}>{salaryLabels[type] || type}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* 금액 및 메모 (강조된 금액창 + 메모 활성화) */}
+        <div className="space-y-3">
+          <div className="p-3 bg-brand-primary/5 border border-brand-primary/30 rounded-xl">
+            <NumericInput label="입금 금액" value={newEntry.amount} onChange={(v: number) => setNewEntry({...newEntry, amount: v})} className="form-input text-[18px] md:text-lg font-black py-1 h-[42px] bg-transparent text-brand-primary" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">메모</label>
+            {!isMemoActive ? (
+              <button onClick={() => setIsMemoActive(true)} className="w-full text-left px-4 py-3 bg-brand-bg/50 border border-brand-border rounded-xl text-brand-text-sub text-[14px] font-medium italic">클릭하여 메모 입력...</button>
+            ) : (
+              <input autoFocus type="text" value={newEntry.memo} placeholder="메모를 입력하세요" onChange={e => setNewEntry({...newEntry, memo: e.target.value})} onBlur={() => newEntry.memo === '' && setIsMemoActive(false)} className="form-input text-[16px] h-[44px] bg-brand-bg/50 border-brand-border rounded-xl px-4 outline-none focus:border-brand-primary" />
+            )}
+          </div>
+        </div>
+
+        <button onClick={handleAddSalary} className="w-full bg-brand-primary text-white font-black py-4 rounded-xl text-[15px] shadow-lg shadow-brand-primary/20 active:scale-95 transition-all">등록 및 지출 탭 연동</button>
+      </div>
+
+      {/* 3. 기존 비교 그래프 (형식 유지) */}
+      <div className="bg-brand-card p-6 rounded-brand border border-brand-border shadow-brand">
+        <h4 className="text-sm font-black uppercase mb-6 flex items-center gap-2 text-brand-text-main"><BarChart2 size={16} className="text-brand-primary" /> 월별 급여 비교 그래프</h4>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={monthlySalaryData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#25282b" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 'bold' }} />
+              <YAxis hide />
+              <Tooltip cursor={{ fill: 'rgba(255,255,255,0.02)' }} contentStyle={{ backgroundColor: '#1a1d22', border: '1px solid #25282b', borderRadius: '12px' }} />
+              <Bar dataKey="나" fill="#94d5ff" radius={[4, 4, 0, 0]} barSize={15} />
+              <Bar dataKey="감자" fill="#b7a8e5" radius={[4, 4, 0, 0]} barSize={15} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* 4. 항목 명칭 설정 (활성화) */}
+      <div className="bg-brand-card p-5 rounded-2xl border border-brand-border">
+        <p className="text-[10px] font-black text-brand-text-sub mb-4 uppercase tracking-widest">항목 명칭 설정 (Custom Labels)</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {SALARY_TYPES.map(type => (
+            <div key={type} className="space-y-1">
+              <span className="text-[9px] font-black text-brand-text-sub px-1">{type}</span>
+              <input type="text" value={salaryLabels[type]} onChange={e => setSalaryLabels({...salaryLabels, [type]: e.target.value})} className="w-full bg-brand-bg border border-brand-border rounded-lg text-[11px] p-2 font-bold outline-none focus:border-brand-primary text-brand-text-main" />
+            </div>
+          ))}
+        </div>
       </div>
     </motion.div>
   );
 }
-
 
 
 function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabName, setTabName }: any) {
