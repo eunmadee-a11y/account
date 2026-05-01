@@ -719,6 +719,7 @@ const quickAccounts = quickAccountKeywords
 }
 
 
+
 function ExpenseView({ transactions, setTransactions, filteredData, changeMonth, deleteTransaction, myAccountNames, balances, searchQuery, setSearchQuery, tabName, setTabName, categories, setCategories, onOpenEdit }: any) {
   const { currMonthTxs } = filteredData;
   const now = new Date();
