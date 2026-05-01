@@ -109,49 +109,36 @@ function exportCSV(transactions: any[]) {
 
 
 
-function EditableHeader({ title, setTitle, description }: any) {
+function EditableHeader({ title, setTitle }: any) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(title);
 
   const handleSave = () => {
-    if (inputValue.trim()) {
-      setTitle(inputValue);
-    }
+    if (inputValue.trim()) setTitle(inputValue);
     setIsEditing(false);
   };
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-3 group">
+    <div className="flex flex-col items-center justify-center py-6 space-y-1">
+      <h3 className="text-[9px] font-bold text-brand-text-sub/40 uppercase tracking-[0.3em]">Current View</h3>
+      <div className="flex items-center gap-2 group">
         {isEditing ? (
-          <div className="flex items-center gap-2">
-            <input 
-              autoFocus
-              type="text" 
-              value={inputValue} 
-              onChange={e => setInputValue(e.target.value)}
-              onBlur={handleSave}
-              onKeyDown={e => e.key === 'Enter' && handleSave()}
-              className="text-2xl font-black bg-brand-bg border-b-2 border-brand-primary outline-none px-1"
-            />
-          </div>
+          <input 
+            autoFocus type="text" value={inputValue} 
+            onChange={e => setInputValue(e.target.value)}
+            onBlur={handleSave} onKeyDown={e => e.key === 'Enter' && handleSave()}
+            className="text-xs font-black bg-transparent border-b border-brand-primary text-center outline-none text-brand-text-main"
+          />
         ) : (
-          <div className="flex items-center gap-3">
-
-            <h3 className="text-xl md:text-2xl font-bold">{title}</h3>
-            <button 
-              onClick={() => setIsEditing(true)}
-              className="p-1.5 rounded-lg hover:bg-white/5 opacity-0 group-hover:opacity-100 transition-all text-brand-text-sub"
-            >
-              <Edit2 size={16} />
-            </button>
-          </div>
+          <h2 className="text-[11px] font-black text-brand-text-sub/60 text-center uppercase tracking-widest cursor-pointer" onClick={() => setIsEditing(true)}>
+            {title}
+          </h2>
         )}
       </div>
-      {description && <p className="text-brand-text-sub font-medium">{description}</p>}
     </div>
   );
 }
+
 
 function NumericInput({ value, onChange, className, placeholder, label }: any) {
   const [displayValue, setDisplayValue] = useState(new Intl.NumberFormat('ko-KR').format(value || 0));
