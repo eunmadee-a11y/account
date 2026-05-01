@@ -2110,6 +2110,8 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
 
 /*월급 비교*/
 
+
+
 function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, setSalaryLabels, currentDate, transactions, setTransactions, gamjaTransactions, setGamjaTransactions, balances, setBalances }: any) {
   const [newEntry, setNewEntry] = useState({
     target: '나' as '나' | '감자',
@@ -2130,12 +2132,11 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
   const myRatio = totalAnnual > 0 ? (totalMyAnnual / totalAnnual) * 100 : 0;
   const gamjaRatio = totalAnnual > 0 ? (totalGamjaAnnual / totalAnnual) * 100 : 0;
 
-  // 1월(index 0)부터 12월(index 11)까지 데이터 유실 없이 생성
+  // 1월부터 12월까지 데이터 생성
   const monthlySalaryData = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
       const monthNum = i + 1;
       const entry: any = { name: `${monthNum}`, details: [] };
-      
       let meMonthTotal = 0;
       salaries.mySalaryRecords.filter((r: any) => {
         const d = new Date(r.date);
@@ -2144,7 +2145,6 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
         meMonthTotal += r.amount;
         entry.details.push({ user: '나', type: salaryLabels[r.type] || r.type, amount: r.amount, memo: r.memo });
       });
-
       let gamjaMonthTotal = 0;
       salaries.gamjaSalaryRecords.filter((r: any) => {
         const d = new Date(r.date);
@@ -2153,7 +2153,6 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
         gamjaMonthTotal += r.amount;
         entry.details.push({ user: '감자', type: '월급', amount: r.amount, memo: r.memo });
       });
-
       entry['나'] = meMonthTotal;
       entry['감자'] = gamjaMonthTotal;
       entry['합계'] = meMonthTotal + gamjaMonthTotal;
@@ -2165,7 +2164,6 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
     if (newEntry.amount <= 0) return;
     const recordId = Math.random().toString(36).substr(2, 9);
     const record = { ...newEntry, id: recordId };
-
     if (newEntry.target === '나') {
       setSalaries({ ...salaries, mySalaryRecords: [record, ...salaries.mySalaryRecords] });
       const autoTx = { id: `salary-${recordId}`, date: newEntry.date, type: '수입', category: salaryLabels[newEntry.type] || newEntry.type, account: '내 여유자금 통장', amount: newEntry.amount, memo: `[급여연동] ${newEntry.memo}` };
@@ -2186,7 +2184,7 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
       const data = payload[0].payload;
       if (data.details.length === 0) return null;
       return (
-        <div className="bg-brand-card border border-brand-border p-4 rounded-xl shadow-xl min-w-[200px]">
+        <div className="bg-brand-card border border-brand-border p-4 rounded-xl shadow-xl min-w-[180px]">
           <p className="text-[11px] font-black text-brand-text-sub mb-2 border-b border-brand-border pb-1">{data.name}월 상세</p>
           <div className="space-y-2">
             {data.details.map((d: any, idx: number) => (
@@ -2195,9 +2193,9 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
                 <span className="text-[11px] font-black tabular-nums">{formatNumber(d.amount)}원</span>
               </div>
             ))}
-            <div className="pt-2 border-t border-brand-border flex justify-between items-center text-brand-mint">
-              <span className="text-[11px] font-black">월 합계</span>
-              <span className="text-[12px] font-black">{formatNumber(data['합계'])}원</span>
+            <div className="pt-2 border-t border-brand-border flex justify-between items-center text-brand-mint font-black">
+              <span className="text-[10px]">월 합계</span>
+              <span className="text-[11px]">{formatNumber(data['합계'])}원</span>
             </div>
           </div>
         </div>
@@ -2210,7 +2208,7 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-4 pb-20 px-2">
       <EditableHeader title={tabName} setTitle={setTabName} />
       
-      {/* 1. 상단 연봉 요약 및 게이지 바 */}
+      {/* 1. 상단 연봉 요약 & 게이지 바 */}
       <div className="bg-brand-card p-5 rounded-2xl border border-brand-border shadow-sm space-y-4">
         <div className="flex justify-between items-center">
           <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">{selectedYear} 가구 총수입</span>
@@ -2234,7 +2232,7 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
         </div>
       </div>
 
-      {/* 2. 급여 입력창 */}
+      {/* 2. 급여 입력 (아이폰 터치 최적화) */}
       <div className="bg-brand-card p-5 rounded-3xl border border-brand-border space-y-5 shadow-brand">
         <div className="flex items-center justify-between">
           <h4 className="text-xs font-black text-brand-primary uppercase tracking-widest flex items-center gap-2"><Plus size={14} /> 급여 입력</h4>
@@ -2268,28 +2266,28 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
             )}
           </div>
         </div>
-        <button onClick={handleAddSalary} className="w-full bg-brand-primary text-white font-black py-4 rounded-xl text-[15px] shadow-lg shadow-brand-primary/20 active:scale-95 transition-all">등록 및 지출 탭 연동</button>
+        <button onClick={handleAddSalary} className="w-full bg-brand-primary text-white font-black py-4 rounded-xl text-[15px] active:scale-95 transition-all">등록 및 지출 탭 연동</button>
       </div>
 
-      {/* 3. 급여 비교 그래프 (1월 추가 및 너비 최적화) */}
+      {/* 3. 급여 비교 그래프 (1월 표시 및 간격 최적화) */}
       <div className="bg-brand-card p-4 rounded-brand border border-brand-border shadow-brand overflow-hidden">
-        <h4 className="text-[11px] font-black uppercase mb-4 flex items-center gap-2 text-brand-text-sub px-1"><BarChart2 size={14} className="text-brand-primary" /> 1-12월 급여 비교</h4>
-        <div className="h-[250px] w-full"> {/* 마진 제거 및 컨테이너 너비 확보 */}
+        <h4 className="text-[11px] font-black uppercase mb-4 flex items-center gap-2 text-brand-text-sub px-1"><BarChart2 size={14} className="text-brand-primary" /> 월별 급여 비교</h4>
+        <div className="h-[250px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlySalaryData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+            <BarChart data={monthlySalaryData} margin={{ top: 10, right: 15, left: -25, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#25282b" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11, fontWeight: 'bold' }} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 'bold' }} interval={0} />
               <YAxis hide />
               <Tooltip cursor={{ fill: 'rgba(255,255,255,0.02)' }} content={<CustomTooltip />} />
-              <Bar dataKey="나" fill="#94d5ff" radius={[4, 4, 0, 0]} barSize={12} />
-              <Bar dataKey="감자" fill="#b7a8e5" radius={[4, 4, 0, 0]} barSize={12} />
+              <Bar dataKey="나" fill="#94d5ff" radius={[2, 2, 0, 0]} barSize={10} />
+              <Bar dataKey="감자" fill="#b7a8e5" radius={[2, 2, 0, 0]} barSize={10} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* 4. 설정 아코디언 */}
-      <div className="bg-brand-card border border-brand-border rounded-2xl overflow-hidden shadow-sm">
+      {/* 4. 항목 명칭 설정 */}
+      <div className="bg-brand-card border border-brand-border rounded-2xl overflow-hidden">
         <button onClick={() => setIsLabelSettingsOpen(!isLabelSettingsOpen)} className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/5 transition-all">
           <span className="text-[11px] font-black text-brand-text-sub uppercase tracking-widest flex items-center gap-2"><Edit2 size={14} /> 항목 명칭 설정</span>
           <ChevronRight size={18} className={`text-brand-text-sub transition-transform ${isLabelSettingsOpen ? 'rotate-90' : ''}`} />
@@ -2301,7 +2299,7 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
                 {SALARY_TYPES.map(type => (
                   <div key={type} className="space-y-1">
                     <span className="text-[9px] font-bold text-brand-text-sub px-1">{type}</span>
-                    <input type="text" value={salaryLabels[type]} onChange={e => setSalaryLabels({...salaryLabels, [type]: e.target.value})} className="w-full bg-brand-card border border-brand-border rounded-lg text-[12px] p-2 font-bold outline-none focus:border-brand-primary text-brand-text-main" />
+                    <input type="text" value={salaryLabels[type]} onChange={e => setSalaryLabels({...salaryLabels, [type]: e.target.value})} className="w-full bg-brand-card border border-brand-border rounded-lg text-[12px] p-2 font-bold outline-none" />
                   </div>
                 ))}
               </div>
@@ -2312,6 +2310,7 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
     </motion.div>
   );
 }
+
 
 
 function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabName, setTabName }: any) {
