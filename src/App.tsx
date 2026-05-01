@@ -1625,67 +1625,35 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           </div>
         </div>
 
-       <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 py-3 bg-brand-bg/30 border-t border-brand-border flex justify-between items-center">
-            <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">거래 내역</span>
-            <span className="text-[10px] font-bold text-brand-text-sub opacity-50 uppercase">{filteredTxs.length}건</span>
-          </div>
-
-          <div className="divide-y divide-brand-border max-h-[520px] overflow-y-auto custom-scrollbar">
-            {filteredTxs.length > 0 ? (
-              filteredTxs.map((t: any) => (
-
-
-
-<div className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 py-3 bg-brand-bg/30 border-t border-brand-border flex justify-between items-center">
-            <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">거래 내역</span>
-            <span className="text-[10px] font-bold text-brand-text-sub opacity-50 uppercase">{filteredTxs.length}건</span>
-          </div>
-
-          <div className="divide-y divide-brand-border max-h-[520px] overflow-y-auto custom-scrollbar">
-            {filteredTxs.length > 0 ? (
-              filteredTxs.map((t: any) => (
-                <div key={t.id} className="px-6 py-4 hover:bg-white/5 transition-colors group">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <p className="text-[10px] text-brand-text-sub font-black uppercase mb-0.5">{t.date}</p>
-                      <p className="text-xs font-black">{t.memo || t.category}</p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className={`text-xs font-black tabular-nums ${t.type === '수입' ? 'text-brand-mint' : 'text-brand-pink'}`}>
-                          {t.type === '수입' ? '+' : '-'}{formatNumber(t.amount)}
-                        </p>
-                        <span className="text-[9px] font-bold text-brand-text-sub bg-brand-border/30 px-1.5 py-0.5 rounded">
-                          {t.category}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={() => deleteGamjaTransaction(t.id)}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-brand-text-sub hover:text-white hover:bg-brand-pink transition-all"
-                        title="내역 삭제"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center p-10 text-center space-y-2 opacity-20">
-                <Activity size={24} />
-                <p className="text-[10px] font-black uppercase tracking-widest">내역이 없습니다</p>
+        <div className="divide-y divide-brand-border max-h-[520px] overflow-y-auto custom-scrollbar">
+          {filteredTxs.map((t: any) => (
+            <div key={t.id} className="px-6 py-4 flex items-center justify-between hover:bg-white/5">
+              <div>
+                <p className="text-xs font-black">{t.memo || t.category}</p>
+                <p className="text-[10px] text-brand-text-sub">{t.date} · {t.category}</p>
               </div>
-            )}
-          </div>
+
+              <div className="flex items-center gap-3">
+                <p className={`text-sm font-black ${t.type === '수입' ? 'text-brand-mint' : 'text-brand-pink'}`}>
+                  {t.type === '수입' ? '+' : '-'}{formatNumber(t.amount)}
+                </p>
+                <button
+                  onClick={() => deleteGamjaTransaction(t.id)}
+                  className="p-2 text-brand-text-sub hover:text-brand-pink"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {filteredTxs.length === 0 && (
+            <div className="p-16 text-center text-brand-text-sub font-bold opacity-40">
+              내역이 없습니다
+            </div>
+          )}
         </div>
       </div>
-
-
-                
 
       <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand overflow-hidden">
         <button
