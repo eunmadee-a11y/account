@@ -280,20 +280,33 @@ export default function App() {
   }, [transactions, currentDate]);
 
   const totalAssets = useMemo(() => {
-    const total = balances.reduce((sum, b) => sum + b.currentBalance, 0);
-    const prevTotal = balances.reduce((sum, b) => sum + b.previousBalance, 0);
-    
-    const cashLike = balances.filter(b => b.category === '내 통장').reduce((sum, b) => sum + b.currentBalance, 0);
-    const investment = balances.filter(b => b.category === '투자/연금').reduce((sum, b) => sum + b.currentBalance, 0);
-    const gamja = balances.filter(b => b.category === '감자 자산').reduce((sum, b) => sum + b.currentBalance, 0);
-    const others = balances.filter(b => b.category === '기타 자산').reduce((sum, b) => sum + b.currentBalance, 0);
+  const total = balances.reduce((sum, b) => sum + b.currentBalance, 0);
+  const prevTotal = balances.reduce((sum, b) => sum + b.previousBalance, 0);
+  
+  // ✅ 핵심: 내 통장 + 적금 자동 포함
+  const cashLike = balances
+    .filter(b => b.category === '내 통장')
+    .reduce((sum, b) => sum + (b.currentBalance || 0), 0);
 
-    const change = total - prevTotal;
-    const changeRate = prevTotal !== 0 ? (change / prevTotal) * 100 : 0;
+  const investment = balances
+    .filter(b => b.category === '투자/연금')
+    .reduce((sum, b) => sum + (b.currentBalance || 0), 0);
 
-    return { total, cashLike, investment, gamja, others, change, changeRate };
-  }, [balances]);
+  const gamja = balances
+    .filter(b => b.category === '감자 자산')
+    .reduce((sum, b) => sum + (b.currentBalance || 0), 0);
 
+  const others = balances
+    .filter(b => b.category === '기타 자산')
+    .reduce((sum, b) => sum + (b.currentBalance || 0), 0);
+
+  const change = total - prevTotal;
+  const changeRate = prevTotal !== 0 ? (change / prevTotal) * 100 : 0;
+
+  return { total, cashLike, investment, gamja, others, change, changeRate };
+}, [balances]);
+
+  
   const myAccountNames = useMemo(() => 
     balances.filter((b: any) => b.category === '내 통장').map((b: any) => b.name)
   , [balances]);
@@ -590,65 +603,84 @@ const homePensionTotal = balances
     </p>
   </div>
 
-  {/* 리스트 */}
-  <div className="divide-y divide-brand-border">
-    {[
-      ...mainAccounts,
-      ...(mainAccounts.some((b: any) => b.name.includes('적금'))
-        ? []
-        : [{
-            id: 'saving-temp',
-            name: '내 적금',
-            category: '내 통장',
-            currentBalance: 0
-          }])
-    ].map((b: any) => {
+ 
+{/* 리스트 */}
+<div className="divide-y divide-brand-border">
+  {[
+    ...mainAccounts,
+    ...(mainAccounts.some((b: any) => b.name.includes('적금'))
+      ? []
+      : [{
+          id: 'saving-temp',
+          name: '내 적금',
+          category: '내 통장',
+          currentBalance: 0
+        }])
+  ].map((b: any) => {
 
-      const isSaving = b.name.includes('적금');
+    const isSaving = b.name.includes('적금');
 
-      return (
-        <div key={b.id} className="px-4 py-3 flex items-center justify-between">
+    return (
+      <div key={b.id} className="px-4 py-3 flex items-center justify-between">
 
-          {/* 통장명 */}
-          <p className="text-xs md:text-sm font-black text-brand-text-sub">
-            {b.name.replace('내 ', '').replace(' 통장', '')}
-          </p>
+        {/* 통장명 */}
+        <p className="text-xs md:text-sm font-black text-brand-text-sub">
+          {b.name.replace('내 ', '').replace(' 통장', '')}
+        </p>
 
-          {/* 금액 영역 */}
-          <div className="w-[55%] flex justify-end">
+        {/* 금액 영역 */}
+        <div className="w-[55%] flex justify-end">
 
-            {isSaving ? (
-              <NumericInput
-                value={b.currentBalance || 0}
-                onChange={(v: number) => {
-                  setBalances((prev: any[]) => {
-                    const exists = prev.some((x: any) => x.id === b.id);
+          {isSaving ? (
+            <NumericInput
+              value={b.currentBalance || 0}
+              onChange={(v: number) => {
+                setBalances((prev: any[]) => {
+                  const exists = prev.some((x: any) => x.id === b.id);
 
-                    if (exists) {
-                      return prev.map((x: any) =>
-                        x.id === b.id ? { ...x, currentBalance: v } : x
-                      );
-                    }
+                  if (exists) {
+                    return prev.map((x: any) =>
+                      x.id === b.id ? { ...x, currentBalance: v } : x
+                    );
+                  }
 
-                    return [...prev, { ...b, currentBalance: v }];
-                  });
-                }}
-                className="text-right font-black tabular-nums w-full"
-                placeholder="0"
-              />
-            ) : (
-              <p className="text-base md:text-xl font-black tabular-nums text-right w-full">
-                {(b.currentBalance || 0).toLocaleString()}
-              </p>
-            )}
+                  return [...prev, { ...b, currentBalance: v }];
+                });
+              }}
+              className="text-right font-black tabular-nums w-full"
+              placeholder="0"
+            />
+          ) : (
+            <p className="text-base md:text-xl font-black tabular-nums text-right w-full">
+              {(b.currentBalance || 0).toLocaleString()}
+            </p>
+          )}
 
-          </div>
         </div>
-      );
-    })}
-  </div>
+      </div>
+    );
+  })}
 </div>
 
+{/* ✅ 적금 추가 버튼 */}
+<div className="px-4 py-3">
+  <button
+    onClick={() => {
+      const newSaving = {
+        id: `saving-${Date.now()}`,
+        name: `내 적금 ${Date.now().toString().slice(-2)}`,
+        category: '내 통장',
+        currentBalance: 0,
+        previousBalance: 0
+      };
+
+      setBalances((prev: any[]) => [...prev, newSaving]);
+    }}
+    className="w-full py-2 rounded-xl border border-dashed border-brand-border text-brand-text-sub font-bold text-sm hover:border-brand-primary hover:text-brand-primary transition-all"
+  >
+    + 적금 추가
+  </button>
+</div>
 
       {/* 메인 대시보드 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
