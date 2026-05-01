@@ -1144,13 +1144,76 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
 
 function PensionView({ balances, setBalances, currentDate, tabName, setTabName }: any) {
   const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-  const pensionAssets = balances.filter((b: any) => b.category === '투자/연금');
 
-  // 연금 통장 추가 함수: 추가 시 즉시 총 자산 연동
+  const pensionOrder = ['개인연금', 'IRP', 'irp', 'ISA', 'isa', '퇴직연금', '퇴직금'];
+
+  // 기존 투자/연금 카테고리 필터링 및 정렬 유지
+  const pensionAssets = balances
+    .filter((b: any) => b.category === '투자/연금' && !b.name.includes('적금'))
+    .sort((a: any, b: any) => {
+      const aIndex = pensionOrder.findIndex(name => a.name.toLowerCase().includes(name.toLowerCase()));
+      const bIndex = pensionOrder.findIndex(name => b.name.toLowerCase().includes(name.toLowerCase()));
+      return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+    });
+
+  const getMonthlyBalance = (asset: any) => asset.monthlyBalances?.[monthKey] ?? asset.currentBalance ?? 0;
+  const getMonthlyAddition = (asset: any) => asset.monthlyAdditions?.[monthKey] ?? 0;
+
+  // 상태 업데이트 로직: 수정 시 홈 화면의 총 자산과 실시간 연동됨
+  const updateMonthlyBalance = (id: string, value: number) => {
+    setBalances((prev: any[]) =>
+      prev.map((b: any) =>
+        b.id === id ? {
+              ...b,
+              currentBalance: value,
+              monthlyBalances: { ...(b.monthlyBalances || {}), [monthKey]: value }
+            } : b
+      )
+    );
+  };
+
+  const updateMonthlyAddition = (id: string, value: number) => {
+    setBalances((prev: any[]) =>
+      prev.map((b: any) =>
+        b.id === id ? {
+              ...b,
+              monthlyAdditions: { ...(b.monthlyAdditions || {}), [monthKey]: value }
+            } : b
+      )
+    );
+  };
+
+  const getYearlyAdditionTotal = (asset: any) => {
+    const year = currentDate.getFullYear().toString();
+    const additions = asset.monthlyAdditions || {};
+    return Object.entries(additions)
+      .filter(([key]) => key.startsWith(year))
+      .reduce((sum: number, [, value]: any) => sum + (Number(value) || 0), 0);
+  };
+
+  const getLimit = (assetName: string) => {
+    const lower = assetName.toLowerCase();
+    if (lower.includes('개인연금')) return 4000000;
+    if (lower.includes('irp')) return 2000000;
+    return 0;
+  };
+
+  const isGaugeTarget = (assetName: string) => {
+    const lower = assetName.toLowerCase();
+    return lower.includes('개인연금') || lower.includes('irp');
+  };
+
+  // 상단 요약 정보
+  const total = pensionAssets.reduce((sum: number, b: any) => sum + getMonthlyBalance(b), 0);
+  const prevTotal = pensionAssets.reduce((sum: number, b: any) => sum + (b.previousBalance || 0), 0);
+  const diff = total - prevTotal;
+
+  // 신규 통장 추가 함수
   const addPensionAccount = () => {
+    const newId = `pension-${Date.now()}`;
     const newAccount = {
-      id: `pension-${Date.now()}`,
-      name: '새 연금/투자',
+      id: newId,
+      name: '새 연금 통장',
       currentBalance: 0,
       previousBalance: 0,
       category: '투자/연금',
@@ -1160,45 +1223,81 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
     setBalances([...balances, newAccount]);
   };
 
-  const updateBalance = (id: string, val: number) => {
-    setBalances(prev => prev.map(b => b.id === id ? {
-      ...b, currentBalance: val, 
-      monthlyBalances: { ...(b.monthlyBalances || {}), [monthKey]: val }
-    } : b));
-  };
-
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 pb-24 px-1">
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+      {/* 제목 중앙 정렬 및 소형화 적용 */}
       <EditableHeader title={tabName} setTitle={setTabName} />
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {pensionAssets.map((asset: any) => (
-          <div key={asset.id} className="bg-brand-card border border-brand-border p-6 rounded-[2.5rem] shadow-brand flex flex-col items-center">
-            <input 
-              value={asset.name} 
-              onChange={(e) => setBalances(balances.map(b => b.id === asset.id ? {...b, name: e.target.value} : b))}
-              className="bg-transparent text-center text-[10px] font-bold text-brand-text-sub uppercase mb-4 outline-none w-full"
-            />
-            <NumericInput
-              value={asset.monthlyBalances?.[monthKey] ?? asset.currentBalance ?? 0}
-              onChange={(v: number) => updateBalance(asset.id, v)}
-              className="text-2xl font-black text-center text-brand-primary bg-transparent border-none outline-none"
-            />
+
+      <div className="bg-brand-card border border-brand-border p-5 rounded-brand shadow-brand min-w-[280px]">
+        <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest text-center">투자 총액</p>
+        <p className="text-2xl font-black text-brand-primary tabular-nums text-center">{formatCurrency(total)}</p>
+        <div className="mt-4 pt-4 border-t border-brand-border">
+          <div className="flex items-center justify-center gap-2">
+            <p className={`text-base font-black tabular-nums ${diff >= 0 ? 'text-brand-mint' : 'text-brand-pink'}`}>
+              {diff >= 0 ? '+' : ''}{formatCurrency(diff)}
+            </p>
+            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${diff >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
+              {prevTotal !== 0 ? ((diff / prevTotal) * 100).toFixed(2) : '0.00'}%
+            </span>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* 추가 버튼: 아이폰 터치에 최적화된 큰 사이즈 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {pensionAssets.map((asset: any) => {
+          const monthlyBalance = getMonthlyBalance(asset);
+          const yearlyAddition = getYearlyAdditionTotal(asset);
+          const limit = getLimit(asset.name);
+          const gaugePercent = limit > 0 ? Math.min((yearlyAddition / limit) * 100, 100) : 0;
+          const taxRefund = Math.min(yearlyAddition, limit) * 0.132;
+
+          return (
+            <div key={asset.id} className="bg-brand-card border border-brand-border p-6 rounded-brand shadow-brand hover:border-brand-primary/50 transition-all group">
+              <div className="flex justify-between items-start mb-5">
+                <input 
+                  value={asset.name}
+                  onChange={(e) => setBalances(balances.map(b => b.id === asset.id ? {...b, name: e.target.value} : b))}
+                  className="font-black text-brand-text-main bg-transparent outline-none focus:text-brand-primary transition-colors"
+                />
+                <div className={`p-1.5 rounded-lg ${monthlyBalance - (asset.previousBalance || 0) >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
+                  <TrendingUp size={14} />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <NumericInput label="이번달 잔액" value={monthlyBalance} onChange={(v: number) => updateMonthlyBalance(asset.id, v)} className="form-input text-lg font-black tabular-nums" />
+                
+                {isGaugeTarget(asset.name) && (
+                  <div className="pt-4 border-t border-brand-border space-y-3">
+                    <NumericInput label="이번달 추가금" value={getMonthlyAddition(asset)} onChange={(v: number) => updateMonthlyAddition(asset.id, v)} className="form-input text-sm font-black" />
+                    <div>
+                      <div className="flex justify-between text-[10px] font-black text-brand-text-sub mb-1">
+                        <span>연간 추가금</span>
+                        <span>{formatCurrency(yearlyAddition)} / {formatCurrency(limit)}</span>
+                      </div>
+                      <div className="h-2 bg-brand-border rounded-full overflow-hidden">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${gaugePercent}%` }} transition={{ duration: 0.5 }} className="h-full bg-brand-primary rounded-full" />
+                      </div>
+                      <p className="text-[9px] font-bold text-brand-mint mt-2 text-center">예상 세제혜택: {formatCurrency(taxRefund)}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/*[cite: 1] 신규 추가 버튼: 기존 포맷 유지하며 하단에 배치 */}
       <button 
         onClick={addPensionAccount}
-        className="w-full py-5 border-2 border-dashed border-brand-border rounded-[2.5rem] text-brand-text-sub flex items-center justify-center gap-2 mt-4 active:scale-95 transition-all"
+        className="w-full py-5 border-2 border-dashed border-brand-border rounded-[2rem] text-brand-text-sub flex items-center justify-center gap-2 mt-4 active:scale-95 transition-all"
       >
-        <Plus size={20} /> <span className="text-xs font-black uppercase tracking-widest">Add New Pension</span>
+        <Plus size={20} /> <span className="text-xs font-black uppercase tracking-widest">새 연금/투자 통장 추가</span>
       </button>
     </motion.div>
   );
 }
-
 
 /*감자 */
 
