@@ -2278,11 +2278,11 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
 }
 
 
-
+/*1년 결산*/
 function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabName, setTabName }: any) {
+  // 현재 가계부 앱에서 선택된 연도 기준 (currentDate 활용 권장하나 여기선 시스템 연도 기준)
   const selectedYear = new Date().getFullYear();
 
-  // 데이터 가공 로직
   const processData = (txs: any[], salaryRecords: any[]) => {
     const annualSalary = salaryRecords
       .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
@@ -2314,90 +2314,128 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
   const totalAnnualExpense = myData.totalExpense + gamjaData.totalExpense;
   const totalRemaining = myData.remaining + gamjaData.remaining;
 
+  // 1.2배 커진 폰트 스타일 (아이폰 가독성 최적화)
+  const biggerFontSize = "text-[1.2rem]"; // 기존보다 약 1.2배 확대
   const COLORS = ['#94D5FF', '#AEE7E6', '#C9C7F5', '#A0E1F0', '#B7A8E5', '#B2D8D8', '#D1C4E9', '#BBDEFB', '#B2EBF2', '#E1BEE7'];
 
+  // 연도별 통합 엑셀 다운로드 함수 (CSV 형식의 한계로 인해 탭별 구분을 위해 파일 내용 구성)
+  const downloadYearlyReport = () => {
+    const header = ["날짜", "구분", "카테고리", "금액", "메모"];
+    
+    // 1. 내 지출 내역
+    const myYearly = transactions
+      .filter(t => new Date(t.date).getFullYear() === selectedYear)
+      .map(t => [t.date, t.type, t.category, t.amount, t.memo].join(","));
+    
+    // 2. 감자 지출 내역
+    const gamjaYearly = gamjaTransactions
+      .filter(t => new Date(t.date).getFullYear() === selectedYear)
+      .map(t => [t.date, t.type, t.category, t.amount, t.memo].join(","));
+
+    // 탭 구분을 위해 텍스트로 섹션 분리
+    const csvContent = [
+      `--- ${selectedYear}년 내 지출 내역 ---`,
+      header.join(","),
+      ...myYearly,
+      "\n",
+      `--- ${selectedYear}년 감자 지출 내역 ---`,
+      header.join(","),
+      ...gamjaYearly
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${selectedYear}년_결산_데이터.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-4 pb-20 px-1">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6 pb-24 px-1">
       <EditableHeader title={tabName} setTitle={setTabName} />
 
-      {/* 1. 가계 전체 요약 (연봉/지출/자산 합계) */}
-      <div className="bg-brand-card p-4 border border-brand-border rounded-2xl shadow-brand">
-        <p className="text-[10px] font-black text-brand-primary uppercase mb-2 tracking-widest text-center">{selectedYear}년 가계 총결산</p>
+      {/* 1. 가계 전체 요약 (글자 크기 1.2배 확대 적용) */}
+      <div className="bg-brand-card p-5 border border-brand-border rounded-2xl shadow-brand">
+        <p className="text-[12px] font-black text-brand-primary uppercase mb-3 tracking-widest text-center">{selectedYear}년 가계 총결산</p>
         <div className="grid grid-cols-3 divide-x divide-brand-border text-center">
-          <div><p className="text-[9px] font-bold text-brand-text-sub mb-1">총 연봉</p><p className="text-xs font-black tabular-nums">{formatNumber(totalAnnualSalary)}</p></div>
-          <div><p className="text-[9px] font-bold text-brand-text-sub mb-1">총 지출</p><p className="text-xs font-black text-brand-pink tabular-nums">{formatNumber(totalAnnualExpense)}</p></div>
-          <div><p className="text-[9px] font-bold text-brand-text-sub mb-1">남은자산</p><p className="text-xs font-black text-brand-mint tabular-nums">{formatNumber(totalRemaining)}</p></div>
+          <div><p className="text-[10px] font-bold text-brand-text-sub mb-1">총 연봉</p><p className={`${biggerFontSize} font-black tabular-nums`}>{formatNumber(totalAnnualSalary)}</p></div>
+          <div><p className="text-[10px] font-bold text-brand-text-sub mb-1">총 지출</p><p className={`${biggerFontSize} font-black text-brand-pink tabular-nums`}>{formatNumber(totalAnnualExpense)}</p></div>
+          <div><p className="text-[10px] font-bold text-brand-text-sub mb-1">남은자산</p><p className={`${biggerFontSize} font-black text-brand-mint tabular-nums`}>{formatNumber(totalRemaining)}</p></div>
         </div>
       </div>
 
       {/* 2. 개별 결산 섹션 (나 / 감자) */}
       {[ { label: '나', data: myData, color: 'brand-primary' }, { label: '감자', data: gamjaData, color: 'brand-purple' } ].map((user) => (
-        <div key={user.label} className="space-y-3">
-          {/* 개인별 요약 박스 */}
-          <div className="bg-brand-card p-4 border border-brand-border rounded-2xl">
-            <div className="flex justify-between items-center mb-3">
-              <span className={`px-2 py-0.5 rounded-md bg-${user.color}/10 text-${user.color} text-[10px] font-black`}>{user.label} 결산</span>
-              <span className="text-[9px] font-bold text-brand-text-sub">{selectedYear}년 기준</span>
+        <div key={user.label} className="space-y-4">
+          <div className="bg-brand-card p-5 border border-brand-border rounded-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <span className={`px-3 py-1 rounded-md bg-${user.color}/10 text-${user.color} text-[11px] font-black`}>{user.label} 결산</span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-brand-bg/50 p-2 rounded-xl text-center">
-                <p className="text-[8px] font-bold text-brand-text-sub mb-0.5">연봉</p>
-                <p className="text-[11px] font-black tabular-nums">{formatNumber(user.data.annualSalary)}</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-brand-bg/50 p-3 rounded-xl text-center">
+                <p className="text-[10px] font-bold text-brand-text-sub mb-1">연봉</p>
+                <p className="text-[13px] font-black tabular-nums">{formatNumber(user.data.annualSalary)}</p>
               </div>
-              <div className="bg-brand-bg/50 p-2 rounded-xl text-center">
-                <p className="text-[8px] font-bold text-brand-text-sub mb-0.5">총 지출</p>
-                <p className="text-[11px] font-black text-brand-pink tabular-nums">{formatNumber(user.data.totalExpense)}</p>
+              <div className="bg-brand-bg/50 p-3 rounded-xl text-center">
+                <p className="text-[10px] font-bold text-brand-text-sub mb-1">지출</p>
+                <p className="text-[13px] font-black text-brand-pink tabular-nums">{formatNumber(user.data.totalExpense)}</p>
               </div>
-              <div className="bg-brand-bg/50 p-2 rounded-xl text-center">
-                <p className="text-[8px] font-bold text-brand-text-sub mb-0.5">남은 자산</p>
-                <p className="text-[11px] font-black text-brand-mint tabular-nums">{formatNumber(user.data.remaining)}</p>
+              <div className="bg-brand-bg/50 p-3 rounded-xl text-center">
+                <p className="text-[10px] font-bold text-brand-text-sub mb-1">자산</p>
+                <p className="text-[13px] font-black text-brand-mint tabular-nums">{formatNumber(user.data.remaining)}</p>
               </div>
             </div>
           </div>
 
-          {/* 지출 현황 그래프 (아이폰 최적화) */}
-          <div className="bg-brand-card p-4 border border-brand-border rounded-2xl">
-            <h4 className="text-[10px] font-black mb-4 flex justify-between items-center px-1">
-              <span>항목별 지출 (많이 쓴 순)</span>
-              <span className="text-brand-text-sub text-[9px]">단위: 원</span>
+          {/* 지출 현황 그래프 */}
+          <div className="bg-brand-card p-5 border border-brand-border rounded-2xl">
+            <h4 className="text-[12px] font-black mb-5 flex justify-between items-center px-1">
+              <span>많이 쓴 항목 (순위)</span>
+              <span className="text-brand-text-sub text-[10px]">{user.label}</span>
             </h4>
             
-            <div className="space-y-4">
-              {user.data.chartData.length > 0 ? (
-                user.data.chartData.map((item, idx) => (
-                  <div key={item.name} className="space-y-1">
-                    <div className="flex justify-between items-end">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-black">{item.name}</span>
-                        <span className="text-[8px] font-bold text-brand-text-sub opacity-70">{item.percent}%</span>
-                      </div>
-                      <span className="text-[9px] font-black tabular-nums">{formatNumber(item.value)}</span>
+            <div className="space-y-5">
+              {user.data.chartData.map((item, idx) => (
+                <div key={item.name} className="space-y-1.5">
+                  <div className="flex justify-between items-end">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-black">{item.name}</span>
+                      <span className="text-[10px] font-bold text-brand-text-sub">{item.percent}%</span>
                     </div>
-                    <div className="h-1.5 w-full bg-brand-bg rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }} 
-                        animate={{ width: `${item.percent}%` }} 
-                        transition={{ duration: 1, delay: idx * 0.05 }}
-                        className="h-full rounded-full" 
-                        style={{ backgroundColor: COLORS[idx % COLORS.length] }} 
-                      />
-                    </div>
+                    <span className="text-[12px] font-black tabular-nums">{formatNumber(item.value)}원</span>
                   </div>
-                ))
-              ) : (
-                <p className="py-10 text-center text-[10px] font-bold opacity-20 uppercase tracking-widest">데이터 없음</p>
-              )}
+                  <div className="h-2 w-full bg-brand-bg rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }} 
+                      animate={{ width: `${item.percent}%` }} 
+                      className="h-full rounded-full" 
+                      style={{ backgroundColor: COLORS[idx % COLORS.length] }} 
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       ))}
       
-      <div className="flex justify-center py-4">
-        <button onClick={() => exportCSV(transactions)} className="text-[10px] font-black text-brand-text-sub border-b border-brand-text-sub/30 pb-0.5 opacity-50">엑셀 데이터 다운로드</button>
+      {/* 3. 스마트 연도별 데이터 다운로드 버튼 */}
+      <div className="flex justify-center pt-6">
+        <button 
+          onClick={downloadYearlyReport} 
+          className="flex items-center gap-2 px-8 py-4 bg-brand-bg border border-brand-border rounded-xl text-[13px] font-black text-brand-primary shadow-lg active:scale-95 transition-all"
+        >
+          <BarChart2 size={16} />
+          {selectedYear}년 전체 내역 (탭별) 다운로드
+        </button>
       </div>
     </motion.div>
   );
 }
+
+
 
 
 function TransactionEditModal({ 
