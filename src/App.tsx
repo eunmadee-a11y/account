@@ -280,33 +280,20 @@ export default function App() {
   }, [transactions, currentDate]);
 
   const totalAssets = useMemo(() => {
-  const total = balances.reduce((sum, b) => sum + b.currentBalance, 0);
-  const prevTotal = balances.reduce((sum, b) => sum + b.previousBalance, 0);
-  
-  // ✅ 핵심: 내 통장 + 적금 자동 포함
-  const cashLike = balances
-    .filter(b => b.category === '내 통장')
-    .reduce((sum, b) => sum + (b.currentBalance || 0), 0);
+    const total = balances.reduce((sum, b) => sum + b.currentBalance, 0);
+    const prevTotal = balances.reduce((sum, b) => sum + b.previousBalance, 0);
+    
+    const cashLike = balances.filter(b => b.category === '내 통장').reduce((sum, b) => sum + b.currentBalance, 0);
+    const investment = balances.filter(b => b.category === '투자/연금').reduce((sum, b) => sum + b.currentBalance, 0);
+    const gamja = balances.filter(b => b.category === '감자 자산').reduce((sum, b) => sum + b.currentBalance, 0);
+    const others = balances.filter(b => b.category === '기타 자산').reduce((sum, b) => sum + b.currentBalance, 0);
 
-  const investment = balances
-    .filter(b => b.category === '투자/연금')
-    .reduce((sum, b) => sum + (b.currentBalance || 0), 0);
+    const change = total - prevTotal;
+    const changeRate = prevTotal !== 0 ? (change / prevTotal) * 100 : 0;
 
-  const gamja = balances
-    .filter(b => b.category === '감자 자산')
-    .reduce((sum, b) => sum + (b.currentBalance || 0), 0);
+    return { total, cashLike, investment, gamja, others, change, changeRate };
+  }, [balances]);
 
-  const others = balances
-    .filter(b => b.category === '기타 자산')
-    .reduce((sum, b) => sum + (b.currentBalance || 0), 0);
-
-  const change = total - prevTotal;
-  const changeRate = prevTotal !== 0 ? (change / prevTotal) * 100 : 0;
-
-  return { total, cashLike, investment, gamja, others, change, changeRate };
-}, [balances]);
-
-  
   const myAccountNames = useMemo(() => 
     balances.filter((b: any) => b.category === '내 통장').map((b: any) => b.name)
   , [balances]);
@@ -496,8 +483,6 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 }
 
 // --- TAB VIEWS ---
-
-
 /*홈 탭 */
 function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
   const mainAccounts = balances.filter((b: any) => b.category === '내 통장');
@@ -576,111 +561,37 @@ const homePensionTotal = balances
         )}
       </div>
 
-{/* 통장 잔액 한 박스 */}
-<div className="bg-brand-card rounded-brand border border-brand-border shadow-brand overflow-hidden">
+      {/* 통장 잔액 한 박스 */}
+      <div className="bg-brand-card rounded-brand border border-brand-border shadow-brand overflow-hidden">
+        <div className="px-4 py-3 border-b border-brand-border bg-white/5">
+          <h3 className="text-sm font-black flex items-center gap-2">
+            <Wallet size={16} className="text-brand-primary" />
+            내 통장 잔액
+          </h3>
+        </div>
 
-  {/* 상단 */}
-  <div className="px-4 py-3 border-b border-brand-border bg-white/5 flex items-center justify-between">
-    <h3 className="text-sm font-black flex items-center gap-2">
-      <Wallet size={16} className="text-brand-primary" />
-      내 통장 잔액
-    </h3>
+        <div className="divide-y divide-brand-border">
+          {mainAccounts.map((b: any) => (
+            <div key={b.id} className="px-4 py-3 flex items-center justify-between gap-3">
+              <p className="text-xs md:text-sm font-black text-brand-text-sub shrink-0">
+                {b.name.replace('내 ', '').replace(' 통장', '')}
+              </p>
 
-    {/* ✅ 합계 (적금 포함) */}
-    <p className="text-sm font-black tabular-nums">
-      {[
-        ...mainAccounts,
-        ...(mainAccounts.some((b: any) => b.name.includes('적금'))
-          ? []
-          : [{
-              id: 'saving-temp',
-              name: '내 적금',
-              currentBalance: 0
-            }])
-      ]
-        .reduce((sum: number, b: any) => sum + (b.currentBalance || 0), 0)
-        .toLocaleString()}
-    </p>
-  </div>
-
- 
-{/* 리스트 */}
-<div className="divide-y divide-brand-border">
-  {[
-    ...mainAccounts,
-    ...(mainAccounts.some((b: any) => b.name.includes('적금'))
-      ? []
-      : [{
-          id: 'saving-temp',
-          name: '내 적금',
-          category: '내 통장',
-          currentBalance: 0
-        }])
-  ].map((b: any) => {
-
-    const isSaving = b.name.includes('적금');
-
-    return (
-      <div key={b.id} className="px-4 py-3 flex items-center justify-between">
-
-        {/* 통장명 */}
-        <p className="text-xs md:text-sm font-black text-brand-text-sub">
-          {b.name.replace('내 ', '').replace(' 통장', '')}
-        </p>
-
-        {/* 금액 영역 */}
-        <div className="w-[55%] flex justify-end">
-
-          {isSaving ? (
-            <NumericInput
-              value={b.currentBalance || 0}
-              onChange={(v: number) => {
-                setBalances((prev: any[]) => {
-                  const exists = prev.some((x: any) => x.id === b.id);
-
-                  if (exists) {
-                    return prev.map((x: any) =>
-                      x.id === b.id ? { ...x, currentBalance: v } : x
-                    );
-                  }
-
-                  return [...prev, { ...b, currentBalance: v }];
-                });
-              }}
-              className="text-right font-black tabular-nums w-full"
-              placeholder="0"
-            />
-          ) : (
-            <p className="text-base md:text-xl font-black tabular-nums text-right w-full">
-              {(b.currentBalance || 0).toLocaleString()}
-            </p>
-          )}
-
+              <div className="flex items-center justify-end gap-2 min-w-0">
+                <p className="text-base md:text-xl font-black tabular-nums">
+                  {formatCurrency(b.currentBalance)}
+                </p>
+                <span className={`text-[10px] font-bold whitespace-nowrap ${
+                  b.currentBalance >= b.previousBalance ? 'text-brand-mint' : 'text-brand-pink'
+                }`}>
+                  {b.currentBalance >= b.previousBalance ? '+' : ''}
+                  {formatCurrency(b.currentBalance - b.previousBalance)}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    );
-  })}
-</div>
-
-{/* ✅ 적금 추가 버튼 */}
-<div className="px-4 py-3">
-  <button
-    onClick={() => {
-      const newSaving = {
-        id: `saving-${Date.now()}`,
-        name: `내 적금 ${Date.now().toString().slice(-2)}`,
-        category: '내 통장',
-        currentBalance: 0,
-        previousBalance: 0
-      };
-
-      setBalances((prev: any[]) => [...prev, newSaving]);
-    }}
-    className="w-full py-2 rounded-xl border border-dashed border-brand-border text-brand-text-sub font-bold text-sm hover:border-brand-primary hover:text-brand-primary transition-all"
-  >
-    + 적금 추가
-  </button>
-</div>
 
       {/* 메인 대시보드 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -839,6 +750,349 @@ const homePensionTotal = balances
   );
 }
 
+/*내 지출*/
+
+
+function ExpenseView({ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery, setSearchQuery, tabName, setTabName, categories, setCategories, onOpenEdit }: any) {
+  const { currMonthTxs } = filteredData;
+  const month = currentDate.getMonth();
+  const year = currentDate.getFullYear();
+
+  const expenseAccountButtons = ['내 생활비 통장', '내 여유자금 통장', '내 자동이체 통장'];
+
+  const [activeExpenseAccount, setActiveExpenseAccount] = useState(
+    expenseAccountButtons.find(name => myAccountNames.includes(name)) || myAccountNames[0] || ''
+  );
+
+  useEffect(() => {
+    if (!activeExpenseAccount && myAccountNames.length > 0) {
+      setActiveExpenseAccount(
+        expenseAccountButtons.find(name => myAccountNames.includes(name)) || myAccountNames[0]
+      );
+    }
+  }, [myAccountNames, activeExpenseAccount]);
+
+  const updateStartBalance = (id: string, value: number) => {
+    setBalances((prev: any[]) =>
+      prev.map((b: any) =>
+        b.id === id
+          ? { ...b, previousBalance: value, currentBalance: value }
+          : b
+      )
+    );
+  };
+
+  const filteredMonthTxs = useMemo(() => {
+    if (!searchQuery.trim()) return currMonthTxs;
+    const q = searchQuery.toLowerCase();
+    return currMonthTxs.filter((t: any) =>
+      (t.memo?.toLowerCase().includes(q)) ||
+      (t.category?.toLowerCase().includes(q)) ||
+      (t.amount.toString().includes(q)) ||
+      (t.date.includes(q))
+    );
+  }, [currMonthTxs, searchQuery]);
+
+  const getAccountCalculatedBalance = (accountName: string) => {
+    const account = balances.find((b: any) => b.name === accountName);
+    const start = account?.previousBalance || 0;
+    const accountTxs = currMonthTxs.filter((t: any) => t.account === accountName);
+    const income = accountTxs.filter((t: any) => t.type === '수입').reduce((s: number, t: any) => s + t.amount, 0);
+    const expense = accountTxs.filter((t: any) => t.type === '지출').reduce((s: number, t: any) => s + t.amount, 0);
+    return start + income - expense;
+  };
+
+  const categoryData = useMemo(() => {
+    const expenseTxs = currMonthTxs.filter((t: any) => t.type === '지출');
+    const totals: { [key: string]: number } = {};
+
+    expenseTxs.forEach((t: any) => {
+      totals[t.category] = (totals[t.category] || 0) + t.amount;
+    });
+
+    const totalAmount = Object.values(totals).reduce((a, b) => a + b, 0);
+    if (totalAmount === 0) return [];
+
+    return Object.entries(totals)
+      .map(([name, value]) => ({
+        name,
+        value: value as number,
+        percentage: ((value as number / totalAmount) * 100).toFixed(1)
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [currMonthTxs]);
+
+  const COLORS = ['#94D5FF', '#AEE7E6', '#C9C7F5', '#A0E1F0', '#B7A8E5', '#B2D8D8', '#D1C4E9', '#BBDEFB', '#B2EBF2', '#E1BEE7'];
+
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="max-w-7xl mx-auto space-y-10 pb-20"
+    >
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <EditableHeader
+          title={tabName}
+          setTitle={setTabName}
+        />
+
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="relative w-full sm:w-64">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-text-sub" />
+            <input
+              type="text"
+              placeholder="내역 검색 (메모, 카테고리, 금액)"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full bg-brand-card border border-brand-border rounded-full pl-9 pr-4 py-2 text-xs outline-none focus:border-brand-primary transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-text-sub hover:text-white"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
+          <div className="text-xs font-black text-brand-text-sub">
+  상단 선택 월 기준: {year}년 {month + 1}월
+</div>
+        </div>
+      </div>
+
+      <div className="space-y-5">
+        <div className="grid grid-cols-3 gap-3">
+          {expenseAccountButtons.map((accountName) => {
+            const exists = myAccountNames.includes(accountName);
+
+            return (
+              <button
+                key={accountName}
+                disabled={!exists}
+                onClick={() => setActiveExpenseAccount(accountName)}
+                className={`py-3 px-3 rounded-xl border font-black text-xs md:text-sm transition-all active:scale-95 ${
+                  activeExpenseAccount === accountName
+                    ? 'bg-brand-primary text-white border-brand-primary shadow-lg shadow-brand-primary/20'
+                    : 'bg-brand-card text-brand-text-main border-brand-border hover:border-brand-primary'
+                } ${!exists ? 'opacity-30 cursor-not-allowed' : ''}`}
+              >
+                {accountName.replace('내 ', '').replace(' 통장', '')}
+              </button>
+            );
+          })}
+        </div>
+
+        {(() => {
+          const accountName = activeExpenseAccount;
+          const accountBalance = balances.find((b: any) => b.name === accountName);
+          const accountTxs = filteredMonthTxs.filter((t: any) => t.account === accountName);
+          const incomeTotal = accountTxs
+            .filter((t: any) => t.type === '수입')
+            .reduce((sum: number, t: any) => sum + t.amount, 0);
+          const expenseTotal = accountTxs
+            .filter((t: any) => t.type === '지출')
+            .reduce((sum: number, t: any) => sum + t.amount, 0);
+
+          return (
+            <div className="bg-brand-card border border-brand-border rounded-brand overflow-hidden shadow-brand flex flex-col h-[650px]">
+              <div className="p-6 border-b border-brand-border bg-white/5 space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center text-brand-primary">
+                    <Wallet size={20} />
+                  </div>
+                  <h4 className="font-black text-base">{accountName}</h4>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">
+                    현재 잔액
+                  </p>
+                  <p className="text-2xl font-black tabular-nums text-brand-text-main">
+                    {formatNumber(accountBalance?.currentBalance || 0)}원
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pb-2">
+                  <div>
+                    <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">이번 달 수입</p>
+                    <p className="text-sm font-black text-brand-mint tabular-nums">+{formatNumber(incomeTotal)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-brand-text-sub uppercase mb-1">이번 달 지출</p>
+                    <p className="text-sm font-black text-brand-pink tabular-nums">-{formatNumber(expenseTotal)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="px-6 py-3 bg-brand-bg/30 border-b border-brand-border flex justify-between items-center">
+                  <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">거래 내역</span>
+                  <span className="text-[10px] font-bold text-brand-text-sub opacity-50 uppercase">{accountTxs.length}건</span>
+                </div>
+
+                <div className="flex-1 overflow-y-auto divide-y divide-brand-border custom-scrollbar">
+                  {accountTxs.length > 0 ? (
+                    accountTxs.map((t: any) => (
+                      <div key={t.id} className="px-6 py-4 hover:bg-white/5 transition-colors group">
+                        <div className="flex justify-between items-start gap-4">
+                          <div>
+                            <p className="text-[10px] text-brand-text-sub font-black uppercase mb-0.5">{t.date}</p>
+                            <p className="text-xs font-black">{t.memo || t.category}</p>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className={`text-xs font-black tabular-nums ${t.type === '수입' ? 'text-brand-mint' : 'text-brand-pink'}`}>
+                                {t.type === '수입' ? '+' : '-'}{formatNumber(t.amount)}
+                              </p>
+                              <span className="text-[9px] font-bold text-brand-text-sub bg-brand-border/30 px-1.5 py-0.5 rounded">
+                                {t.category}
+                              </span>
+                            </div>
+
+                            <button
+                              onClick={() => deleteTransaction(t.id)}
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-brand-text-sub hover:text-white hover:bg-brand-pink transition-all"
+                              title="내역 삭제"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center p-10 text-center space-y-2 opacity-20">
+                      <Activity size={24} />
+                      <p className="text-[10px] font-black uppercase tracking-widest">내역이 없습니다</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      <div className="bg-brand-card border border-brand-border rounded-brand p-8 shadow-brand">
+        <h4 className="text-lg font-black mb-10 flex items-center gap-2">
+          <Activity size={20} className="text-brand-primary" />
+          이번 달 지출 분석
+        </h4>
+
+        {categoryData.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="h-[350px] relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={80}
+                    outerRadius={120}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                    label={({ percentage }) => parseFloat(percentage) > 5 ? `${percentage}%` : ''}
+                    labelLine={false}
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#1a1d22', border: '1px solid #25282b', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}
+                    itemStyle={{ color: '#e5e7eb', fontSize: '11px', fontWeight: 'black' }}
+                    formatter={(value: number) => `${formatNumber(value)}원`}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <p className="text-[10px] font-bold text-brand-text-sub uppercase tracking-widest">이번 달 총 지출</p>
+                <p className="text-3xl font-black tabular-nums">
+                  {formatNumber(categoryData.reduce((s, c) => s + c.value, 0))}원
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+              {categoryData.map((item, index) => (
+                <div key={item.name} className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                      <span className="font-black">{item.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-black tabular-nums">{formatNumber(item.value)}원</span>
+                      <span className="text-[10px] text-brand-text-sub font-bold ml-2">({item.percentage}%)</span>
+                    </div>
+                  </div>
+
+                  <div className="w-full h-1.5 bg-brand-border/30 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${item.percentage}%` }}
+                      transition={{ duration: 1, delay: index * 0.1 }}
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="h-[300px] flex flex-col items-center justify-center text-center space-y-4 border border-brand-border border-dashed rounded-xl">
+            <CreditCard size={32} className="text-brand-text-sub/30" />
+            <p className="text-sm font-bold text-brand-text-sub uppercase tracking-widest">분석할 지출 데이터가 없습니다</p>
+          </div>
+        )}
+      </div>
+
+<div className="bg-brand-card border border-brand-border rounded-brand p-6 shadow-brand space-y-4">
+  <h4 className="font-black text-sm flex items-center gap-2">
+    <Wallet size={16} className="text-brand-primary" />
+    내 통장 시작금액 입력
+  </h4>
+
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {balances
+      .filter((b: any) => b.category === '내 통장')
+      .map((b: any) => (
+        <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl p-4 space-y-3">
+          <p className="text-xs font-black">{b.name}</p>
+          <NumericInput
+            label="시작금액"
+            value={b.previousBalance || 0}
+            onChange={(v: number) => updateStartBalance(b.id, v)}
+            className="form-input text-sm font-black"
+          />
+          <p className="text-[10px] font-bold text-brand-text-sub">
+            시작금액 + 이번 달 수입 - 지출 = {formatCurrency(getAccountCalculatedBalance(b.name))}
+          </p>
+        </div>
+      ))}
+  </div>
+</div>
+      
+      <div className="flex justify-center pt-10">
+        <button
+          onClick={onOpenEdit}
+          className="px-12 py-4 bg-brand-card border border-brand-border rounded-2xl font-black text-brand-primary uppercase tracking-widest shadow-brand hover:border-brand-primary transition-all flex items-center gap-3 active:scale-95"
+        >
+          <Edit2 size={18} />
+          내 지출 내역 및 항목 수정 (EDIT EXPENSES)
+        </button>
+      </div>
+    </motion.div>
+  );
+}
 
 /*연금 투자관리*/
 function PensionView({ balances, setBalances, currentDate, tabName, setTabName }: any) {
