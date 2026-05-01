@@ -118,25 +118,18 @@ function EditableHeader({ title, setTitle }: any) {
     setIsEditing(false);
   };
 
-  return (
-    <div className="flex flex-col items-center justify-center py-6 space-y-1">
-      <h3 className="text-[9px] font-bold text-brand-text-sub/40 uppercase tracking-[0.3em]">Current View</h3>
-      <div className="flex items-center gap-2 group">
-        {isEditing ? (
-          <input 
-            autoFocus type="text" value={inputValue} 
-            onChange={e => setInputValue(e.target.value)}
-            onBlur={handleSave} onKeyDown={e => e.key === 'Enter' && handleSave()}
-            className="text-xs font-black bg-transparent border-b border-brand-primary text-center outline-none text-brand-text-main"
-          />
-        ) : (
-          <h2 className="text-[11px] font-black text-brand-text-sub/60 text-center uppercase tracking-widest cursor-pointer" onClick={() => setIsEditing(true)}>
-            {title}
-          </h2>
-        )}
-      </div>
+return (
+  <div className="flex flex-col items-center justify-center py-4 text-center">
+    <div className="flex items-center gap-2 group">
+      {isEditing ? (
+        <input autoFocus type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} onBlur={handleSave} onKeyDown={e => e.key === 'Enter' && handleSave()}
+          className="text-xs font-black bg-transparent border-b border-brand-primary text-center outline-none" />
+      ) : (
+        <h2 className="text-[11px] font-black text-brand-text-sub/60 uppercase tracking-widest cursor-pointer" onClick={() => setIsEditing(true)}>{title}</h2>
+      )}
     </div>
-  );
+  </div>
+);
 }
 
 
@@ -368,26 +361,18 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 
 
 {/* iOS Style Simple Header - 로직 유지 */}
-<header className="sticky top-0 bg-brand-bg/90 backdrop-blur-xl z-50 border-b border-brand-border px-6 pt-10 pb-4">
-  <div className="flex flex-col items-center gap-3">
-    {/* 심플 로고 */}
-    <div className="w-10 h-10 rounded-2xl bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/20">
-      <Activity size={22} className="text-white" />
-    </div>
-    <span className="text-[10px] font-black tracking-[0.2em] text-brand-text-sub uppercase">ACCOUNT</span>
 
-    {/* 월 선택 UI -[cite: 1] 기존 함수 연결 */}
-    <div className="flex items-center gap-6 bg-brand-card/50 px-4 py-1.5 rounded-full mt-1 border border-brand-border">
-      <button onClick={() => changeMonth(-1)} className="text-brand-text-sub active:text-brand-primary"><ChevronLeft size={18} /></button>
-      <span className="text-sm font-black min-w-[100px] text-center text-brand-text-main">
-        {currentMonthDisplay}
-      </span>
-      <button onClick={() => changeMonth(1)} className="text-brand-text-sub active:text-brand-primary"><ChevronRight size={18} /></button>
-    </div>
+<header className="sticky top-0 bg-brand-bg/90 backdrop-blur-xl z-50 border-b border-brand-border px-6 pt-12 pb-4 flex flex-col items-center gap-4">
+  <div className="flex flex-col items-center gap-1">
+    <div className="w-10 h-10 rounded-2xl bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/20"><Activity size={22} className="text-white" /></div>
+    <span className="text-[10px] font-black tracking-[0.2em] text-brand-text-sub uppercase mt-1">Account</span>
   </div>
-
-  {/* 가로 스크롤 메뉴 - 중앙 정렬 스타일 */}
-  <nav className="flex gap-2 overflow-x-auto mt-4 scrollbar-hide justify-start md:justify-center px-2">
+  <div className="flex items-center gap-6 bg-brand-card/50 px-4 py-1.5 rounded-full border border-brand-border">
+    <button onClick={() => changeMonth(-1)} className="text-brand-text-sub"><ChevronLeft size={18} /></button>
+    <span className="text-sm font-black min-w-[100px] text-center">{currentMonthDisplay}</span>
+    <button onClick={() => changeMonth(1)} className="text-brand-text-sub"><ChevronRight size={18} /></button>
+  </div>
+  <nav className="flex gap-1 overflow-x-auto scrollbar-hide w-full px-2">
     <TabButton name="홈" icon={Home} />
     <TabButton name="내 지출" icon={CreditCard} />
     <TabButton name="연금/투자 관리" icon={TrendingUp} />
@@ -397,7 +382,6 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
     <TabButton name="1년 결산" icon={BarChart2} />
   </nav>
 </header>
-
       
 
       {/* Main Content Area */}
