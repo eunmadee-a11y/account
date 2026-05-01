@@ -489,41 +489,81 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 
 
 // --- TAB VIEWS ---
+
+// --- TAB VIEWS ---
 /* 홈 탭 */
 function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
   const mainAccounts = balances.filter((b: any) => b.category === '내 통장');
-
   const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
-  // --- 1. 새로 추가된 적금 상태 관리 (로컬 스토리지 사용으로 매달 데이터 유지) ---
-  const [savingsData, setSavingsData] = useState<Record<string, number>>(() => {
-    try { return JSON.parse(localStorage.getItem('mySavingsData') || '{}'); }
-    catch { return {}; }
+  // --- 1. 적금 다중 추가를 위한 로컬 상태 관리 ---
+  const [savingsList, setSavingsList] = useState<{id: string, name: string}[]>(() => {
+    try {
+      const saved = localStorage.getItem('mySavingsList');
+      return saved ? JSON.parse(saved) : [{ id: 'savings-1', name: '적금 1' }];
+    } catch { return [{ id: 'savings-1', name: '적금 1' }]; }
   });
 
-  const handleSavingsChange = (val: number) => {
-    const newData = { ...savingsData, [monthKey]: val };
-    setSavingsData(newData);
-    localStorage.setItem('mySavingsData', JSON.stringify(newData));
+  const [savingsValues, setSavingsValues] = useState<Record<string, Record<string, number>>>(() => {
+    try {
+      const saved = localStorage.getItem('mySavingsValues');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const currentMonthSavings = savingsValues[monthKey] || {};
+
+  const handleAddSavings = () => {
+    const newId = `savings-${Date.now()}`;
+    const newList = [...savingsList, { id: newId, name: `적금 ${savingsList.length + 1}` }];
+    setSavingsList(newList);
+    localStorage.setItem('mySavingsList', JSON.stringify(newList));
   };
 
-  const currentSavings = savingsData[monthKey] || 0;
+  const handleRemoveSavings = (id: string) => {
+    const newList = savingsList.filter(s => s.id !== id);
+    setSavingsList(newList);
+    localStorage.setItem('mySavingsList', JSON.stringify(newList));
+  };
 
-  // --- 2. 생활비, 여유자금, 자동이체, 적금 4개 항목 합계 계산 ---
+  const handleSavingsNameChange = (id: string, newName: string) => {
+    const newList = savingsList.map(s => s.id === id ? { ...s, name: newName } : s);
+    setSavingsList(newList);
+    localStorage.setItem('mySavingsList', JSON.stringify(newList));
+  };
+
+  const handleSavingsValueChange = (id: string, val: number) => {
+    const newMonthData = { ...currentMonthSavings, [id]: val };
+    const newTotalData = { ...savingsValues, [monthKey]: newMonthData };
+    setSavingsValues(newTotalData);
+    localStorage.setItem('mySavingsValues', JSON.stringify(newTotalData));
+  };
+
+  // 추가된 모든 적금 항목의 이번 달 총합계
+  const totalSavingsAmount = savingsList.reduce((sum, s) => sum + (currentMonthSavings[s.id] || 0), 0);
+
+  // --- 2. 생활비, 여유자금, 자동이체 + 적금(전체) 합계 ---
   const totalSum = useMemo(() => {
     const targetKeywords = ['생활비', '여유자금', '자동이체'];
     const accountsSum = mainAccounts
       .filter((b: any) => targetKeywords.some(k => b.name.includes(k)))
       .reduce((sum: number, b: any) => sum + b.currentBalance, 0);
-    return accountsSum + currentSavings;
-  }, [mainAccounts, currentSavings]);
+    return accountsSum + totalSavingsAmount;
+  }, [mainAccounts, totalSavingsAmount]);
 
+  // --- 3. 자산 현황 요약 커스텀 데이터 (감자 제외, 현금성=totalSum) ---
   const homePensionTotal = balances
-    .filter((b: any) => b.category === '투자/연금' && !b.name.includes('적금'))
+    .filter((b: any) => b.category === '투자/연금')
     .reduce((sum: number, b: any) => {
+      // 투자/연금 탭의 합산 로직과 동일하게 연동
       return sum + (b.monthlyBalances?.[monthKey] ?? b.currentBalance ?? 0);
     }, 0);
-    
+
+  const customCashLike = totalSum;               // 현금성 = 내 통장 합계(적금 포함)
+  const customInvestment = homePensionTotal;     // 투자/연금 = 연금/투자 탭 총액
+  const customOthers = totalAssets.others || 0;  // 기타 자산
+  const customTotalAsset = customCashLike + customInvestment + customOthers; // 감자 자산 제외 총합
+
   const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(null);
 
   const quickAccountKeywords = ['생활비', '여유자금', '자동이체'];
@@ -601,13 +641,12 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
         </div>
 
         <div className="divide-y divide-brand-border">
-          {/* 기존 통장 목록 (전달 비교 UI 삭제됨) */}
+          {/* 기존 3개 통장 목록 */}
           {mainAccounts.map((b: any) => (
             <div key={b.id} className="px-4 py-3 flex items-center justify-between gap-3">
               <p className="text-xs md:text-sm font-black text-brand-text-sub shrink-0">
                 {b.name.replace('내 ', '').replace(' 통장', '')}
               </p>
-
               <div className="flex items-center justify-end gap-2 min-w-0">
                 <p className="text-base md:text-xl font-black tabular-nums">
                   {formatCurrency(b.currentBalance)}
@@ -616,19 +655,39 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
             </div>
           ))}
 
-          {/* 3. 자동이체 밑에 추가된 적금 항목 (직접 입력 가능) */}
-          <div className="px-4 py-3 flex items-center justify-between gap-3 bg-brand-bg/30">
-            <p className="text-xs md:text-sm font-black text-brand-text-sub shrink-0">
-              적금
-            </p>
-            <div className="flex items-center justify-end gap-2 min-w-0 w-32">
-              <NumericInput
-                value={currentSavings}
-                onChange={handleSavingsChange}
-                className="w-full bg-transparent border-b border-brand-primary/50 text-right text-base md:text-xl font-black tabular-nums outline-none focus:border-brand-primary text-brand-primary"
-                placeholder="0"
-              />
+          {/* 추가된 다중 적금 항목 리스트 */}
+          {savingsList.map((savings) => (
+            <div key={savings.id} className="px-4 py-3 flex items-center justify-between gap-3 bg-brand-bg/30">
+              <div className="flex items-center gap-1 shrink-0">
+                {savingsList.length > 1 && (
+                  <button onClick={() => handleRemoveSavings(savings.id)} className="text-brand-pink hover:bg-brand-pink/10 p-1.5 rounded-md transition-colors">
+                    <Minus size={12} />
+                  </button>
+                )}
+                <input
+                  type="text"
+                  value={savings.name}
+                  onChange={(e) => handleSavingsNameChange(savings.id, e.target.value)}
+                  className="bg-transparent text-xs md:text-sm font-black text-brand-text-sub outline-none w-24 md:w-32 focus:text-brand-primary"
+                  placeholder="적금 이름"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 min-w-0 w-32">
+                <NumericInput
+                  value={currentMonthSavings[savings.id] || 0}
+                  onChange={(val: number) => handleSavingsValueChange(savings.id, val)}
+                  className="w-full bg-transparent border-b border-brand-primary/30 text-right text-base md:text-xl font-black tabular-nums outline-none focus:border-brand-primary text-brand-primary"
+                  placeholder="0"
+                />
+              </div>
             </div>
+          ))}
+          
+          {/* 적금 추가 (+) 버튼 */}
+          <div className="px-4 py-2 bg-brand-bg/10 flex justify-center border-t border-brand-border">
+             <button onClick={handleAddSavings} className="flex items-center gap-1 text-[11px] font-bold text-brand-text-sub hover:text-brand-primary transition-colors py-1.5">
+               <Plus size={12} /> 적금 통장 추가
+             </button>
           </div>
         </div>
       </div>
@@ -653,26 +712,22 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
 
             <div className="space-y-4">
               <div>
-                <p className="text-xs font-bold text-brand-text-sub uppercase mb-2">총 자산</p>
-                <h4 className="text-3xl font-black">{formatCurrency(totalAssets.total)}</h4>
+                <p className="text-xs font-bold text-brand-text-sub uppercase mb-2">총 자산 (감자 자산 제외)</p>
+                <h4 className="text-3xl font-black">{formatCurrency(customTotalAsset)}</h4>
               </div>
 
               <div className="h-1.5 bg-brand-border rounded-full overflow-hidden flex">
-                <div className="h-full bg-brand-primary" style={{ width: `${totalAssets.total ? (totalAssets.cashLike / totalAssets.total) * 100 : 0}%` }} />
-                <div className="h-full bg-brand-mint" style={{ width: `${totalAssets.total ? (totalAssets.investment / totalAssets.total) * 100 : 0}%` }} />
-                <div className="h-full bg-brand-purple" style={{ width: `${totalAssets.total ? (totalAssets.gamja / totalAssets.total) * 100 : 0}%` }} />
-                <div className="h-full bg-brand-yellow" style={{ width: `${totalAssets.total ? (totalAssets.others / totalAssets.total) * 100 : 0}%` }} />
+                <div className="h-full bg-brand-primary" style={{ width: `${customTotalAsset ? (customCashLike / customTotalAsset) * 100 : 0}%` }} />
+                <div className="h-full bg-brand-mint" style={{ width: `${customTotalAsset ? (customInvestment / customTotalAsset) * 100 : 0}%` }} />
+                <div className="h-full bg-brand-yellow" style={{ width: `${customTotalAsset ? (customOthers / customTotalAsset) * 100 : 0}%` }} />
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px] font-bold text-brand-text-sub">
+              <div className="grid grid-cols-3 gap-2 text-[10px] font-bold text-brand-text-sub">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-brand-primary" />현금성
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-brand-mint" />투자/연금
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-brand-purple" />감자 자산
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-brand-yellow" />기타 자산
@@ -789,8 +844,6 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
     </motion.div>
   );
 }
-
-
 
 /*내 지출*/
 
