@@ -1634,6 +1634,18 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           <div className="divide-y divide-brand-border max-h-[520px] overflow-y-auto custom-scrollbar">
             {filteredTxs.length > 0 ? (
               filteredTxs.map((t: any) => (
+
+
+
+<div className="flex-1 flex flex-col overflow-hidden">
+          <div className="px-6 py-3 bg-brand-bg/30 border-t border-brand-border flex justify-between items-center">
+            <span className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">거래 내역</span>
+            <span className="text-[10px] font-bold text-brand-text-sub opacity-50 uppercase">{filteredTxs.length}건</span>
+          </div>
+
+          <div className="divide-y divide-brand-border max-h-[520px] overflow-y-auto custom-scrollbar">
+            {filteredTxs.length > 0 ? (
+              filteredTxs.map((t: any) => (
                 <div key={t.id} className="px-6 py-4 hover:bg-white/5 transition-colors group">
                   <div className="flex justify-between items-start gap-4">
                     <div>
@@ -1671,6 +1683,9 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           </div>
         </div>
       </div>
+
+
+                
 
       <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand overflow-hidden">
         <button
