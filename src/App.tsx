@@ -843,10 +843,14 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
 /*내 지출*/
 
 
+/* 내 지출 */
 function ExpenseView({ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery, setSearchQuery, tabName, setTabName, categories, setCategories, onOpenEdit }: any) {
   const { currMonthTxs } = filteredData;
   const month = currentDate.getMonth();
   const year = currentDate.getFullYear();
+
+  // 시작금액 아코디언 토글 상태 추가
+  const [isStartBalanceOpen, setIsStartBalanceOpen] = useState(false);
 
   const expenseAccountButtons = ['내 생활비 통장', '내 여유자금 통장', '내 자동이체 통장'];
 
@@ -914,7 +918,6 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
 
   const COLORS = ['#94D5FF', '#AEE7E6', '#C9C7F5', '#A0E1F0', '#B7A8E5', '#B2D8D8', '#D1C4E9', '#BBDEFB', '#B2EBF2', '#E1BEE7'];
 
-
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
@@ -948,8 +951,8 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
           </div>
 
           <div className="text-xs font-black text-brand-text-sub">
-  상단 선택 월 기준: {year}년 {month + 1}월
-</div>
+            상단 선택 월 기준: {year}년 {month + 1}월
+          </div>
         </div>
       </div>
 
@@ -1067,109 +1070,104 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
         })()}
       </div>
 
+      {/* 파이그래프 제외, 항목별 막대 그래프만 남긴 분석 영역 */}
       <div className="bg-brand-card border border-brand-border rounded-brand p-8 shadow-brand">
-        <h4 className="text-lg font-black mb-10 flex items-center gap-2">
+        <h4 className="text-lg font-black mb-8 flex items-center gap-2">
           <Activity size={20} className="text-brand-primary" />
           이번 달 지출 분석
         </h4>
 
         {categoryData.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="h-[350px] relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={120}
-                    paddingAngle={5}
-                    dataKey="value"
-                    stroke="none"
-                    label={({ percentage }) => parseFloat(percentage) > 5 ? `${percentage}%` : ''}
-                    labelLine={false}
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1a1d22', border: '1px solid #25282b', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}
-                    itemStyle={{ color: '#e5e7eb', fontSize: '11px', fontWeight: 'black' }}
-                    formatter={(value: number) => `${formatNumber(value)}원`}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <p className="text-[10px] font-bold text-brand-text-sub uppercase tracking-widest">이번 달 총 지출</p>
-                <p className="text-3xl font-black tabular-nums">
-                  {formatNumber(categoryData.reduce((s, c) => s + c.value, 0))}원
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
-              {categoryData.map((item, index) => (
-                <div key={item.name} className="flex flex-col gap-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                      <span className="font-black">{item.name}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-black tabular-nums">{formatNumber(item.value)}원</span>
-                      <span className="text-[10px] text-brand-text-sub font-bold ml-2">({item.percentage}%)</span>
-                    </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+            {categoryData.map((item, index) => (
+              <div key={item.name} className="flex flex-col gap-2">
+                <div className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                    <span className="font-black">{item.name}</span>
                   </div>
-
-                  <div className="w-full h-1.5 bg-brand-border/30 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${item.percentage}%` }}
-                      transition={{ duration: 1, delay: index * 0.1 }}
-                      className="h-full rounded-full"
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
+                  <div className="text-right">
+                    <span className="font-black tabular-nums">{formatNumber(item.value)}원</span>
+                    <span className="text-[10px] text-brand-text-sub font-bold ml-2">({item.percentage}%)</span>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="w-full h-1.5 bg-brand-border/30 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${item.percentage}%` }}
+                    transition={{ duration: 1, delay: index * 0.1 }}
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="h-[300px] flex flex-col items-center justify-center text-center space-y-4 border border-brand-border border-dashed rounded-xl">
+          <div className="h-[200px] flex flex-col items-center justify-center text-center space-y-4 border border-brand-border border-dashed rounded-xl">
             <CreditCard size={32} className="text-brand-text-sub/30" />
             <p className="text-sm font-bold text-brand-text-sub uppercase tracking-widest">분석할 지출 데이터가 없습니다</p>
           </div>
         )}
       </div>
 
-<div className="bg-brand-card border border-brand-border rounded-brand p-6 shadow-brand space-y-4">
-  <h4 className="font-black text-sm flex items-center gap-2">
-    <Wallet size={16} className="text-brand-primary" />
-    내 통장 시작금액 입력
-  </h4>
+      {/* 감자지출처럼 아코디언 방식으로 변경된 내 통장 시작금액 입력 */}
+      <div className="bg-brand-card border border-brand-border rounded-brand shadow-brand overflow-hidden">
+        <button
+          onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)}
+          className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-white/5 transition-all"
+        >
+          <div>
+            <h4 className="font-black text-sm flex items-center gap-2">
+              <Wallet size={16} className="text-brand-primary" />
+              내 통장 시작금액 입력
+            </h4>
+            <p className="text-[10px] font-bold text-brand-text-sub mt-1">
+              수정할 때만 열어서 사용하세요.
+            </p>
+          </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-    {balances
-      .filter((b: any) => b.category === '내 통장')
-      .map((b: any) => (
-        <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl p-4 space-y-3">
-          <p className="text-xs font-black">{b.name}</p>
-          <NumericInput
-            label="시작금액"
-            value={b.previousBalance || 0}
-            onChange={(v: number) => updateStartBalance(b.id, v)}
-            className="form-input text-sm font-black"
+          <ChevronRight
+            size={18}
+            className={`text-brand-primary transition-transform ${
+              isStartBalanceOpen ? 'rotate-90' : ''
+            }`}
           />
-          <p className="text-[10px] font-bold text-brand-text-sub">
-            시작금액 + 이번 달 수입 - 지출 = {formatCurrency(getAccountCalculatedBalance(b.name))}
-          </p>
-        </div>
-      ))}
-  </div>
-</div>
+        </button>
+
+        <AnimatePresence>
+          {isStartBalanceOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="px-6 pb-6 pt-2 border-t border-brand-border">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {balances
+                    .filter((b: any) => b.category === '내 통장')
+                    .map((b: any) => (
+                      <div key={b.id} className="bg-brand-bg/50 border border-brand-border rounded-xl p-4 space-y-3">
+                        <p className="text-xs font-black">{b.name}</p>
+                        <NumericInput
+                          label="시작금액"
+                          value={b.previousBalance || 0}
+                          onChange={(v: number) => updateStartBalance(b.id, v)}
+                          className="form-input text-sm font-black"
+                        />
+                        <p className="text-[10px] font-bold text-brand-text-sub">
+                          시작금액 + 이번 달 수입 - 지출 = {formatCurrency(getAccountCalculatedBalance(b.name))}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
       
       <div className="flex justify-center pt-10">
         <button
