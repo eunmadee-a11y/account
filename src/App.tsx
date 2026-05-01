@@ -2269,22 +2269,47 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
         <button onClick={handleAddSalary} className="w-full bg-brand-primary text-white font-black py-4 rounded-xl text-[15px] active:scale-95 transition-all">등록 및 지출 탭 연동</button>
       </div>
 
-      {/* 3. 급여 비교 그래프 (1월 표시 및 간격 최적화) */}
+
+
+{/* 3. 월급 비교 그래프 (1월 표시 및 간격 최적화) */}
       <div className="bg-brand-card p-4 rounded-brand border border-brand-border shadow-brand overflow-hidden">
-        <h4 className="text-[11px] font-black uppercase mb-4 flex items-center gap-2 text-brand-text-sub px-1"><BarChart2 size={14} className="text-brand-primary" /> 월별 급여 비교</h4>
+        <h4 className="text-[11px] font-black uppercase mb-4 flex items-center gap-2 text-brand-text-sub px-1">
+          <BarChart2 size={14} className="text-brand-primary" /> 
+          월별 급여 비교
+        </h4>
         <div className="h-[250px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlySalaryData} margin={{ top: 10, right: 15, left: -25, bottom: 0 }}>
+            <BarChart 
+              data={monthlySalaryData} 
+              margin={{ top: 10, right: 10, left: 0, bottom: 0 }} // left를 0으로 조정하여 1월이 잘리지 않게 함
+            >
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#25282b" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 'bold' }} interval={0} />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 'bold' }} 
+                interval={0} // 모든 달(1~12월)이 다 보이도록 강제
+              />
               <YAxis hide />
               <Tooltip cursor={{ fill: 'rgba(255,255,255,0.02)' }} content={<CustomTooltip />} />
-              <Bar dataKey="나" fill="#94d5ff" radius={[2, 2, 0, 0]} barSize={10} />
-              <Bar dataKey="감자" fill="#b7a8e5" radius={[2, 2, 0, 0]} barSize={10} />
+              <Bar 
+                dataKey="나" 
+                fill="#94d5ff" 
+                radius={[2, 2, 0, 0]} 
+                barSize={8} // 아이폰 화면 폭을 고려해 바 굵기 살짝 축소
+              />
+              <Bar 
+                dataKey="감자" 
+                fill="#b7a8e5" 
+                radius={[2, 2, 0, 0]} 
+                barSize={8} 
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
+      
 
       {/* 4. 항목 명칭 설정 */}
       <div className="bg-brand-card border border-brand-border rounded-2xl overflow-hidden">
