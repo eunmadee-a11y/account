@@ -563,88 +563,49 @@ const homePensionTotal = balances
         )}
       </div>
 
-     {/* 통장 잔액 한 박스 */}
+
+{/* 통장 잔액 한 박스 */}
 <div className="bg-brand-card rounded-brand border border-brand-border shadow-brand overflow-hidden">
+
+  {/* 상단 */}
   <div className="px-4 py-3 border-b border-brand-border bg-white/5 flex items-center justify-between">
-    
     <h3 className="text-sm font-black flex items-center gap-2">
       <Wallet size={16} className="text-brand-primary" />
       내 통장 잔액
     </h3>
 
-    {/* 통장 종류 표시 */}
-    <p className="text-[10px] font-bold text-brand-text-sub">
-      생활비 · 여유자금 · 자동이체 · 적금
+    {/* ✅ 4개 통장 합계 */}
+    <p className="text-sm font-black tabular-nums">
+      {mainAccounts
+        .reduce((sum: number, b: any) => sum + (b.currentBalance || 0), 0)
+        .toLocaleString()}
     </p>
   </div>
 
+  {/* 리스트 */}
   <div className="divide-y divide-brand-border">
-    {[
-      ...mainAccounts,
-      ...(mainAccounts.some((b: any) => b.name.includes('적금'))
-        ? []
-        : [{
-            id: 'saving-temp',
-            name: '내 적금',
-            category: '내 통장',
-            currentBalance: 0,
-            previousBalance: 0
-          }])
-    ].map((b: any) => {
+    {mainAccounts.map((b: any) => (
+      <div key={b.id} className="px-4 py-3 flex items-center justify-between">
 
-      const isSaving = b.name.includes('적금');
+        {/* 통장명 */}
+        <p className="text-xs md:text-sm font-black text-brand-text-sub">
+          {b.name.replace('내 ', '').replace(' 통장', '')}
+        </p>
 
-      return (
-        <div key={b.id} className="px-4 py-3 flex items-center justify-between">
+        {/* 금액 영역 */}
+        <div className="w-[55%] flex justify-end">
 
-          {/* 왼쪽: 통장명 */}
-          <p className="text-xs md:text-sm font-black text-brand-text-sub">
-            {b.name.replace('내 ', '').replace(' 통장', '')}
+          {/* ✅ 핵심: 정렬 맞추는 부분 */}
+          <p className="text-base md:text-xl font-black tabular-nums text-right w-full">
+            {(b.currentBalance || 0).toLocaleString()}
           </p>
 
-          {/* 오른쪽: 금액 (중앙쪽 + 오른쪽 정렬 느낌) */}
-          <div className="w-[60%] flex justify-end items-center gap-2">
-
-            {isSaving ? (
-              <NumericInput
-                value={b.currentBalance || 0}
-                onChange={(v: number) => {
-                  setBalances((prev: any[]) => {
-                    const exists = prev.some((x: any) => x.id === b.id);
-
-                    if (exists) {
-                      return prev.map((x: any) =>
-                        x.id === b.id ? { ...x, currentBalance: v } : x
-                      );
-                    }
-
-                    return [...prev, { ...b, currentBalance: v }];
-                  });
-                }}
-                className="text-right font-black"
-                placeholder="0"
-              />
-            ) : (
-              <>
-                <p className="text-base md:text-xl font-black text-right tabular-nums">
-                  {b.currentBalance?.toLocaleString()}
-                </p>
-
-                <span className={`text-[10px] font-bold ${
-                  b.currentBalance >= b.previousBalance ? 'text-brand-mint' : 'text-brand-pink'
-                }`}>
-                  {b.currentBalance >= b.previousBalance ? '+' : ''}
-                  {(b.currentBalance - b.previousBalance)?.toLocaleString()}
-                </span>
-              </>
-            )}
-
-          </div>
         </div>
-      );
-    })}
+      </div>
+    ))}
   </div>
 </div>
+      
 
       {/* 메인 대시보드 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
