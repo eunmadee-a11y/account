@@ -2030,20 +2030,36 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
   const [newTx, setNewTx] = useState({
     date: new Date().toISOString().split('T')[0],
     type: '지출' as TransactionType,
-    category: categories.expense[0],
+    category: categories.expense[0], // 항상 지출 항목이 기본으로 뜨도록 설정
     amount: 0,
     memo: ''
   });
 
-  const handleAdd = (type: TransactionType) => {
+  // 유형(수입/지출)이 바뀔 때 카테고리도 알맞게 변경해주는 함수
+  const handleTypeChange = (newType: TransactionType) => {
+    setNewTx({
+      ...newTx,
+      type: newType,
+      category: newType === '지출' ? categories.expense[0] : categories.income[0]
+    });
+  };
+
+  // 단일 입력 버튼 동작
+  const handleAdd = () => {
     if (newTx.amount <= 0) return;
     onAdd({
       id: Math.random().toString(36).substr(2, 9),
       ...newTx,
-      type,
       account
     });
-    setNewTx({ ...newTx, amount: 0, memo: '' });
+    // 입력 후 다시 기본값(지출)으로 초기화
+    setNewTx({ 
+      ...newTx, 
+      type: '지출', 
+      category: categories.expense[0], 
+      amount: 0, 
+      memo: '' 
+    });
   };
 
   return (
@@ -2053,7 +2069,6 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
             <Plus size={14} /> {account}
          </h4>
         <div className="flex items-center bg-brand-card border border-brand-border rounded-xl px-2 py-1">
-           {/* 날짜 화살표 제거하고 감자탭처럼 캘린더(date) 입력창으로 변경 */}
            <input
              type="date"
              value={newTx.date}
@@ -2063,16 +2078,23 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 mb-3">
          <div className="space-y-1.5">
-            <div className="flex items-center justify-between ml-1">
-               <label className="text-[11px] font-black text-brand-text-sub uppercase">항목</label>
-            </div>
-            {/* iOS 줌 방지를 위해 모바일에서 text-[16px] 강제 적용 */}
-            <select value={newTx.category} onChange={e => setNewTx({...newTx, category: e.target.value})} className="form-select text-[16px] md:text-[11px] py-2 h-[42px]">
+            <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">유형</label>
+            <select value={newTx.type} onChange={e => handleTypeChange(e.target.value as TransactionType)} className="form-select text-[16px] md:text-[11px] py-2 h-[42px] font-black">
+               <option value="지출">지출</option>
+               <option value="수입">수입</option>
+            </select>
+         </div>
+         <div className="space-y-1.5">
+            <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">항목</label>
+            <select value={newTx.category} onChange={e => setNewTx({...newTx, category: e.target.value})} className="form-select text-[16px] md:text-[11px] py-2 h-[42px] font-black">
                {(newTx.type === '지출' ? categories.expense : categories.income).map((c: string) => <option key={c} value={c}>{c}</option>)}
             </select>
          </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
          <NumericInput 
            label="금액 입력"
            value={newTx.amount} 
@@ -2080,16 +2102,16 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
            onChange={(val: number) => setNewTx({...newTx, amount: val})} 
            className="form-input text-[16px] md:text-sm font-black py-2 h-[42px]" 
          />
+         <div className="space-y-1.5">
+            <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">메모</label>
+            <input type="text" value={newTx.memo} placeholder="메모 입력" onChange={e => setNewTx({...newTx, memo: e.target.value})} className="form-input text-[16px] md:text-[11px] py-2 h-[42px]" />
+         </div>
       </div>
 
-      <div className="space-y-1.5">
-         <label className="text-[11px] font-black text-brand-text-sub uppercase ml-1">메모</label>
-         <input type="text" value={newTx.memo} placeholder="메모 입력" onChange={e => setNewTx({...newTx, memo: e.target.value})} className="form-input text-[16px] md:text-[11px] py-2 h-[42px]" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mt-4">
-         <button onClick={() => { setNewTx({...newTx, type: '수입', category: categories.income[0] }); handleAdd('수입'); }} className="bg-brand-mint/10 text-brand-mint text-[11px] font-black py-3 rounded-xl hover:bg-brand-mint/20 transition-all uppercase">수입</button>
-         <button onClick={() => { setNewTx({...newTx, type: '지출', category: categories.expense[0] }); handleAdd('지출'); }} className="bg-brand-pink/10 text-brand-pink text-[11px] font-black py-3 rounded-xl hover:bg-brand-pink/20 transition-all uppercase">지출</button>
+      <div className="mt-4">
+         <button onClick={handleAdd} className="w-full bg-brand-primary text-white text-[14px] font-black py-3.5 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all uppercase tracking-widest shadow-lg shadow-brand-primary/20">
+            입력하기
+         </button>
       </div>
     </div>
   );
@@ -2893,17 +2915,18 @@ function Calendar({ currentDate, transactions, selectedDateStr, onDateClick }: a
   for (let i = 1; i <= daysInMonth; i++) days.push(i);
 
   return (
-    <div className="grid grid-cols-7 gap-px bg-brand-border border border-brand-border rounded-brand overflow-hidden shadow-brand">
+    // -mx-6 를 추가하여 부모의 패딩을 무시하고 모바일 화면 좌우 꽉 차게 늘려줍니다.
+    <div className="-mx-6 md:mx-0 grid grid-cols-7 gap-px bg-brand-border border-y md:border border-brand-border md:rounded-brand overflow-hidden shadow-brand">
       {['일', '월', '화', '수', '목', '금', '토'].map(d => (
-        <div key={d} className="text-[10px] text-center font-black text-brand-text-sub py-2 bg-brand-card border-b border-brand-border uppercase tracking-widest">{d}</div>
+        <div key={d} className="text-[10px] text-center font-black text-brand-text-sub py-2.5 bg-brand-card border-b border-brand-border uppercase tracking-widest">{d}</div>
       ))}
       {days.map((day, idx) => {
         if (!day) return <div key={`empty-${idx}`} className="bg-brand-bg/20" />;
         
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const dayTransactions = transactions.filter((t: any) => t.date === dateStr);
-        const dayExpense = dayTransactions.filter((t: any) => t.type === '지출').reduce((sum: number, t: any) => sum + t.amount, 0);
-        const dayIncome = dayTransactions.filter((t: any) => t.type === '수입').reduce((sum: number, t: any) => sum + t.amount, 0);
+        const hasExpense = dayTransactions.some((t: any) => t.type === '지출');
+        const hasIncome = dayTransactions.some((t: any) => t.type === '수입');
         const isToday = new Date().toISOString().split('T')[0] === dateStr;
         const isSelected = selectedDateStr === dateStr;
 
@@ -2911,22 +2934,17 @@ function Calendar({ currentDate, transactions, selectedDateStr, onDateClick }: a
           <button 
             key={idx} 
             onClick={() => onDateClick(dateStr)}
-            /* p-2를 p-1로 줄이고, overflow-hidden을 주어 칸을 넘어가지 않게 함 */
-            className={`min-h-[55px] md:min-h-[80px] p-1 border transition-all flex flex-col items-start gap-1 relative overflow-hidden ${
+            className={`min-h-[55px] md:min-h-[70px] p-1 border transition-all flex flex-col items-center justify-between relative overflow-hidden ${
               isSelected ? 'bg-brand-primary/10 border-brand-primary z-10' :
               isToday ? 'bg-white/5 border-white/20' : 
               'bg-brand-card border-transparent hover:bg-white/5'
             }`}
           >
-            <span className={`text-[10px] font-black pl-0.5 ${isSelected ? 'text-brand-primary' : isToday ? 'text-white' : 'text-brand-text-sub/60'}`}>{day}</span>
-            <div className="flex flex-col gap-0.5 w-full px-0.5">
-               {/* 금액 폰트를 8px로 살짝 줄이고, truncate를 추가해 넘칠 경우 ...으로 생략되게 처리 */}
-               {dayIncome > 0 && (
-                 <span className="text-[8px] md:text-[9px] font-black text-brand-mint tabular-nums truncate w-full text-left">+{formatNumber(dayIncome)}</span>
-               )}
-               {dayExpense > 0 && (
-                 <span className="text-[8px] md:text-[9px] font-black text-brand-pink tabular-nums truncate w-full text-left">-{formatNumber(dayExpense)}</span>
-               )}
+            <span className={`text-[12px] font-black mt-1 ${isSelected ? 'text-brand-primary' : isToday ? 'text-white' : 'text-brand-text-sub/80'}`}>{day}</span>
+            <div className="flex gap-1.5 mb-1.5">
+               {/* 숫자 대신 직관적인 기호만 표시하여 깔끔하게 변경 */}
+               {hasIncome && <span className="text-[14px] font-black text-brand-mint leading-none">+</span>}
+               {hasExpense && <span className="text-[14px] font-black text-brand-pink leading-none">-</span>}
             </div>
           </button>
         );
