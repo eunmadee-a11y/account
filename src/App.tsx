@@ -2110,9 +2110,8 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
 
 
 
-
-function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, setSalaryLabels, currentDate, setTransactions, setGamjaTransactions }: any) {
-  // 통합 입력 상태
+function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, setSalaryLabels, currentDate, transactions, setTransactions, gamjaTransactions, setGamjaTransactions }: any) {
+  // 통합 입력 상태 (나/감자 선택 포함)
   const [newEntry, setNewEntry] = useState({
     target: '나' as '나' | '감자',
     date: new Date().toISOString().split('T')[0],
@@ -2122,104 +2121,164 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
   });
 
   const selectedYear = currentDate.getFullYear();
+
+  // 1. 연간 총 수입 계산 (슬림 박스용)
   const totalAnnual = useMemo(() => {
     const my = salaries.mySalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0);
     const gamja = salaries.gamjaSalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0);
     return my + gamja;
   }, [salaries, selectedYear]);
 
-  // 상단 날짜와 연동된 등록 로직
+  // 2. 통합 등록 및 지출 탭 자동 연동 함수
   const handleAddSalary = () => {
     if (newEntry.amount <= 0) return;
     const recordId = Math.random().toString(36).substr(2, 9);
-    const newRecord = { ...newEntry, id: recordId };
+    const record = { ...newEntry, id: recordId };
 
     if (newEntry.target === '나') {
-      setSalaries({ ...salaries, mySalaryRecords: [newRecord, ...salaries.mySalaryRecords] });
-      // 내 지출 탭 '여유자금 통장' 수입 연동
-      setTransactions((prev: any) => [{
+      // 월급 비교 데이터 저장
+      setSalaries({ ...salaries, mySalaryRecords: [record, ...salaries.mySalaryRecords] });
+      // [내 지출 탭] 여유자금 통장으로 수입 자동 추가
+      const autoTx = {
         id: `auto-${recordId}`,
         date: newEntry.date,
-        type: '수입',
+        type: '수입' as TransactionType,
         category: salaryLabels[newEntry.type] || newEntry.type,
-        account: '내 여유자금 통장', // 정확한 통장 명칭 확인 필요
+        account: '내 여유자금 통장', // 사용자 통장 명칭에 맞춰 수정 가능
         amount: newEntry.amount,
-        memo: `[월급연동] ${newEntry.memo}`
-      }, ...prev]);
+        memo: `[급여연동] ${newEntry.memo}`
+      };
+      setTransactions([autoTx, ...transactions]);
     } else {
-      setSalaries({ ...salaries, gamjaSalaryRecords: [newRecord, ...salaries.gamjaSalaryRecords] });
-      // 감자 지출 탭 '생활비 통장' 수입 연동
-      setGamjaTransactions((prev: any) => [{
+      // 감자 월급 데이터 저장
+      setSalaries({ ...salaries, gamjaSalaryRecords: [record, ...salaries.gamjaSalaryRecords] });
+      // [감자 지출 탭] 생활비 통장으로 수입 자동 추가
+      const autoGamjaTx = {
         id: `auto-gamja-${recordId}`,
         date: newEntry.date,
-        type: '수입',
+        type: '수입' as TransactionType,
         category: '월급',
-        account: '감자 생활비 통장', // 정확한 통장 명칭 확인 필요
+        account: '감자 생활비 통장', // 사용자 통장 명칭에 맞춰 수정 가능
         amount: newEntry.amount,
-        memo: `[감자연동] ${newEntry.memo}`
-      }, ...prev]);
+        memo: `[급여연동] ${newEntry.memo}`
+      };
+      setGamjaTransactions([autoGamjaTx, ...gamjaTransactions]);
     }
+    // 입력창 초기화
     setNewEntry({ ...newEntry, amount: 0, memo: '' });
+    alert(`${newEntry.target}의 급여가 등록되고 해당 지출 탭에 수입으로 연동되었습니다.`);
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-4 pb-10 px-2">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-4 pb-20 px-2">
       <EditableHeader title={tabName} setTitle={setTabName} />
       
-      {/* 1. 슬림해진 상단 요약 박스 (애플 스타일) */}
-      <div className="bg-brand-card p-6 rounded-2xl border border-brand-border shadow-sm">
-        <p className="text-[10px] font-bold text-brand-text-sub uppercase tracking-widest text-center">Annual Household Income ({selectedYear})</p>
-        <h4 className="text-3xl font-black text-center mt-1">{formatCurrency(totalAnnual)}</h4>
+      {/* 1. 슬림한 상단 수입 요약 (애플 스타일) */}
+      <div className="bg-brand-card py-5 px-6 rounded-2xl border border-brand-border shadow-sm flex justify-between items-center">
+        <span className="text-[11px] font-black text-brand-text-sub uppercase tracking-widest">{selectedYear} 가구 총 수입</span>
+        <span className="text-2xl font-black text-brand-text-main tabular-nums">{formatCurrency(totalAnnual)}</span>
       </div>
 
-      {/* 2. 통합 월급 등록창 (홈 탭 디자인) */}
-      <div className="bg-brand-card p-5 rounded-2xl border border-brand-border space-y-4">
+      {/* 2. 통합 급여 등록창 (홈 탭 디자인 차용) */}
+      <div className="bg-brand-card p-5 rounded-2xl border border-brand-border space-y-5 shadow-brand">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-black text-brand-primary">월급/상여 등록</span>
-          <input type="date" value={newEntry.date} onChange={e => setNewEntry({...newEntry, date: e.target.value})} className="bg-brand-bg border border-brand-border rounded-lg px-2 py-1 text-[13px] font-bold outline-none" />
+          <h4 className="text-xs font-black text-brand-primary uppercase tracking-widest flex items-center gap-2">
+            <Plus size={14} /> 급여 등록 및 연동
+          </h4>
+          <input 
+            type="date" 
+            value={newEntry.date} 
+            onChange={e => setNewEntry({...newEntry, date: e.target.value})} 
+            className="bg-brand-bg border border-brand-border rounded-xl px-2 py-1 text-[14px] font-bold outline-none text-brand-text-main"
+          />
         </div>
 
-        {/* 대상 선택 롤링 칩 */}
+        {/* 대상 선택 (나/감자 롤링 칩) */}
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-brand-text-sub ml-1">입금 대상</label>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          <label className="text-[10px] font-black text-brand-text-sub ml-1 uppercase">입금 대상</label>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
             {(['나', '감자'] as const).map(t => (
-              <button key={t} onClick={() => setNewEntry({...newEntry, target: t})} className={`shrink-0 px-5 py-2 rounded-xl text-xs font-black border transition-all ${newEntry.target === t ? 'bg-brand-primary border-brand-primary text-white' : 'bg-brand-bg border-brand-border text-brand-text-sub'}`}>{t === '나' ? '내 월급' : '감자 월급'}</button>
+              <button 
+                key={t} 
+                onClick={() => setNewEntry({...newEntry, target: t})}
+                className={`shrink-0 px-6 py-2.5 rounded-xl text-xs font-black border transition-all ${
+                  newEntry.target === t ? 'bg-brand-primary border-brand-primary text-white shadow-md' : 'bg-brand-bg border-brand-border text-brand-text-sub'
+                }`}
+              >
+                {t === '나' ? '내 급여' : '감자 급여'}
+              </button>
             ))}
           </div>
         </div>
 
-        {/* 종류 선택 롤링 칩 (항목 설정 연동) */}
+        {/* 급여 항목 선택 (명칭 설정 연동 롤링 칩) */}
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-brand-text-sub ml-1">급여 종류</label>
+          <label className="text-[10px] font-black text-brand-text-sub ml-1 uppercase">급여 항목</label>
           <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
             {SALARY_TYPES.map(type => (
-              <button key={type} onClick={() => setNewEntry({...newEntry, type: type as SalaryType})} className={`shrink-0 px-4 py-2 rounded-xl text-xs font-black border transition-all ${newEntry.type === type ? 'bg-brand-mint border-brand-mint text-white' : 'bg-brand-bg border-brand-border text-brand-text-sub'}`}>{salaryLabels[type] || type}</button>
+              <button 
+                key={type} 
+                onClick={() => setNewEntry({...newEntry, type: type as SalaryType})}
+                className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-black border transition-all ${
+                  newEntry.type === type ? 'bg-brand-mint border-brand-mint text-white' : 'bg-brand-bg border-brand-border text-brand-text-sub'
+                }`}
+              >
+                {salaryLabels[type] || type}
+              </button>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3">
-          <NumericInput label="입금 금액" value={newEntry.amount} onChange={(v: number) => setNewEntry({...newEntry, amount: v})} className="form-input text-lg font-black py-2 h-[42px] bg-brand-bg/50 border-brand-border text-brand-primary" />
-          <input type="text" placeholder="메모 (자동 연동됩니다)" value={newEntry.memo} onChange={e => setNewEntry({...newEntry, memo: e.target.value})} className="form-input text-[13px] h-[42px] bg-brand-bg/50 border-brand-border rounded-xl px-3 outline-none" />
+        {/* 금액 및 메모 입력 */}
+        <div className="space-y-3">
+          <div className="p-3 bg-brand-primary/5 border border-brand-primary/20 rounded-xl">
+            <NumericInput 
+              label="입금 금액" 
+              value={newEntry.amount} 
+              onChange={(v: number) => setNewEntry({...newEntry, amount: v})} 
+              className="form-input text-[18px] font-black py-1 h-[42px] bg-transparent text-brand-primary" 
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-brand-text-sub ml-1 uppercase">메모</label>
+            <input 
+              type="text" 
+              placeholder="메모를 입력하세요" 
+              value={newEntry.memo} 
+              onChange={e => setNewEntry({...newEntry, memo: e.target.value})} 
+              className="form-input text-[16px] h-[44px] bg-brand-bg/50 border-brand-border rounded-xl px-4 outline-none focus:border-brand-primary"
+            />
+          </div>
         </div>
 
-        <button onClick={handleAddSalary} className="w-full bg-brand-primary text-white font-black py-3.5 rounded-xl text-sm shadow-lg shadow-brand-primary/10 active:scale-95 transition-all">등록 및 지출 탭 연동</button>
+        <button 
+          onClick={handleAddSalary} 
+          className="w-full bg-brand-primary text-white font-black py-4 rounded-xl text-sm shadow-lg shadow-brand-primary/20 active:scale-95 transition-all uppercase tracking-widest"
+        >
+          등록 및 자동 연동하기
+        </button>
       </div>
 
-      {/* 3. 명칭 설정 (활성화) */}
-      <div className="bg-brand-card p-4 rounded-2xl border border-brand-border grid grid-cols-4 gap-2">
-        {SALARY_TYPES.map(type => (
-          <div key={type} className="flex flex-col gap-1">
-            <span className="text-[8px] font-bold text-brand-text-sub px-1">{type}</span>
-            <input type="text" value={salaryLabels[type]} onChange={e => setSalaryLabels({...salaryLabels, [type]: e.target.value})} className="bg-brand-bg border border-brand-border rounded-lg text-[10px] p-1.5 font-bold outline-none focus:border-brand-primary" />
-          </div>
-        ))}
+      {/* 3. 명칭 설정 (심플 그리드) */}
+      <div className="bg-brand-card p-4 rounded-2xl border border-brand-border">
+        <p className="text-[10px] font-black text-brand-text-sub mb-3 px-1 uppercase tracking-tighter">급여 항목 명칭 설정</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {SALARY_TYPES.map(type => (
+            <div key={type} className="space-y-1">
+              <span className="text-[9px] font-bold text-brand-text-sub px-1">{type}</span>
+              <input 
+                type="text" 
+                value={salaryLabels[type]} 
+                onChange={e => setSalaryLabels({...salaryLabels, [type]: e.target.value})} 
+                className="w-full bg-brand-bg border border-brand-border rounded-lg text-[12px] p-2 font-bold outline-none focus:border-brand-primary text-brand-text-main"
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </motion.div>
   );
 }
-
 
 
 
