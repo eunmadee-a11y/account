@@ -914,13 +914,13 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         </div>
       </div>
 
- <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {gamjaAccountNames.map((name: string) => (
           <button
             key={name} onClick={() => { setActiveGamjaAccount(name); setNewTx({ ...newTx, account: name }); }}
             className={`py-4 px-3 rounded-2xl border font-black text-xs transition-all active:scale-95 ${
-              activeGamjaAccount === name
-                ? 'bg-[#FDE047] text-[#121212] border-[#FDE047] shadow-[0_8px_20px_rgba(253,224,71,0.3)]'
+              activeTab === name || activeGamjaAccount === name
+                ? 'bg-[#E2F2D5] text-[#121212] border-[#E2F2D5] shadow-[0_8px_20px_rgba(226,242,213,0.3)]'
                 : 'bg-[#1c1c1e] text-brand-text-main border-white/5 hover:border-white/20'
             }`}
           >
