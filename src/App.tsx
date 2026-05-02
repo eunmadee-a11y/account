@@ -46,21 +46,37 @@ const formatNumber = (num: number) => {
 
 function exportCSV(transactions: any[]) {
   if (!transactions.length) {
-    alert("데이터 없음");
+    alert("내보낼 데이터가 없습니다.");
     return;
   }
-  const header = ["날짜","구분","카테고리","통장","금액","메모"];
+
+  // 엑셀에서 열었을 때 헤더가 명확하도록 설정
+  const header = ["날짜", "구분", "카테고리", "통장", "금액", "메모"];
   const rows = transactions.map((t) => [
-    t.date, t.type, t.category, t.account, t.amount, t.memo || ""
+    t.date,
+    t.type,
+    t.category,
+    t.account,
+    t.amount, // 숫자는 따옴표 없이 들어가야 엑셀에서 바로 합계 계산이 됩니다.
+    `"${(t.memo || "").replace(/"/g, '""')}"` // 메모에 쉼표가 있어도 셀이 밀리지 않게 처리
   ]);
+
   const csvContent = [header, ...rows].map((e) => e.join(",")).join("\n");
+  
+  // 핵심: \uFEFF (BOM)는 엑셀이 이 파일이 UTF-8임을 즉시 인식하게 하여 한글 깨짐을 방지합니다.
   const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "budget.csv";
-  a.click();
-  URL.revokeObjectURL(url);
+  const link = document.createElement("a");
+  
+  const dateStr = new Date().toLocaleDateString('ko-KR', {
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).replace(/\. /g, '-').replace(/\./g, '');
+
+  link.setAttribute("href", url);
+  link.setAttribute("download", `가계부_데이터_${dateStr}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function EditableHeader({ title, setTitle }: any) {
