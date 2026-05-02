@@ -360,33 +360,64 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
       {/* Navigation Rail / Header */}
 
 
-
-
-{/* iOS Style Simple Header - 상단 여백 최소화 및 한 줄 배치 */}
-<header className="sticky top-0 bg-brand-bg/90 backdrop-blur-xl z-50 border-b border-brand-border px-4 pt-6 pb-2">
-  <div className="flex items-center justify-between mb-3">
-    {/* 로고 및 제목 한 줄 배치 */}
+{/* iOS 최적화: 상단 여백 및 탭 하단 간격 최소화 */}
+<header className="sticky top-0 bg-brand-bg/90 backdrop-blur-xl z-50 border-b border-brand-border px-4 pt-4 pb-1">
+  <div className="flex items-center justify-between mb-2">
+    {/* 로고 및 제목 */}
     <div className="flex items-center gap-2">
-      <div className="w-7 h-7 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/20">
-        <Activity size={16} className="text-white" />
+      <div className="w-6 h-6 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/20">
+        <Activity size={14} className="text-white" />
       </div>
-      <span className="text-[12px] font-black tracking-widest text-brand-text-main uppercase">Account</span>
+      <span className="text-[11px] font-black tracking-widest text-brand-text-main uppercase">Account</span>
     </div>
 
-    {/* 날짜 탭 우상단 이동[cite: 1] */}
-    <div className="flex items-center gap-3 bg-brand-card/50 px-3 py-1 rounded-full border border-brand-border">
-      <button onClick={() => changeMonth(-1)} className="text-brand-text-sub active:scale-90 transition-transform">
-        <ChevronLeft size={16} />
+    {/* 날짜 이동 탭 (우상단 배치) */}
+    <div className="flex items-center gap-2 bg-brand-card/50 px-2.5 py-0.5 rounded-full border border-brand-border">
+      <button onClick={() => changeMonth(-1)} className="text-brand-text-sub active:scale-90 p-1">
+        <ChevronLeft size={14} />
       </button>
-      <span className="text-[11px] font-black min-w-[70px] text-center">{currentMonthDisplay}[cite: 1]</span>
-      <button onClick={() => changeMonth(1)} className="text-brand-text-sub active:scale-90 transition-transform">
-        <ChevronRight size={16} />
+      <span className="text-[10px] font-black min-w-[65px] text-center">{currentMonthDisplay}</span>
+      <button onClick={() => changeMonth(1)} className="text-brand-text-sub active:scale-90 p-1">
+        <ChevronRight size={14} />
       </button>
     </div>
   </div>
 
-  {/* 하단 탭 네비게이션[cite: 1] */}
-  <nav className="flex gap-1 overflow-x-auto scrollbar-hide w-full pb-1">
+  {/* 탭 메뉴 (하단 여백 제거) */}
+  <nav className="flex gap-1 overflow-x-auto scrollbar-hide w-full">
+    <TabButton name="홈" icon={Home} />
+    <TabButton name="내 지출" icon={CreditCard} />
+    <TabButton name="연금/투자 관리" icon={TrendingUp} />
+    <TabButton name="감자 지출" icon={User} />
+    <TabButton name="월급 비교" icon={ComparisonIcon} />
+    <TabButton name="대출 관리" icon={LoanIcon} />
+    <TabButton name="1년 결산" icon={BarChart2} />
+  </nav>
+</header>{/* iOS 최적화: 상단 여백 및 탭 하단 간격 최소화 */}
+<header className="sticky top-0 bg-brand-bg/90 backdrop-blur-xl z-50 border-b border-brand-border px-4 pt-4 pb-1">
+  <div className="flex items-center justify-between mb-2">
+    {/* 로고 및 제목 */}
+    <div className="flex items-center gap-2">
+      <div className="w-6 h-6 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/20">
+        <Activity size={14} className="text-white" />
+      </div>
+      <span className="text-[11px] font-black tracking-widest text-brand-text-main uppercase">Account</span>
+    </div>
+
+    {/* 날짜 이동 탭 (우상단 배치) */}
+    <div className="flex items-center gap-2 bg-brand-card/50 px-2.5 py-0.5 rounded-full border border-brand-border">
+      <button onClick={() => changeMonth(-1)} className="text-brand-text-sub active:scale-90 p-1">
+        <ChevronLeft size={14} />
+      </button>
+      <span className="text-[10px] font-black min-w-[65px] text-center">{currentMonthDisplay}</span>
+      <button onClick={() => changeMonth(1)} className="text-brand-text-sub active:scale-90 p-1">
+        <ChevronRight size={14} />
+      </button>
+    </div>
+  </div>
+
+  {/* 탭 메뉴 (하단 여백 제거) */}
+  <nav className="flex gap-1 overflow-x-auto scrollbar-hide w-full">
     <TabButton name="홈" icon={Home} />
     <TabButton name="내 지출" icon={CreditCard} />
     <TabButton name="연금/투자 관리" icon={TrendingUp} />
@@ -396,7 +427,7 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
     <TabButton name="1년 결산" icon={BarChart2} />
   </nav>
 </header>
-      
+
 
       {/* Main Content Area */}
      <main className="flex-1 max-w-[1400px] w-full mx-auto p-4 md:p-8">
