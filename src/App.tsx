@@ -224,7 +224,7 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
       onClick={() => setActiveTab(name)}
       className={`shrink-0 flex items-center gap-2 px-5 py-3 rounded-full font-black text-[13px] whitespace-nowrap transition-all duration-300 relative overflow-hidden ${
         activeTab === name 
-          ? 'text-[#00178F] bg-[#4B96FF] shadow-[0_4px_20px_rgba(75,150,255,0.4)]' 
+          ? 'text-[#121212] bg-[#4B96FF] shadow-[0_4px_20px_rgba(75,150,255,0.4)]' 
           : 'text-brand-text-sub bg-white/5 hover:bg-white/10 border border-white/5'
       }`}
     >
@@ -914,18 +914,18 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {gamjaAccountNames.map((name: string) => (
           <button
             key={name} onClick={() => { setActiveGamjaAccount(name); setNewTx({ ...newTx, account: name }); }}
             className={`py-4 px-3 rounded-2xl border font-black text-xs transition-all active:scale-95 ${
               activeGamjaAccount === name
-                ? 'bg-[#E2F2D5] text-[#A0C7DF] border-[#E2F2D5] shadow-[0_8px_20px_rgba(167,181,255,0.4)]'
+                ? 'bg-[#A7B5FF] text-[#121212] border-[#A7B5FF] shadow-[0_8px_20px_rgba(167,181,255,0.4)]'
                 : 'bg-[#1c1c1e] text-brand-text-main border-white/5 hover:border-white/20'
             }`}
           >
             <span className="block truncate text-[13px]">{name.replace('감자 ', '').replace(' 통장', '')}</span>
-            <span className={`block mt-1.5 text-[12px] tabular-nums ${activeGamjaAccount === name ? 'text-[#A0C7DF]/90' : 'text-brand-text-sub'}`}>{formatCurrency(getAccountCalculatedBalance(name))}</span>
+            <span className={`block mt-1.5 text-[12px] tabular-nums ${activeGamjaAccount === name ? 'text-[#121212]/80' : 'text-brand-text-sub'}`}>{formatCurrency(getAccountCalculatedBalance(name))}</span>
           </button>
         ))}
       </div>
