@@ -360,19 +360,33 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
       {/* Navigation Rail / Header */}
 
 
-{/* iOS Style Simple Header - 로직 유지 */}
 
-<header className="sticky top-0 bg-brand-bg/90 backdrop-blur-xl z-50 border-b border-brand-border px-6 pt-12 pb-4 flex flex-col items-center gap-4">
-  <div className="flex flex-col items-center gap-1">
-    <div className="w-10 h-10 rounded-2xl bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/20"><Activity size={22} className="text-white" /></div>
-    <span className="text-[10px] font-black tracking-[0.2em] text-brand-text-sub uppercase mt-1">Account</span>
+
+{/* iOS Style Simple Header - 상단 여백 최소화 및 한 줄 배치 */}
+<header className="sticky top-0 bg-brand-bg/90 backdrop-blur-xl z-50 border-b border-brand-border px-4 pt-6 pb-2">
+  <div className="flex items-center justify-between mb-3">
+    {/* 로고 및 제목 한 줄 배치 */}
+    <div className="flex items-center gap-2">
+      <div className="w-7 h-7 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/20">
+        <Activity size={16} className="text-white" />
+      </div>
+      <span className="text-[12px] font-black tracking-widest text-brand-text-main uppercase">Account</span>
+    </div>
+
+    {/* 날짜 탭을 우상단으로 이동 */}
+    <div className="flex items-center gap-3 bg-brand-card/50 px-3 py-1 rounded-full border border-brand-border">
+      <button onClick={() => changeMonth(-1)} className="text-brand-text-sub active:scale-90 transition-transform">
+        <ChevronLeft size={16} />
+      </button>
+      <span className="text-[11px] font-black min-w-[70px] text-center">{currentMonthDisplay}</span>
+      <button onClick={() => changeMonth(1)} className="text-brand-text-sub active:scale-90 transition-transform">
+        <ChevronRight size={16} />
+      </button>
+    </div>
   </div>
-  <div className="flex items-center gap-6 bg-brand-card/50 px-4 py-1.5 rounded-full border border-brand-border">
-    <button onClick={() => changeMonth(-1)} className="text-brand-text-sub"><ChevronLeft size={18} /></button>
-    <span className="text-sm font-black min-w-[100px] text-center">{currentMonthDisplay}</span>
-    <button onClick={() => changeMonth(1)} className="text-brand-text-sub"><ChevronRight size={18} /></button>
-  </div>
-  <nav className="flex gap-1 overflow-x-auto scrollbar-hide w-full px-2">
+
+  {/* 탭 메뉴 */}
+  <nav className="flex gap-1 overflow-x-auto scrollbar-hide w-full pb-1">
     <TabButton name="홈" icon={Home} />
     <TabButton name="내 지출" icon={CreditCard} />
     <TabButton name="연금/투자 관리" icon={TrendingUp} />
@@ -382,6 +396,7 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
     <TabButton name="1년 결산" icon={BarChart2} />
   </nav>
 </header>
+      
       
 
       {/* Main Content Area */}
