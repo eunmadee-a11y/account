@@ -957,8 +957,8 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           <div className="space-y-2">
             <label className="text-[11px] font-black text-brand-text-sub uppercase ml-2 tracking-widest">유형</label>
             <div className="flex bg-black/40 rounded-2xl p-1 border border-white/5">
-              <button onClick={() => handleTypeChange('지출')} className={`flex-1 py-2.5 rounded-xl text-[14px] font-black transition-colors ${newTx.type === '지출' ? 'bg-[#FFA59E] text-white shadow-md' : 'text-brand-text-sub hover:text-white'}`}>지출</button>
-              <button onClick={() => handleTypeChange('수입')} className={`flex-1 py-2.5 rounded-xl text-[14px] font-black transition-colors ${newTx.type === '수입' ? 'bg-[#4B96FF] text-white shadow-md' : 'text-brand-text-sub hover:text-white'}`}>수입</button>
+              <button onClick={() => handleTypeChange('지출')} className={`flex-1 py-2.5 rounded-xl text-[14px] font-black transition-colors ${newTx.type === '지출' ? 'bg-[#FFA59E] text-[#121212] shadow-md' : 'text-brand-text-sub hover:text-white'}`}>지출</button>
+              <button onClick={() => handleTypeChange('수입')} className={`flex-1 py-2.5 rounded-xl text-[14px] font-black transition-colors ${newTx.type === '수입' ? 'bg-[#4B96FF] text-[#121212] shadow-md' : 'text-brand-text-sub hover:text-white'}`}>수입</button>
             </div>
           </div>
           <div className="space-y-2">
@@ -979,7 +979,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
             </div>
           </div>
           <div className="pt-2">
-            <button onClick={handleAdd} className="w-full bg-[#E2F2D5] text-[#A0C7DF] text-[16px] font-black py-5 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-widest shadow-[0_8px_30px_rgba(167,181,255,0.4)]">추가하기</button>
+            <button onClick={handleAdd} className="w-full bg-[#E2F2D5] text-[#121212] text-[16px] font-black py-5 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-widest shadow-[0_8px_30px_rgba(167,181,255,0.4)]">추가하기</button>
           </div>
         </div>
 
@@ -1159,7 +1159,7 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
       <div className="space-y-2">
          <label className="text-[11px] font-black text-brand-text-sub uppercase ml-2 tracking-widest">유형</label>
          <div className="flex bg-black/40 rounded-2xl p-1 border border-white/5">
-            <button onClick={() => handleTypeChange('지출')} className={`flex-1 py-2.5 rounded-xl text-[14px] font-black transition-colors ${newTx.type === '지출' ? 'bg-[#FFA59E] text-white shadow-md' : 'text-brand-text-sub'}`}>지출</button>
+            <button onClick={() => handleTypeChange('지출')} className={`flex-1 py-2.5 rounded-xl text-[14px] font-black transition-colors ${newTx.type === '지출' ? 'bg-[#FFA59E] text-[#121212] shadow-md' : 'text-brand-text-sub'}`}>지출</button>
             <button onClick={() => handleTypeChange('수입')} className={`flex-1 py-2.5 rounded-xl text-[14px] font-black transition-colors ${newTx.type === '수입' ? 'bg-[#4B96FF] text-[#121212] shadow-md' : 'text-brand-text-sub'}`}>수입</button>
          </div>
       </div>
