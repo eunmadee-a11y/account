@@ -129,7 +129,50 @@ function NumericInput({ value, onChange, className, placeholder, label }: any) {
   );
 }
 
+
+
 export default function App() {
+  // --- [데이터 영구 저장 및 불러오기 로직] ---
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('myTransactions') : null;
+    if (saved) return JSON.parse(saved);
+    const currentYearMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`;
+    return MOCK_TRANSACTIONS.map(t => (t.amount === 15400 && t.category === '식비') ? { ...t, date: currentYearMonth } : t);
+  });
+
+  const [gamjaTransactions, setGamjaTransactions] = useState<GamjaTransaction[]>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('gamjaTransactions') : null;
+    return saved ? JSON.parse(saved) : MOCK_GAMJA_TRANSACTIONS;
+  });
+
+  const [balances, setBalances] = useState<BalanceEntry[]>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('myBalances') : null;
+    return saved ? JSON.parse(saved) : INITIAL_BALANCES;
+  });
+
+  const [salaries, setSalaries] = useState<SalaryData>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('mySalaries') : null;
+    return saved ? JSON.parse(saved) : { mySalaryRecords: [], gamjaSalaryRecords: [], mySalary: 3500000, gamjaSalary: 4200000 };
+  });
+
+  const [loans, setLoans] = useState<Loan[]>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('myLoans') : null;
+    return saved ? JSON.parse(saved) : INITIAL_LOANS;
+  });
+
+  const [myCategories, setMyCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
+  const [gamjaCategories, setGamjaCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
+
+  // 데이터 변경 시 자동 저장 (아이폰 브라우저 저장소 활용)
+  useEffect(() => {
+    localStorage.setItem('myTransactions', JSON.stringify(transactions));
+    localStorage.setItem('gamjaTransactions', JSON.stringify(gamjaTransactions));
+    localStorage.setItem('myBalances', JSON.stringify(balances));
+    localStorage.setItem('mySalaries', JSON.stringify(salaries));
+    localStorage.setItem('myLoans', JSON.stringify(loans));
+  }, [transactions, gamjaTransactions, balances, salaries, loans]);
+  // --- [저장 로직 끝] ---
+
   const [activeTab, setActiveTab] = useState<TabName>('홈');
   const [tabNames, setTabNames] = useState<Record<TabName, string>>({
     '홈': '홈', '내 지출': '내 지출', '연금/투자 관리': '연금/투자 관리',
@@ -139,23 +182,6 @@ export default function App() {
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(new Date().toISOString().split('T')[0]);
   const [mySearchQuery, setMySearchQuery] = useState('');
   const [gamjaSearchQuery, setGamjaSearchQuery] = useState('');
-  
-  // 15,400원 식비 예시를 현재 달(5월)로 강제 업데이트
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const currentYearMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`;
-    return MOCK_TRANSACTIONS.map(t => 
-      (t.amount === 15400 && t.category === '식비') ? { ...t, date: currentYearMonth } : t
-    );
-  });
-  
-  const [gamjaTransactions, setGamjaTransactions] = useState<GamjaTransaction[]>(MOCK_GAMJA_TRANSACTIONS);
-  const [balances, setBalances] = useState<BalanceEntry[]>(INITIAL_BALANCES);
-  const [salaries, setSalaries] = useState<SalaryData>({ 
-    mySalaryRecords: [], gamjaSalaryRecords: [], mySalary: 3500000, gamjaSalary: 4200000 
-  });
-  const [loans, setLoans] = useState<Loan[]>(INITIAL_LOANS);
-  const [myCategories, setMyCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
-  const [gamjaCategories, setGamjaCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
   const [isMyEditModalOpen, setIsMyEditModalOpen] = useState(false);
   const [isGamjaEditModalOpen, setIsGamjaEditModalOpen] = useState(false);
   const [salaryLabels, setSalaryLabels] = useState<Record<string, string>>({
