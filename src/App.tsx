@@ -399,7 +399,7 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 
 
 {/* 콘텐츠 영역 상단 패딩(pt-0)을 제거하여 탭 바에 밀착[cite: 1] */}
-<main className="flex-1 max-w-[1400px] w-full mx-auto p-4 pt-0 md:p-8 md:pt-1">
+<main className="flex-1 max-w-[1400px] w-full mx-auto p-4 pt-0 md:p-8 md:pt-3">
   <AnimatePresence mode="wait">
     {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, categories: myCategories, setCategories: setMyCategories }} />}
     {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true) }} />}
