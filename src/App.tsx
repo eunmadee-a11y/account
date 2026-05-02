@@ -1404,7 +1404,7 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
         </div>
       </div>
 
-      {[ { label: '나', data: myData, color: '#4B96FF', bg: 'bg-[#4B96FF]', text: 'text-white' }, { label: '감자', data: gamjaData, color: '#E2F2D5', bg: 'bg-[#E2F2D5]', text: 'text-[#A0C7DF]' } ].map((user) => (
+      {[ { label: '나', data: myData, color: '#4B96FF', bg: 'bg-[#4B96FF]', text: 'text-[#121212]' }, { label: '감자', data: gamjaData, color: '#E2F2D5', bg: 'bg-[#E2F2D5]', text: 'text-[#121212]' } ].map((user) => (
         <div key={user.label} className="space-y-6">
           <div className="bg-[#1c1c1e] p-8 border border-white/5 rounded-[32px] shadow-2xl">
             <div className="flex justify-between items-center mb-6">
