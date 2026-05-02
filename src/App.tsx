@@ -238,7 +238,7 @@ export default function App() {
       <header className="sticky top-0 bg-[#121212]/80 backdrop-blur-3xl z-50 border-b border-white/5 px-4 pt-safe-top pb-3">
         <div className="flex items-center justify-between mb-4 mt-2">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-black tracking-widest text-[#4B96FF] uppercase">Ledger</span>
+            <span className="text-xs font-black tracking-widest text-[#4B96FF] uppercase">E.wallet</span>
           </div>
 
           <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-[12px] border border-white/10">
@@ -263,7 +263,8 @@ export default function App() {
         </nav>
       </header>
 
-      <main className="flex-1 max-w-[1400px] w-full mx-auto p-4 pt-4 md:p-8">
+     {/* 기존 p-4 pt-4 md:p-8 에서 pt-2(위쪽 여백 축소)로 수정 */}
+<main className="flex-1 max-w-[1400px] w-full mx-auto p-4 pt-2 md:p-8">
         <AnimatePresence mode="wait">
           {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, categories: myCategories, setCategories: setMyCategories, tabName: tabNames['홈'], setTabName: (n:string)=>setTabNames({...tabNames, '홈':n}) }} />}
           {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true), tabName: tabNames['내 지출'], setTabName: (n:string)=>setTabNames({...tabNames, '내 지출':n}) }} />}
@@ -340,7 +341,6 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <EditableHeader title={tabName} setTitle={setTabName} />
 
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-3">
@@ -573,7 +573,6 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
   return (
     <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="max-w-7xl mx-auto space-y-10 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <EditableHeader title={tabName} setTitle={setTabName} />
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <div className="relative w-full sm:w-64">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-text-sub" />
@@ -788,7 +787,6 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-6xl mx-auto space-y-8 pb-20">
-      <EditableHeader title={tabName} setTitle={setTabName} />
       <div className="bg-[#1c1c1e] border border-white/5 p-8 rounded-[32px] shadow-[0_10px_40px_rgba(0,0,0,0.3)] text-center relative overflow-hidden">
         <p className="text-[12px] font-bold text-[#4B96FF] uppercase mb-3 tracking-widest relative z-10">투자 총액</p>
         <p className="text-3xl md:text-4xl font-black text-white tabular-nums tracking-tighter relative z-10">{formatCurrency(total)}</p>
@@ -884,7 +882,6 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-6xl mx-auto space-y-8 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <EditableHeader title={tabName} setTitle={setTabName} />
         <div className="relative w-full sm:w-64">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-text-sub" />
           <input type="text" placeholder="검색" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full bg-[#1c1c1e] border border-white/10 rounded-2xl pl-11 pr-4 py-3 text-[13px] text-white outline-none focus:border-[#A7B5FF] transition-colors shadow-inner" />
@@ -1023,7 +1020,6 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6 pb-20 px-2">
-      <EditableHeader title={tabName} setTitle={setTabName} />
       {activeLoan && activeStats && (
         <div className="bg-[#1c1c1e] p-8 border border-white/5 rounded-[32px] shadow-[0_10px_40px_rgba(0,0,0,0.3)] space-y-6 relative overflow-hidden">
           <div className="text-center">
@@ -1218,7 +1214,7 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6 pb-20 px-2">
-      <EditableHeader title={tabName} setTitle={setTabName} />
+
       
       <div className="bg-[#1c1c1e] p-8 rounded-[32px] border border-white/5 shadow-[0_10px_40px_rgba(0,0,0,0.3)] space-y-6">
         <div className="flex justify-between items-end">
@@ -1356,7 +1352,6 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-8 pb-24 px-1">
-      <EditableHeader title={tabName} setTitle={setTabName} />
 
       <div className="bg-[#1c1c1e] p-8 border border-white/5 rounded-[32px] shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
         <p className="text-[14px] font-black text-[#4B96FF] uppercase mb-6 tracking-widest text-center bg-[#4B96FF]/10 py-2 rounded-xl w-fit mx-auto px-6">{selectedYear}년 총결산</p>
