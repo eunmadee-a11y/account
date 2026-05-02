@@ -373,19 +373,19 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
       <span className="text-[12px] font-black tracking-widest text-brand-text-main uppercase">Account</span>
     </div>
 
-    {/* 날짜 탭을 우상단으로 이동 */}
+    {/* 날짜 탭 우상단 이동[cite: 1] */}
     <div className="flex items-center gap-3 bg-brand-card/50 px-3 py-1 rounded-full border border-brand-border">
       <button onClick={() => changeMonth(-1)} className="text-brand-text-sub active:scale-90 transition-transform">
         <ChevronLeft size={16} />
       </button>
-      <span className="text-[11px] font-black min-w-[70px] text-center">{currentMonthDisplay}</span>
+      <span className="text-[11px] font-black min-w-[70px] text-center">{currentMonthDisplay}[cite: 1]</span>
       <button onClick={() => changeMonth(1)} className="text-brand-text-sub active:scale-90 transition-transform">
         <ChevronRight size={16} />
       </button>
     </div>
   </div>
 
-  {/* 탭 메뉴 */}
+  {/* 하단 탭 네비게이션[cite: 1] */}
   <nav className="flex gap-1 overflow-x-auto scrollbar-hide w-full pb-1">
     <TabButton name="홈" icon={Home} />
     <TabButton name="내 지출" icon={CreditCard} />
@@ -396,7 +396,6 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
     <TabButton name="1년 결산" icon={BarChart2} />
   </nav>
 </header>
-      
       
 
       {/* Main Content Area */}
