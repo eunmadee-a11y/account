@@ -219,12 +219,12 @@ export default function App() {
     if (confirm('이 내역을 삭제하시겠습니까?')) setGamjaTransactions(prev => prev.filter(t => t.id !== id));
   };
 
-  const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
+const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
     <button 
       onClick={() => setActiveTab(name)}
       className={`shrink-0 flex items-center gap-2 px-5 py-3 rounded-full font-black text-[13px] whitespace-nowrap transition-all duration-300 relative overflow-hidden ${
         activeTab === name 
-          ? 'text-white bg-[#4B96FF] shadow-[0_4px_20px_rgba(75,150,255,0.4)]' 
+          ? 'text-[#00178F] bg-[#4B96FF] shadow-[0_4px_20px_rgba(75,150,255,0.4)]' 
           : 'text-brand-text-sub bg-white/5 hover:bg-white/10 border border-white/5'
       }`}
     >
