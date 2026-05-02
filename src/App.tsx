@@ -1140,13 +1140,11 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
 }
 
 /*연금 투자관리*/
-
-function PensionView({ balances, setBalances, currentDate }: any) {
+function PensionView({ balances, setBalances, currentDate, tabName, setTabName }: any) {
   const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-
-  // 기존 정렬 로직 유지
   const pensionOrder = ['개인연금', 'IRP', 'irp', 'ISA', 'isa', '퇴직연금', '퇴직금'];
 
+  // 1. 기존 필터링 및 정렬 로직 유지
   const pensionAssets = balances
     .filter((b: any) => b.category === '투자/연금' && !b.name.includes('적금'))
     .sort((a: any, b: any) => {
@@ -1156,8 +1154,9 @@ function PensionView({ balances, setBalances, currentDate }: any) {
     });
 
   const getMonthlyBalance = (asset: any) => asset.monthlyBalances?.[monthKey] ?? asset.currentBalance ?? 0;
+  const getMonthlyAddition = (asset: any) => asset.monthlyAdditions?.[monthKey] ?? 0;
 
-  // 실시간 잔액 업데이트 함수 (기존 유지)
+  // 2. 실시간 업데이트 로직 유지
   const updateMonthlyBalance = (id: string, value: number) => {
     setBalances((prev: any[]) =>
       prev.map((b: any) =>
@@ -1170,14 +1169,49 @@ function PensionView({ balances, setBalances, currentDate }: any) {
     );
   };
 
-  // 통장 삭제 함수 추가: 삭제 시 상단 총액에 즉시 반영됨
+  const updateMonthlyAddition = (id: string, value: number) => {
+    setBalances((prev: any[]) =>
+      prev.map((b: any) =>
+        b.id === id ? {
+              ...b,
+              monthlyAdditions: { ...(b.monthlyAdditions || {}), [monthKey]: value }
+            } : b
+      )
+    );
+  };
+
+  // 3. 통장 삭제 기능만 추가 (상단 투자 총액 실시간 연동)
   const deletePensionAccount = (id: string, name: string) => {
-    if (confirm(`'${name}' 통장을 삭제하시겠습니까? 삭제된 금액은 투자 총액 및 홈 화면 자산에서 즉시 제외됩니다.`)) {
+    if (confirm(`'${name}' 통장을 삭제하시겠습니까? 삭제 시 투자 총액에서 해당 금액이 즉시 제외됩니다.`)) {
       setBalances((prev: any[]) => prev.filter(b => b.id !== id));
     }
   };
 
-  // 기존 신규 통장 추가 함수 유지[cite: 1]
+  // 4. 기존 연간 데이터 계산 로직 유지[cite: 1]
+  const getYearlyAdditionTotal = (asset: any) => {
+    const year = currentDate.getFullYear().toString();
+    const additions = asset.monthlyAdditions || {};
+    return Object.entries(additions)
+      .filter(([key]) => key.startsWith(year))
+      .reduce((sum: number, [, value]: any) => sum + (Number(value) || 0), 0);
+  };
+
+  const getLimit = (assetName: string) => {
+    const lower = assetName.toLowerCase();
+    if (lower.includes('개인연금')) return 4000000;
+    if (lower.includes('irp')) return 2000000;
+    return 0;
+  };
+
+  const isGaugeTarget = (assetName: string) => {
+    const lower = assetName.toLowerCase();
+    return lower.includes('개인연금') || lower.includes('irp');
+  };
+
+  const total = pensionAssets.reduce((sum: number, b: any) => sum + getMonthlyBalance(b), 0);
+  const prevTotal = pensionAssets.reduce((sum: number, b: any) => sum + (b.previousBalance || 0), 0);
+  const diff = total - prevTotal;
+
   const addPensionAccount = () => {
     const newId = `pension-${Date.now()}`;
     const newAccount = {
@@ -1192,56 +1226,78 @@ function PensionView({ balances, setBalances, currentDate }: any) {
     setBalances([...balances, newAccount]);
   };
 
-  const total = pensionAssets.reduce((sum: number, b: any) => sum + getMonthlyBalance(b), 0);
-
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      <div className="bg-brand-card border border-brand-border p-4 rounded-xl shadow-brand text-center">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <div className="bg-brand-card border border-brand-border p-5 rounded-xl shadow-brand text-center">
         <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1 tracking-widest">투자 총액[cite: 1]</p>
         <p className="text-2xl font-black text-brand-primary tabular-nums">{formatCurrency(total)}</p>
+        <div className="flex items-center justify-center gap-2 mt-2">
+           <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${diff >= 0 ? 'bg-brand-mint/10 text-brand-mint' : 'bg-brand-pink/10 text-brand-pink'}`}>
+             {diff >= 0 ? '+' : ''}{formatCurrency(diff)}
+           </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {pensionAssets.map((asset: any) => (
-          <div key={asset.id} className="bg-brand-card border border-brand-border p-5 rounded-xl relative group hover:border-brand-primary/50 transition-all">
-            <div className="flex justify-between items-start mb-4">
-              <input 
-                value={asset.name}
-                onChange={(e) => setBalances(balances.map(b => b.id === asset.id ? {...b, name: e.target.value} : b))}
-                className="font-black text-brand-text-main bg-transparent outline-none focus:text-brand-primary transition-colors text-sm"
-              />
-              <div className="p-1.5 rounded-lg bg-brand-mint/10 text-brand-mint">
-                <TrendingUp size={14} />
+        {pensionAssets.map((asset: any) => {
+          const monthlyBalance = getMonthlyBalance(asset);
+          const yearlyAddition = getYearlyAdditionTotal(asset);
+          const limit = getLimit(asset.name);
+          const gaugePercent = limit > 0 ? Math.min((yearlyAddition / limit) * 100, 100) : 0;
+          const taxRefund = Math.min(yearlyAddition, limit) * 0.132;
+
+          return (
+            <div key={asset.id} className="bg-brand-card border border-brand-border p-5 rounded-xl relative group hover:border-brand-primary/50 transition-all">
+              <div className="flex justify-between items-start mb-4">
+                <input 
+                  value={asset.name}
+                  onChange={(e) => setBalances(balances.map(b => b.id === asset.id ? {...b, name: e.target.value} : b))}
+                  className="font-black text-brand-text-main bg-transparent outline-none focus:text-brand-primary text-sm w-3/4"
+                />
+                <div className="p-1.5 rounded-lg bg-brand-mint/10 text-brand-mint">
+                  <TrendingUp size={14} />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-4">
-              <NumericInput label="이번달 잔액" value={getMonthlyBalance(asset)} onChange={(v: number) => updateMonthlyBalance(asset.id, v)} className="form-input text-lg font-black tabular-nums" />
-            </div>
+              <div className="space-y-4">
+                <NumericInput label="이번달 잔액" value={monthlyBalance} onChange={(v: number) => updateMonthlyBalance(asset.id, v)} className="form-input text-lg font-black tabular-nums" />
+                
+                {/* 기존 게이지 그래프 및 세제 혜택 유지[cite: 1] */}
+                {isGaugeTarget(asset.name) && (
+                  <div className="pt-4 border-t border-brand-border space-y-3">
+                    <NumericInput label="이번달 추가금" value={getMonthlyAddition(asset)} onChange={(v: number) => updateMonthlyAddition(asset.id, v)} className="form-input text-sm font-black" />
+                    <div>
+                      <div className="flex justify-between text-[10px] font-black text-brand-text-sub mb-1">
+                        <span>연간 추가금</span>
+                        <span>{formatNumber(yearlyAddition)} / {formatNumber(limit)}</span>
+                      </div>
+                      <div className="h-1.5 bg-brand-border rounded-full overflow-hidden">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${gaugePercent}%` }} className="h-full bg-brand-primary" />
+                      </div>
+                      <p className="text-[9px] font-bold text-brand-mint mt-2 text-center">예상 세제혜택: {formatCurrency(taxRefund)}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            {/* 통장 박스 하단 삭제 버튼 추가[cite: 1] */}
-            <button 
-              onClick={() => deletePensionAccount(asset.id, asset.name)}
-              className="absolute bottom-2 right-2 p-2 text-brand-text-sub/40 hover:text-brand-pink transition-colors active:scale-90"
-              title="통장 삭제"
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
+              {/* 통장 삭제 버튼 추가[cite: 1] */}
+              <button 
+                onClick={() => deletePensionAccount(asset.id, asset.name)}
+                className="absolute bottom-2 right-2 p-2 text-brand-text-sub/30 hover:text-brand-pink transition-colors active:scale-90"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          );
+        })}
       </div>
 
-      {/* 기존 신규 추가 버튼 유지[cite: 1] */}
-      <button 
-        onClick={addPensionAccount}
-        className="w-full py-4 border-2 border-dashed border-brand-border rounded-xl text-brand-text-sub flex items-center justify-center gap-2 mt-2 active:scale-95 transition-all"
-      >
+      <button onClick={addPensionAccount} className="w-full py-4 border-2 border-dashed border-brand-border rounded-xl text-brand-text-sub flex items-center justify-center gap-2 mt-2 active:scale-95 transition-all">
         <Plus size={18} /> <span className="text-[11px] font-black uppercase tracking-widest">새 연금/투자 통장 추가</span>
       </button>
     </motion.div>
   );
 }
-
 /*감자 */
 
 function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, setBalances, currentDate, tabName, setTabName, categories, setCategories, onOpenEdit }: any) {
