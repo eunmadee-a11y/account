@@ -360,40 +360,8 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
       {/* Navigation Rail / Header */}
 
 
+
 {/* iOS 최적화: 상단 여백 및 탭 하단 간격 최소화 */}
-<header className="sticky top-0 bg-brand-bg/90 backdrop-blur-xl z-50 border-b border-brand-border px-4 pt-4 pb-1">
-  <div className="flex items-center justify-between mb-2">
-    {/* 로고 및 제목 */}
-    <div className="flex items-center gap-2">
-      <div className="w-6 h-6 rounded-lg bg-brand-primary flex items-center justify-center shadow-lg shadow-brand-primary/20">
-        <Activity size={14} className="text-white" />
-      </div>
-      <span className="text-[11px] font-black tracking-widest text-brand-text-main uppercase">Account</span>
-    </div>
-
-    {/* 날짜 이동 탭 (우상단 배치) */}
-    <div className="flex items-center gap-2 bg-brand-card/50 px-2.5 py-0.5 rounded-full border border-brand-border">
-      <button onClick={() => changeMonth(-1)} className="text-brand-text-sub active:scale-90 p-1">
-        <ChevronLeft size={14} />
-      </button>
-      <span className="text-[10px] font-black min-w-[65px] text-center">{currentMonthDisplay}</span>
-      <button onClick={() => changeMonth(1)} className="text-brand-text-sub active:scale-90 p-1">
-        <ChevronRight size={14} />
-      </button>
-    </div>
-  </div>
-
-  {/* 탭 메뉴 (하단 여백 제거) */}
-  <nav className="flex gap-1 overflow-x-auto scrollbar-hide w-full">
-    <TabButton name="홈" icon={Home} />
-    <TabButton name="내 지출" icon={CreditCard} />
-    <TabButton name="연금/투자 관리" icon={TrendingUp} />
-    <TabButton name="감자 지출" icon={User} />
-    <TabButton name="월급 비교" icon={ComparisonIcon} />
-    <TabButton name="대출 관리" icon={LoanIcon} />
-    <TabButton name="1년 결산" icon={BarChart2} />
-  </nav>
-</header>{/* iOS 최적화: 상단 여백 및 탭 하단 간격 최소화 */}
 <header className="sticky top-0 bg-brand-bg/90 backdrop-blur-xl z-50 border-b border-brand-border px-4 pt-4 pb-1">
   <div className="flex items-center justify-between mb-2">
     {/* 로고 및 제목 */}
@@ -429,8 +397,9 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
 </header>
 
 
-      {/* Main Content Area */}
-     <main className="flex-1 max-w-[1400px] w-full mx-auto p-4 md:p-8">
+
+{/* 콘텐츠 영역 상단 패딩(pt-0)을 제거하여 탭 바에 밀착[cite: 1] */}
+<main className="flex-1 max-w-[1400px] w-full mx-auto p-4 pt-0 md:p-8 md:pt-4">
   <AnimatePresence mode="wait">
     {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, categories: myCategories, setCategories: setMyCategories }} />}
     {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true) }} />}
@@ -441,6 +410,8 @@ className={`shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl font-bold text
     {activeTab === '1년 결산' && <AnnualSettlementView key="annual" {...{ transactions, gamjaTransactions, salaries }} />}
   </AnimatePresence>
 </main>
+
+      
       {/* Edit Modals */}
       <TransactionEditModal 
         isOpen={isMyEditModalOpen} 
