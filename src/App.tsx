@@ -1413,7 +1413,6 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
 
 
 
-
 const downloadYearlyReport = () => {
     // CSV 헤더 설정
     const header = ["날짜", "구분", "카테고리/항목", "금액", "메모/상세"];
@@ -1481,25 +1480,24 @@ const downloadYearlyReport = () => {
       ...pensionData
     ].join("\n");
 
-    // 파일 다운로드 로직 (BOM 추가로 한글 깨짐 방지 및 아이폰 호환성 강화)
+    // 파일 다운로드 로직 (BOM 추가로 한글 깨짐 방지)
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    
+    const a = document.createElement("a");
     const dateStr = new Date().toLocaleDateString('ko-KR', {
       year: 'numeric', month: '2-digit', day: '2-digit'
     }).replace(/\. /g, '-').replace(/\./g, '');
 
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${selectedYear}년_가계부_통합결산_${dateStr}.csv`);
-    document.body.appendChild(link); // DOM에 추가해야 아이폰에서 안정적입니다
-    link.click();
-    document.body.removeChild(link);
+    a.href = url;
+    a.download = `${selectedYear}년_가계부_통합결산_${dateStr}.csv`;
+    a.click();
     URL.revokeObjectURL(url);
   };
 
+  
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-8 pb-24 px-1">
+
       <div className="bg-[#1c1c1e] p-8 border border-white/5 rounded-[32px] shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
         <p className="text-[14px] font-black text-[#4B96FF] uppercase mb-6 tracking-widest text-center bg-[#4B96FF]/10 py-2 rounded-xl w-fit mx-auto px-6">{selectedYear}년 총결산</p>
         <div className="grid grid-cols-3 divide-x divide-white/10 text-center">
@@ -1563,11 +1561,7 @@ const downloadYearlyReport = () => {
       </div>
     </motion.div>
   );
-
-
-
-
-  
+}
 
 function TransactionEditModal({ isOpen, onClose, transactions, setTransactions, categories, setCategories, title }: any) {
   const [editedTxs, setEditedTxs] = useState<any[]>([]);
