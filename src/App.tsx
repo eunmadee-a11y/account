@@ -1389,6 +1389,11 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
 }
 
 /*1년 결산*/
+
+
+
+
+/*1년 결산*/
 function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabName, setTabName }: any) {
   const selectedYear = new Date().getFullYear();
   const processData = (txs: any[], salaryRecords: any[]) => {
@@ -1411,14 +1416,80 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
   const COLORS = ['#4B96FF', '#A0C7DF', '#E2F2D5', '#FFA59E', '#FFE1EA'];
 
   const downloadYearlyReport = () => {
-    const header = ["날짜", "구분", "카테고리", "금액", "메모"];
-    const myYearly = transactions.filter(t => new Date(t.date).getFullYear() === selectedYear).map(t => [t.date, t.type, t.category, t.amount, t.memo].join(","));
-    const gamjaYearly = gamjaTransactions.filter(t => new Date(t.date).getFullYear() === selectedYear).map(t => [t.date, t.type, t.category, t.amount, t.memo].join(","));
-    const csvContent = [`--- ${selectedYear}년 내 지출 내역 ---`, header.join(","), ...myYearly, "\n", `--- ${selectedYear}년 감자 지출 내역 ---`, header.join(","), ...gamjaYearly].join("\n");
+    // 에러 방지: 컴포넌트로 전달되지 않은 대출/연금 데이터를 로컬 스토리지에서 안전하게 불러옵니다.
+    const localLoans = JSON.parse(localStorage.getItem('myLoans') || '[]');
+    const localBalances = JSON.parse(localStorage.getItem('myBalances') || '[]');
+
+    const header = ["날짜", "구분", "카테고리/항목", "금액", "메모/상세"];
+
+    // 1. 1년 결산 요약
+    const summaryHeader = ["구분", "총 연봉", "총 지출", "여유 자산", ""];
+    const summaryData = [
+      ["나", myData.annualSalary, myData.totalExpense, myData.remaining, ""].join(","),
+      ["감자", gamjaData.annualSalary, gamjaData.totalExpense, gamjaData.remaining, ""].join(","),
+      ["합계", totalAnnualSalary, totalAnnualExpense, totalRemaining, ""].join(",")
+    ];
+
+    // 2. 내 지출
+    const myYearly = transactions
+      .filter((t: any) => new Date(t.date).getFullYear() === selectedYear)
+      .map((t: any) => [t.date, t.type, t.category, t.amount, `"${(t.memo || "").replace(/"/g, '""')}"`].join(","));
+
+    // 3. 감자 지출
+    const gamjaYearly = gamjaTransactions
+      .filter((t: any) => new Date(t.date).getFullYear() === selectedYear)
+      .map((t: any) => [t.date, t.type, t.category, t.amount, `"${(t.memo || "").replace(/"/g, '""')}"`].join(","));
+
+    // 4. 월급 비교
+    const mySalaryData = salaries.mySalaryRecords
+      .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
+      .map((r: any) => [r.date, "급여(나)", r.type, r.amount, `"${(r.memo || "").replace(/"/g, '""')}"`].join(","));
+    const gamjaSalaryData = salaries.gamjaSalaryRecords
+      .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
+      .map((r: any) => [r.date, "급여(감자)", "월급", r.amount, `"${(r.memo || "").replace(/"/g, '""')}"`].join(","));
+
+    // 5. 대출 관리
+    const loanData: string[] = [];
+    localLoans.forEach((loan: any) => {
+      (loan.repayments || [])
+        .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
+        .forEach((r: any) => {
+          loanData.push([r.date, `대출(${loan.name})`, "원금", r.principal, `"${r.turn || ''}회차 / ${(r.memo || "")}"`].join(","));
+          if (r.interest > 0) loanData.push([r.date, `대출(${loan.name})`, "이자", r.interest, ""].join(","));
+        });
+    });
+
+    // 6. 연금 투자 현황
+    const pensionData = localBalances
+      .filter((b: any) => b.category === '투자/연금')
+      .map((b: any) => [new Date().toISOString().split('T')[0], "자산현황", b.name, b.currentBalance, "현재 잔액"].join(","));
+
+    // 엑셀 내용 모두 병합
+    const csvContent = [
+      `--- ${selectedYear}년 1년 결산 요약 ---`, summaryHeader.join(","), ...summaryData, "\n",
+      `--- ${selectedYear}년 내 지출 내역 ---`, header.join(","), ...myYearly, "\n",
+      `--- ${selectedYear}년 감자 지출 내역 ---`, header.join(","), ...gamjaYearly, "\n",
+      `--- ${selectedYear}년 월급 비교 ---`, header.join(","), ...mySalaryData, ...gamjaSalaryData, "\n",
+      `--- ${selectedYear}년 대출 관리 ---`, header.join(","), ...loanData, "\n",
+      `--- ${selectedYear}년 연금 투자 현황 ---`, header.join(","), ...pensionData
+    ].join("\n");
+
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `${selectedYear}년_결산_데이터.csv`; a.click(); URL.revokeObjectURL(url);
+    
+    const dateStr = new Date().toLocaleDateString('ko-KR', {
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    }).replace(/\. /g, '-').replace(/\./g, '');
+
+    a.href = url; 
+    a.download = `${selectedYear}년_결산_데이터_${dateStr}.csv`; 
+    
+    // 아이폰 모바일 사파리 호환성 해결
+    document.body.appendChild(a); 
+    a.click(); 
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -1488,6 +1559,9 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
     </motion.div>
   );
 }
+
+
+
 
 function TransactionEditModal({ isOpen, onClose, transactions, setTransactions, categories, setCategories, title }: any) {
   const [editedTxs, setEditedTxs] = useState<any[]>([]);
