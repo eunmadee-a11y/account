@@ -850,21 +850,28 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
   );
 }
 
-/*감자 지출*/
-/* 감자 지출 탭 (누적 잔액 및 아이폰 최적화) */
+
+
+/* 감자 지출 탭 (항목 선택 기능 추가 및 아이폰 최적화) */
 function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, setBalances, currentDate, categories, onOpenEdit }: any) {
   const [activeGamjaAccount, setActiveGamjaAccount] = useState(gamjaAccountNames[0] || '');
   const [isStartBalanceOpen, setIsStartBalanceOpen] = useState(false);
-  const [newTx, setNewTx] = useState({ date: new Date().toISOString().split('T')[0], type: '지출' as TransactionType, account: gamjaAccountNames[0] || '', category: categories.expense[0], amount: 0, memo: '' });
+  
+  // 항목(카테고리) 선택 기능을 포함한 새로운 내역 상태
+  const [newTx, setNewTx] = useState({ 
+    date: new Date().toISOString().split('T')[0], 
+    type: '지출' as TransactionType, 
+    account: gamjaAccountNames[0] || '', 
+    category: categories.expense[0], 
+    amount: 0, 
+    memo: '' 
+  });
 
   // 기초 자산 수정 함수 (수정 즉시 실시간 잔액에 반영됨)
   const updateGamjaStartValue = (id: string, value: number) => {
     setBalances((prev: any[]) => prev.map((item: any) => item.id === id ? { ...item, previousBalance: value } : item));
   };
 
-  // 현재 선택된 감자 통장 데이터
-  const currentAcc = balances.find((b: any) => b.name === activeGamjaAccount);
-  
   // 실시간 누적 잔액 계산 (기초 자산 + 전체 수입 - 전체 지출)
   const calculateLiveBalance = (accountName: string) => {
     const acc = balances.find((b: any) => b.name === accountName);
@@ -878,14 +885,14 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     if (newTx.amount <= 0 || !activeGamjaAccount) return;
     const tx: GamjaTransaction = { id: Math.random().toString(36).substr(2, 9), ...newTx, account: activeGamjaAccount };
     setGamjaTransactions([tx, ...gamjaTransactions]);
-    setNewTx({ ...newTx, amount: 0, memo: '' });
+    setNewTx({ ...newTx, amount: 0, memo: '' }); // 입력 후 금액과 메모만 초기화 (날짜/항목 유지)
   };
 
   const filteredTxs = useMemo(() => {
     let txs = gamjaTransactions.filter((t: any) => t.account === activeGamjaAccount);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      txs = txs.filter((t: any) => t.memo?.toLowerCase().includes(q) || t.category?.toLowerCase().includes(q));
+      txs = txs.filter((t: any) => (t.memo?.toLowerCase().includes(q)) || (t.category?.toLowerCase().includes(q)));
     }
     return txs;
   }, [gamjaTransactions, activeGamjaAccount, searchQuery]);
@@ -893,7 +900,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6 pb-28">
       
-      {/* 1. 감자 통장 선택 스위치 (현재 잔액 포함)[cite: 1] */}
+      {/* 1. 감자 통장 선택 스위치 (현재 잔액 포함) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {gamjaAccountNames.map((name: string) => (
           <button
@@ -943,17 +950,44 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         </AnimatePresence>
       </div>
 
-      {/* 3. 내역 입력 상자[cite: 1] */}
+      {/* 3. 내역 입력 상자 (항목 선택 탭 추가됨)[cite: 1] */}
       <div className="bg-[#1c1c1e] p-7 rounded-[32px] border border-white/5 shadow-2xl space-y-5">
         <div className="flex justify-between items-center">
           <h4 className="text-sm font-black text-white">{activeGamjaAccount} 입력</h4>
-          <input type="date" value={newTx.date} onChange={e => setNewTx({...newTx, date: e.target.value})} className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none" />
+          <input type="date" value={newTx.date} onChange={e => setNewTx({...newTx, date: e.target.value})} className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[16px] md:text-sm font-bold text-white outline-none" />
         </div>
         
+        {/* 지출/수입 선택 스위치[cite: 1] */}
         <div className="flex bg-black/40 rounded-2xl p-1 border border-white/5">
           {['지출', '수입'].map((type) => (
-            <button key={type} onClick={() => setNewTx({ ...newTx, type: type as any })} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${newTx.type === type ? (type === '지출' ? 'bg-[#FFA59E] text-[#121212]' : 'bg-[#4B96FF] text-[#121212]') : 'text-brand-text-sub'}`}>{type}</button>
+            <button 
+              key={type} 
+              onClick={() => setNewTx({ ...newTx, type: type as any, category: type === '지출' ? categories.expense[0] : categories.income[0] })} 
+              className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${newTx.type === type ? (type === '지출' ? 'bg-[#FFA59E] text-[#121212]' : 'bg-[#4B96FF] text-[#121212]') : 'text-brand-text-sub'}`}
+            >
+              {type}
+            </button>
           ))}
+        </div>
+
+        {/* [추가됨] 항목(카테고리) 선택 탭 - 가로 스크롤 가능[cite: 1] */}
+        <div className="space-y-2">
+          <label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">항목 선택</label>
+          <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide snap-x">
+            {(newTx.type === '지출' ? categories.expense : categories.income).map((c: string) => (
+              <button 
+                key={c} 
+                onClick={() => setNewTx({...newTx, category: c})} 
+                className={`shrink-0 snap-start px-5 py-3 rounded-xl text-[13px] font-black transition-all border ${
+                  newTx.category === c 
+                    ? (newTx.type === '지출' ? 'bg-[#FFA59E]/20 text-[#FFA59E] border-[#FFA59E]/50' : 'bg-[#4B96FF]/20 text-[#4B96FF] border-[#4B96FF]/50') 
+                    : 'bg-black/40 text-brand-text-sub border-white/5'
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
         </div>
 
         <NumericInput label="금액" value={newTx.amount} onChange={(v: number) => setNewTx({...newTx, amount: v})} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none" />
@@ -964,16 +998,17 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
       </div>
 
       {/* 4. 거래 내역 리스트[cite: 1] */}
-      <div className="bg-[#1c1c1e] rounded-[32px] border border-white/5 overflow-hidden">
+      <div className="bg-[#1c1c1e] rounded-[32px] border border-white/5 overflow-hidden shadow-2xl">
         <div className="px-8 py-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
           <p className="text-[11px] font-black text-brand-text-sub uppercase tracking-widest">감자 거래 내역</p>
+          <button onClick={onOpenEdit} className="text-[11px] font-bold text-[#E2F2D5] px-3 py-1 bg-[#E2F2D5]/10 rounded-lg">항목 관리</button>
         </div>
         <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
           {filteredTxs.map((t: any) => (
             <div key={t.id} className="px-8 py-5 flex justify-between items-center active:bg-white/5 transition-colors">
               <div>
                 <p className="text-[14px] font-black text-white">{t.memo || t.category}</p>
-                <p className="text-[10px] text-brand-text-sub mt-1">{t.date} · {t.category}</p>
+                <p className="text-[10px] text-brand-text-sub mt-1">{t.date} · <span className="text-[#E2F2D5]">{t.category}</span></p>
               </div>
               <div className="flex items-center gap-4">
                 <p className={`text-base font-black tabular-nums ${t.type === '수입' ? 'text-[#4B96FF]' : 'text-white'}`}>
@@ -988,8 +1023,6 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     </motion.div>
   );
 }
-
-
 
 
 // 대출 현황
