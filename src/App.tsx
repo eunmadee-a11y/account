@@ -1571,24 +1571,58 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
 function TransactionEditModal({ isOpen, onClose, transactions, setTransactions, categories, setCategories, title }: any) {
   const [editedTxs, setEditedTxs] = useState<any[]>([]);
   const [editedCategories, setEditedCategories] = useState<any>({ expense: [], income: [] });
-  useEffect(() => { if (isOpen) { setEditedTxs([...transactions]); setEditedCategories({ ...categories }); } }, [isOpen, transactions, categories]);
+
+  useEffect(() => { 
+    if (isOpen) { 
+      setEditedTxs([...transactions]); 
+      setEditedCategories({ ...categories }); 
+    } 
+  }, [isOpen, transactions, categories]);
+
   const handleUpdateTx = (id: string, field: string, value: any) => setEditedTxs(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
   const handleDeleteTx = (id: string) => setEditedTxs(prev => prev.filter(t => t.id !== id));
-  const handleSave = () => { setTransactions(editedTxs); setCategories(editedCategories); onClose(); };
+  
+  // 카테고리 개별 수정 로직 (리스트형)
+  const handleCategoryNameChange = (type: 'expense' | 'income', index: number, newName: string) => {
+    const newCats = { ...editedCategories };
+    newCats[type][index] = newName;
+    setEditedCategories(newCats);
+  };
+
+  const handleAddCategory = (type: 'expense' | 'income') => {
+    const newCats = { ...editedCategories };
+    newCats[type] = [...newCats[type], "새 항목"];
+    setEditedCategories(newCats);
+  };
+
+  const handleRemoveCategory = (type: 'expense' | 'income', index: number) => {
+    const newCats = { ...editedCategories };
+    newCats[type] = newCats[type].filter((_: any, i: number) => i !== index);
+    setEditedCategories(newCats);
+  };
+
+  const handleSave = () => { 
+    setTransactions(editedTxs); 
+    setCategories(editedCategories); 
+    onClose(); 
+  };
 
   if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={onClose} />
       <div className="bg-[#1c1c1e] border border-white/10 rounded-[32px] w-full max-w-6xl h-[85vh] flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)] relative z-10 overflow-hidden">
+        
+        {/* 헤더 영역 */}
         <div className="p-8 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-white/5 to-transparent">
-           <div>
-              <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2">{title}</h3>
-           </div>
+           <h3 className="text-xl font-black uppercase tracking-tight text-white">{title}</h3>
            <button onClick={onClose} className="p-4 hover:bg-[#FFA59E] hover:text-white rounded-xl transition-all text-brand-text-sub bg-white/5"><X size={24} /></button>
         </div>
         
         <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+           
+           {/* 내역 리스트 (왼쪽) */}
            <div className="flex-1 flex flex-col overflow-hidden border-r border-white/5">
               <div className="p-5 bg-black/40 border-b border-white/5 flex justify-between items-center">
                  <p className="text-[11px] font-black uppercase tracking-widest text-brand-text-sub">리스트 ({editedTxs.length})</p>
@@ -1596,66 +1630,86 @@ function TransactionEditModal({ isOpen, onClose, transactions, setTransactions, 
               <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar bg-black/20">
                  {editedTxs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((t: any) => (
                    <div key={t.id} className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3 bg-[#2c2c2e] border border-white/5 rounded-2xl hover:border-[#4B96FF]/50 transition-all items-center shadow-md">
-                      <div className="sm:col-span-2">
+                      <div className="sm:col-span-3">
                          <input type="date" value={t.date} onChange={e => handleUpdateTx(t.id, 'date', e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-[12px] font-bold text-white outline-none focus:border-[#4B96FF]" />
                       </div>
-                      <div className="sm:col-span-2">
+                      <div className="sm:col-span-3">
                          <select value={t.category} onChange={e => handleUpdateTx(t.id, 'category', e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-[12px] font-bold text-white outline-none focus:border-[#4B96FF]">
                             {(t.type === '지출' ? editedCategories.expense : editedCategories.income).map((c: string) => <option key={c} value={c}>{c}</option>)}
                          </select>
                       </div>
-                      <div className="sm:col-span-3">
+                      <div className="sm:col-span-4">
                          <input type="text" value={t.memo} placeholder="메모" onChange={e => handleUpdateTx(t.id, 'memo', e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-[12px] font-bold text-white outline-none focus:border-[#4B96FF]" />
-                      </div>
-                      <div className="sm:col-span-3">
-                         <NumericInput value={t.amount} onChange={(v: number) => handleUpdateTx(t.id, 'amount', v)} className="w-full bg-black/40 border border-[#4B96FF]/30 rounded-xl px-3 py-2 text-[14px] font-black text-[#4B96FF] outline-none focus:border-[#4B96FF] tabular-nums" />
                       </div>
                       <div className="sm:col-span-2 flex justify-end">
                          <button onClick={() => handleDeleteTx(t.id)} className="text-[#FFA59E] hover:bg-[#FFA59E] hover:text-white p-3 rounded-xl transition-all active:scale-90 bg-[#FFA59E]/10"><Trash2 size={18} /></button>
                       </div>
                    </div>
                  ))}
-                 {editedTxs.length === 0 && (
-                    <div className="text-center py-32 opacity-30 flex flex-col items-center gap-4">
-                      <p className="font-black uppercase tracking-widest text-[13px] text-white">내역 없음</p>
-                   </div>
-                 )}
               </div>
            </div>
 
-           <div className="w-full lg:w-80 flex flex-col overflow-hidden bg-black/30">
-              <div className="p-5 bg-black/40 border-b border-white/5">
-                 <p className="text-[11px] font-black uppercase tracking-widest text-brand-text-sub">카테고리</p>
+           {/* 카테고리 관리 (오른쪽 - 리스트형 수정 및 추가) */}
+           <div className="w-full lg:w-96 flex flex-col overflow-hidden bg-black/30">
+              <div className="p-5 bg-black/40 border-b border-white/5 flex justify-between items-center">
+                 <p className="text-[11px] font-black uppercase tracking-widest text-brand-text-sub">카테고리 설정</p>
               </div>
               <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                 
+                 {/* 지출 카테고리 리스트 */}
                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 px-2">
-                       <Minus size={18} className="text-[#FFA59E]" />
-                       <p className="text-[12px] font-black text-[#FFA59E] uppercase tracking-widest">지출</p>
+                    <div className="flex items-center justify-between px-2">
+                       <div className="flex items-center gap-2">
+                          <Minus size={18} className="text-[#FFA59E]" />
+                          <p className="text-[12px] font-black text-[#FFA59E] uppercase tracking-widest">지출 항목</p>
+                       </div>
+                       <button onClick={() => handleAddCategory('expense')} className="p-1.5 bg-[#FFA59E]/20 text-[#FFA59E] rounded-lg active:scale-90 transition-transform"><Plus size={16}/></button>
                     </div>
-                    <textarea value={editedCategories.expense.join(', ')} onChange={e => setEditedCategories({...editedCategories, expense: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} className="w-full h-40 bg-black/40 border border-white/10 rounded-2xl p-5 text-[13px] font-bold text-white leading-relaxed focus:border-[#FFA59E] outline-none transition-all" />
+                    <div className="space-y-2">
+                       {editedCategories.expense.map((cat: string, idx: number) => (
+                         <div key={idx} className="flex gap-2">
+                            <input value={cat} onChange={(e) => handleCategoryNameChange('expense', idx, e.target.value)} className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-[13px] font-bold text-white focus:border-[#FFA59E] outline-none transition-all" />
+                            <button onClick={() => handleRemoveCategory('expense', idx)} className="px-3 bg-white/5 text-[#FFA59E] rounded-xl active:scale-95"><Minus size={14}/></button>
+                         </div>
+                       ))}
+                    </div>
                  </div>
+
+                 {/* 수입 카테고리 리스트 */}
                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 px-2">
-                       <Plus size={18} className="text-[#4B96FF]" />
-                       <p className="text-[12px] font-black text-[#4B96FF] uppercase tracking-widest">수입</p>
+                    <div className="flex items-center justify-between px-2">
+                       <div className="flex items-center gap-2">
+                          <Plus size={18} className="text-[#4B96FF]" />
+                          <p className="text-[12px] font-black text-[#4B96FF] uppercase tracking-widest">수입 항목</p>
+                       </div>
+                       <button onClick={() => handleAddCategory('income')} className="p-1.5 bg-[#4B96FF]/20 text-[#4B96FF] rounded-lg active:scale-90 transition-transform"><Plus size={16}/></button>
                     </div>
-                    <textarea value={editedCategories.income.join(', ')} onChange={e => setEditedCategories({...editedCategories, income: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} className="w-full h-40 bg-black/40 border border-white/10 rounded-2xl p-5 text-[13px] font-bold text-white leading-relaxed focus:border-[#4B96FF] outline-none transition-all" />
+                    <div className="space-y-2">
+                       {editedCategories.income.map((cat: string, idx: number) => (
+                         <div key={idx} className="flex gap-2">
+                            <input value={cat} onChange={(e) => handleCategoryNameChange('income', idx, e.target.value)} className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-[13px] font-bold text-white focus:border-[#4B96FF] outline-none transition-all" />
+                            <button onClick={() => handleRemoveCategory('income', idx)} className="px-3 bg-white/5 text-[#4B96FF] rounded-xl active:scale-95"><Minus size={14}/></button>
+                         </div>
+                       ))}
+                    </div>
                  </div>
+
               </div>
            </div>
         </div>
 
+        {/* 하단 버튼 영역 */}
         <div className="p-8 border-t border-white/5 bg-[#1c1c1e] flex gap-5">
            <button onClick={onClose} className="flex-1 py-5 border border-white/10 rounded-2xl font-bold uppercase text-[13px] text-white hover:bg-white/10 transition-all tracking-widest">취소</button>
-           <button onClick={handleSave} className="flex-[2] py-5 bg-[#4B96FF] text-white rounded-2xl font-black uppercase text-[14px] shadow-[0_10px_30px_rgba(75,150,255,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all tracking-widest">
-             저장
-           </button>
+           <button onClick={handleSave} className="flex-[2] py-5 bg-[#4B96FF] text-white rounded-2xl font-black uppercase text-[14px] shadow-[0_10px_30px_rgba(75,150,255,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all tracking-widest">저장하기</button>
         </div>
       </div>
     </div>
   );
 }
+
+
+
 
 // --- HELPERS ---
 function SummarySmallCard({ label, value, color }: { label: string, value: string | number, color: string }) {
