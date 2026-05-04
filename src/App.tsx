@@ -158,13 +158,21 @@ export default function App() {
     return saved ? JSON.parse(saved) : { mySalaryRecords: [], gamjaSalaryRecords: [], mySalary: 3500000, gamjaSalary: 4200000 };
   });
 
-  const [loans, setLoans] = useState<Loan[]>(() => {
+ const [loans, setLoans] = useState<Loan[]>(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('myLoans') : null;
     return saved ? JSON.parse(saved) : INITIAL_LOANS;
   });
 
-  const [myCategories, setMyCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
-  const [gamjaCategories, setGamjaCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
+  // 수정된 부분: 내 카테고리를 로컬 스토리지에서 불러오도록 변경
+  const [myCategories, setMyCategories] = useState(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('myCategories') : null;
+    return saved ? JSON.parse(saved) : { income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] };
+  });
+
+  const [gamjaCategories, setGamjaCategories] = useState(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('gamjaCategories') : null;
+    return saved ? JSON.parse(saved) : { income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] };
+  });
 
 // [통합 잔액 로직] 기초 자산 + 전체 내역을 합산하여 실시간 잔액을 도출합니다
   useEffect(() => {
