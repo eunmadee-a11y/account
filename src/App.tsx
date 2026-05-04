@@ -639,58 +639,46 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
 }
 
 /* 내 지출 */
-/* 내 지출 탭 (아이폰 최적화 및 누적 잔액 로직) */
-function ExpenseView({ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery, setSearchQuery, tabName, setTabName, categories, setCategories, onOpenEdit }: any) {
+/* 내 지출 탭 (아이폰 최적화: 기초 자산 즉시 반영 버전) */
+function ExpenseView({ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery, setSearchQuery, onOpenEdit }: any) {
   const { currMonthTxs } = filteredData;
   const [isStartBalanceOpen, setIsStartBalanceOpen] = useState(false);
   
-  // 아이폰에서 터치하기 쉬운 큰 버튼을 위한 통장 목록
+  // 아이폰 터치용 큰 통장 버튼 목록
   const expenseAccountButtons = ['내 생활비 통장', '내 여유자금 통장', '내 자동이체 통장'];
   const [activeExpenseAccount, setActiveExpenseAccount] = useState(expenseAccountButtons.find(name => myAccountNames.includes(name)) || myAccountNames[0] || '');
 
-  // [핵심 로직] 시작 금액 수정 시 전체 balances에 즉시 반영 (전체 달 잔액이 연동됨)
-  const updateStartBalance = (id: string, value: number) => {
+  // [핵심] 기초 자산(시작 금액) 수정 시 즉시 전역 balances 상태 업데이트
+  const updateStartValue = (id: string, value: number) => {
     setBalances((prev: any[]) => prev.map((b: any) => 
       b.id === id ? { ...b, previousBalance: value } : b
     ));
   };
 
-  // 현재 선택된 통장의 '실시간 누적 잔액' 가져오기
-  const currentAccountData = balances.find((b: any) => b.name === activeExpenseAccount);
-  const currentDisplayBalance = currentAccountData?.currentBalance || 0;
+  // 현재 선택된 통장의 데이터 찾기
+  const currentAcc = balances.find((b: any) => b.name === activeExpenseAccount);
 
-  const filteredMonthTxs = useMemo(() => {
-    if (!searchQuery.trim()) return currMonthTxs;
-    const q = searchQuery.toLowerCase();
-    return currMonthTxs.filter((t: any) => (t.memo?.toLowerCase().includes(q)) || (t.category?.toLowerCase().includes(q)));
-  }, [currMonthTxs, searchQuery]);
+  // [계산] 시작 금액 + 해당 통장의 전체 수입 - 전체 지출 = 현재 실시간 잔액
+  const calculateLiveBalance = () => {
+    if (!currentAcc) return 0;
+    const allTxs = transactions.filter((t: any) => t.account === activeExpenseAccount);
+    const income = allTxs.filter((t: any) => t.type === '수입').reduce((s: number, t: any) => s + t.amount, 0);
+    const expense = allTxs.filter((t: any) => t.type === '지출').reduce((s: number, t: any) => s + t.amount, 0);
+    return (currentAcc.previousBalance || 0) + income - expense;
+  };
 
-  // 해당 통장의 이번 달 수입/지출 합계
   const accountMonthTxs = currMonthTxs.filter((t: any) => t.account === activeExpenseAccount);
-  const incomeTotal = accountMonthTxs.filter((t: any) => t.type === '수입').reduce((s: number, t: any) => s + t.amount, 0);
-  const expenseTotal = accountMonthTxs.filter((t: any) => t.type === '지출').reduce((s: number, t: any) => s + t.amount, 0);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto space-y-6 pb-28">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-5 pb-24">
       
-      {/* 1. 상단 검색바 (아이폰 터치 최적화) */}
-      <div className="relative group">
-        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-text-sub group-focus-within:text-[#4B96FF] transition-colors" />
-        <input
-          type="text" placeholder="내역 또는 카테고리 검색..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-          className="w-full bg-[#1c1c1e] border border-white/10 rounded-[20px] pl-12 pr-4 py-4 text-[15px] text-white outline-none focus:border-[#4B96FF] transition-all shadow-inner"
-        />
-      </div>
-
-      {/* 2. 통장 선택 스위치 */}
+      {/* 1. 통장 선택 (아이폰 하단 탭 느낌의 큰 버튼)[cite: 1] */}
       <div className="grid grid-cols-3 gap-2">
         {expenseAccountButtons.map((name) => (
           <button
             key={name} onClick={() => setActiveExpenseAccount(name)}
-            className={`py-4 rounded-2xl font-black text-[12px] border transition-all active:scale-95 ${
-              activeExpenseAccount === name
-                ? 'bg-[#4B96FF] text-[#121212] border-[#4B96FF] shadow-[0_8px_20px_rgba(75,150,255,0.3)]'
-                : 'bg-[#1c1c1e] text-brand-text-sub border-white/5'
+            className={`py-4 rounded-2xl font-black text-[12px] border transition-all active:scale-90 ${
+              activeExpenseAccount === name ? 'bg-[#4B96FF] text-[#121212] border-[#4B96FF]' : 'bg-[#1c1c1e] text-brand-text-sub border-white/5'
             }`}
           >
             {name.replace('내 ', '').replace(' 통장', '')}
@@ -698,97 +686,75 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
         ))}
       </div>
 
-      {/* 3. 현재 잔액 카드 (실시간 누적 결과) */}
-      <div className="bg-gradient-to-br from-[#1c1c1e] to-[#121212] p-8 rounded-[32px] border border-white/10 shadow-2xl text-center">
-        <p className="text-[11px] font-black text-brand-text-sub uppercase mb-3 tracking-[0.2em]">현재 실시간 잔액</p>
-        <p className="text-4xl font-black text-white tracking-tighter tabular-nums mb-6">
-          {new Intl.NumberFormat('ko-KR').format(currentDisplayBalance)}
+      {/* 2. 현재 실시간 잔액 카드 (기초 자산 반영 결과)[cite: 1] */}
+      <div className="bg-[#1c1c1e] p-8 rounded-[32px] border border-white/10 shadow-2xl text-center">
+        <p className="text-[11px] font-black text-brand-text-sub uppercase mb-2 tracking-widest">현재 실시간 잔액</p>
+        <p className="text-4xl font-black text-white tabular-nums tracking-tighter">
+          {new Intl.NumberFormat('ko-KR').format(calculateLiveBalance())}
         </p>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-black/30 p-3 rounded-2xl border border-white/5">
-            <p className="text-[10px] font-bold text-brand-text-sub mb-1 uppercase">이번달 수입</p>
-            <p className="text-[14px] font-black text-[#4B96FF]">+{new Intl.NumberFormat('ko-KR').format(incomeTotal)}</p>
-          </div>
-          <div className="bg-black/30 p-3 rounded-2xl border border-white/5">
-            <p className="text-[10px] font-bold text-brand-text-sub mb-1 uppercase">이번달 지출</p>
-            <p className="text-[14px] font-black text-[#FFA59E]">-{new Intl.NumberFormat('ko-KR').format(expenseTotal)}</p>
-          </div>
-        </div>
       </div>
 
-      {/* 4. 시작 금액 수정 (여기서 수정하면 모든 달의 잔액이 바뀜) */}
-      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden shadow-xl">
-        <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-6 flex items-center justify-between hover:bg-white/5 transition-all">
+      {/* 3. 기초 자산(시작 금액) 입력창 - 여기서 수정하면 바로 위 잔액이 바뀝니다[cite: 1] */}
+      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden">
+        <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-white/5">
           <div className="text-left">
-            <h4 className="font-black text-[14px] text-[#E2F2D5] uppercase tracking-wide">기초 자산 설정 (시작금액)</h4>
-            <p className="text-[11px] text-brand-text-sub mt-1">최초 1회 입력 시 모든 달에 누적 반영됩니다.</p>
+            <h4 className="font-black text-[13px] text-[#E2F2D5]">기초 자산(시작 금액) 수정</h4>
+            <p className="text-[10px] text-brand-text-sub">이 금액이 실시간 잔액의 기준점이 됩니다.</p>
           </div>
-          <ChevronRight size={20} className={`text-[#E2F2D5] transition-transform duration-300 ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
+          <ChevronRight size={18} className={`transition-transform ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
         </button>
         <AnimatePresence>
           {isStartBalanceOpen && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-black/20">
-              <div className="p-8 space-y-6">
-                {balances.filter((b: any) => expenseAccountButtons.includes(b.name)).map((b: any) => (
-                  <div key={b.id} className="space-y-2">
-                    <label className="text-[11px] font-black text-brand-text-sub ml-1 uppercase">{b.name}</label>
-                    <NumericInput 
-                      value={b.previousBalance || 0} 
-                      onChange={(v: number) => updateStartBalance(b.id, v)} 
-                      className="w-full bg-[#2c2c2e] border border-white/10 rounded-2xl px-5 py-4 text-xl font-black text-white outline-none focus:border-[#4B96FF] transition-all" 
-                    />
-                  </div>
-                ))}
-                {/* 실시간 반영 저장 버튼 */}
-                <button 
-                  onClick={() => { setIsStartBalanceOpen(false); alert("시작 금액이 저장되었습니다. 이제 모든 달의 잔액이 이 금액부터 계산됩니다."); }}
-                  className="w-full py-5 bg-[#4B96FF] text-[#121212] rounded-2xl font-black text-[14px] uppercase tracking-widest shadow-lg active:scale-95 transition-all mt-4"
-                >
-                  수정 및 실시간 반영 완료
-                </button>
-              </div>
+            <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="px-8 pb-8 space-y-4 bg-black/20">
+              {balances.filter((b: any) => expenseAccountButtons.includes(b.name)).map((b: any) => (
+                <div key={b.id} className="space-y-1 pt-3">
+                  <p className="text-[11px] font-bold text-brand-text-sub ml-1">{b.name}</p>
+                  <NumericInput 
+                    value={b.previousBalance || 0} 
+                    onChange={(v: number) => updateStartValue(b.id, v)} 
+                    className="w-full bg-[#2c2c2e] border border-white/10 rounded-2xl px-5 py-4 text-xl font-black text-white outline-none focus:border-[#4B96FF]" 
+                  />
+                </div>
+              ))}
+              <button 
+                onClick={() => { setIsStartBalanceOpen(false); alert("기초 자산이 반영되었습니다."); }}
+                className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all mt-2"
+              >
+                수정 완료
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* 5. 이번 달 내역 리스트 */}
-      <div className="bg-[#1c1c1e] rounded-[32px] border border-white/5 overflow-hidden shadow-2xl">
-        <div className="px-8 py-5 border-b border-white/5 bg-white/5 flex justify-between items-center">
-          <h3 className="text-[13px] font-black text-white uppercase tracking-widest">이번 달 거래 내역</h3>
-          <span className="text-[11px] font-bold text-brand-text-sub bg-white/10 px-3 py-1 rounded-full">{accountMonthTxs.length}건</span>
+      {/* 4. 이번 달 거래 내역[cite: 1] */}
+      <div className="bg-[#1c1c1e] rounded-[32px] border border-white/5 overflow-hidden shadow-xl">
+        <div className="px-8 py-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
+          <p className="text-[11px] font-black text-brand-text-sub uppercase">이번 달 내역</p>
         </div>
-        <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
-          {accountMonthTxs.length > 0 ? (
-            accountMonthTxs.map((t: any) => (
-              <div key={t.id} className="px-8 py-5 flex items-center justify-between active:bg-white/5 transition-colors">
-                <div>
-                  <p className="text-[14px] font-black text-white">{t.memo || t.category}</p>
-                  <p className="text-[11px] text-brand-text-sub mt-1">{t.date} · {t.category}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <p className={`text-[16px] font-black tabular-nums ${t.type === '수입' ? 'text-[#4B96FF]' : 'text-white'}`}>
-                    {t.type === '수입' ? '+' : '-'}{new Intl.NumberFormat('ko-KR').format(t.amount)}
-                  </p>
-                  <button onClick={() => deleteTransaction(t.id)} className="p-2 text-brand-text-sub active:text-[#FFA59E] transition-colors"><X size={16} /></button>
-                </div>
+        <div className="divide-y divide-white/5 max-h-[350px] overflow-y-auto">
+          {accountMonthTxs.map((t: any) => (
+            <div key={t.id} className="px-8 py-5 flex justify-between items-center active:bg-white/5">
+              <div>
+                <p className="text-sm font-black text-white">{t.memo || t.category}</p>
+                <p className="text-[10px] text-brand-text-sub mt-1">{t.date}</p>
               </div>
-            ))
-          ) : (
-            <div className="py-20 text-center opacity-20 font-black uppercase tracking-[0.3em] text-xs">내역 없음</div>
-          )}
+              <div className="flex items-center gap-4">
+                <p className={`text-base font-black ${t.type === '수입' ? 'text-[#4B96FF]' : 'text-white'}`}>
+                  {t.type === '수입' ? '+' : '-'}{new Intl.NumberFormat('ko-KR').format(t.amount)}
+                </p>
+                <button onClick={() => deleteTransaction(t.id)} className="p-2 text-brand-text-sub"><X size={14} /></button>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
-
-      {/* 하단 관리 버튼 */}
-      <div className="pt-4 px-2">
-        <button onClick={onOpenEdit} className="w-full py-5 bg-[#1c1c1e] border border-white/10 rounded-2xl font-black text-[#4B96FF] text-[13px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">
-           항목 및 카테고리 편집
-        </button>
       </div>
     </motion.div>
   );
-}    
+}
+
+
+
 
 /*연금 투자관리*/
 function PensionView({ balances, setBalances, currentDate, tabName, setTabName }: any) {
