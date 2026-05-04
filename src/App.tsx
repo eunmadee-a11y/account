@@ -958,14 +958,19 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         </AnimatePresence>
       </div>
 
-      {/* 3. 내역 입력 상자 (항목 선택 탭 추가됨)[cite: 1] */}
+    {/* 3. 감자 내역 입력 상자 (사용자 설정 항목 자동 연동 및 가로 스크롤) */}
       <div className="bg-[#1c1c1e] p-7 rounded-[32px] border border-white/5 shadow-2xl space-y-5">
         <div className="flex justify-between items-center">
           <h4 className="text-sm font-black text-white">{activeGamjaAccount} 입력</h4>
-          <input type="date" value={newTx.date} onChange={e => setNewTx({...newTx, date: e.target.value})} className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[16px] md:text-sm font-bold text-white outline-none" />
+          <input 
+            type="date" 
+            value={newTx.date} 
+            onChange={e => setNewTx({...newTx, date: e.target.value})} 
+            className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[16px] font-bold text-white outline-none" 
+          />
         </div>
         
-        {/* 지출/수입 선택 스위치[cite: 1] */}
+        {/* 지출/수입 선택 스위치 */}
         <div className="flex bg-black/40 rounded-2xl p-1 border border-white/5">
           {['지출', '수입'].map((type) => (
             <button 
@@ -978,7 +983,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           ))}
         </div>
 
-        {/* [추가됨] 항목(카테고리) 선택 탭 - 가로 스크롤 가능[cite: 1] */}
+        {/* [연동 확인] 내 지출 탭 하단에서 수정한 항목들이 여기에 자동으로 뜹니다 */}
         <div className="space-y-2">
           <label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">항목 선택</label>
           <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide snap-x">
@@ -998,11 +1003,27 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           </div>
         </div>
 
-        <NumericInput label="금액" value={newTx.amount} onChange={(v: number) => setNewTx({...newTx, amount: v})} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none" />
+        <NumericInput 
+          label="금액" 
+          value={newTx.amount} 
+          onChange={(v: number) => setNewTx({...newTx, amount: v})} 
+          className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none" 
+        />
         
-        <input type="text" placeholder="메모 입력..." value={newTx.memo} onChange={e => setNewTx({...newTx, memo: e.target.value})} className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white outline-none" />
+        <input 
+          type="text" 
+          placeholder="메모 입력..." 
+          value={newTx.memo} 
+          onChange={e => setNewTx({...newTx, memo: e.target.value})} 
+          className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white outline-none" 
+        />
         
-        <button onClick={handleAdd} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">거래 내역 추가</button>
+        <button 
+          onClick={handleAdd} 
+          className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg"
+        >
+          거래 내역 추가
+        </button>
       </div>
 
       {/* 4. 거래 내역 리스트[cite: 1] */}
