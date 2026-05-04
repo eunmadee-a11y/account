@@ -698,6 +698,9 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
             <h4 className="font-black text-[13px] text-[#E2F2D5] uppercase">기초 자산(시작금액) 수정</h4>
             <p className="text-[10px] text-brand-text-sub mt-1">이 금액을 기준으로 전체 잔액이 재계산됩니다.</p>
           </div>
+
+
+          
           <ChevronRight size={18} className={`transition-transform duration-300 ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
         </button>
         <AnimatePresence>
@@ -1335,6 +1338,69 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
         </div>
       </div>
 
+
+
+
+
+
+{/* 3번: 월급 내역 나열 및 연동 삭제 섹션 */}
+      <div className="bg-[#1c1c1e] rounded-[32px] border border-white/5 overflow-hidden shadow-2xl">
+        <div className="px-8 py-5 border-b border-white/5 bg-white/5 flex justify-between items-center">
+          <h4 className="text-[13px] font-black text-white uppercase tracking-widest">이번 달 월급 상세 내역</h4>
+          <span className="text-[11px] font-bold text-brand-text-sub bg-white/10 px-3 py-1 rounded-full">
+            {monthlySalaryData[currentDate.getMonth()].details.length}건
+          </span>
+        </div>
+        <div className="divide-y divide-white/5 max-h-[350px] overflow-y-auto custom-scrollbar">
+          {[...salaries.mySalaryRecords, ...salaries.gamjaSalaryRecords]
+            .filter(r => {
+              const d = new Date(r.date);
+              return d.getMonth() === currentDate.getMonth() && d.getFullYear() === selectedYear;
+            })
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .map((record: any) => (
+              <div key={record.id} className="px-8 py-5 flex justify-between items-center active:bg-white/5 transition-colors">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${record.target === '나' ? 'bg-[#4B96FF] text-white' : 'bg-[#E2F2D5] text-[#121212]'}`}>
+                      {record.target}
+                    </span>
+                    <p className="text-[14px] font-black text-white">{salaryLabels[record.type] || record.type}</p>
+                  </div>
+                  <p className="text-[10px] text-brand-text-sub">{record.date} {record.memo && `| ${record.memo}`}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <p className="text-base font-black text-white tabular-nums">
+                    {new Intl.NumberFormat('ko-KR').format(record.amount)}
+                  </p>
+                  <button 
+                    onClick={() => {
+                      if(confirm('이 월급 내역을 삭제하시겠습니까? 연동된 통장 잔액도 함께 차감됩니다.')) {
+                        if (record.target === '나') {
+                          setSalaries({...salaries, mySalaryRecords: salaries.mySalaryRecords.filter((r:any) => r.id !== record.id)});
+                          setTransactions((prev:any) => prev.filter((t:any) => t.id !== `salary-${record.id}`));
+                        } else {
+                          setSalaries({...salaries, gamjaSalaryRecords: salaries.gamjaSalaryRecords.filter((r:any) => r.id !== record.id)});
+                          setGamjaTransactions((prev:any) => prev.filter((t:any) => t.id !== `salary-g-${record.id}`));
+                        }
+                      }
+                    }} 
+                    className="p-2 text-brand-text-sub active:text-[#FFA59E] bg-white/5 rounded-xl"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          {monthlySalaryData[currentDate.getMonth()].details.length === 0 && (
+            <div className="py-16 text-center opacity-20 font-black uppercase tracking-[0.2em] text-[10px]">내역이 없습니다.</div>
+          )}
+        </div>
+      </div>
+      
+
+
+      
       <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden shadow-2xl">
         <button onClick={() => setIsLabelSettingsOpen(!isLabelSettingsOpen)} className="w-full px-8 py-6 flex items-center justify-between hover:bg-white/5 transition-all">
           <span className="text-[13px] font-black text-white uppercase tracking-widest">명칭 설정</span>
