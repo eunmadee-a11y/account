@@ -318,15 +318,16 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
     animate={{ x: 0, opacity: 1 }}
     exit={{ x: -50, opacity: 0 }}
     transition={{ type: "spring", stiffness: 300, damping: 30 }}
-    /* 아이폰 중첩 롤링 해결: 내부 요소 터치 시 드래그 방지 */
+    /* 아이폰 최적화: 가로 롤링 항목 인지 범위 강화 */
     drag="x"
     dragConstraints={{ left: 0, right: 0 }}
-    dragElastic={0.1}
+    dragElastic={0.15}
+    dragMomentum={false} // 의도치 않은 관성 이동 방지
     onDragStart={(e) => {
-      // 터치된 요소가 버튼이거나 가로 스크롤 가능한 요소 내부라면 드래그 취소
       const target = e.target as HTMLElement;
-      if (target.closest('button') || target.closest('.overflow-x-auto')) {
-        return;
+      // 가로 스크롤 영역이나 버튼을 터치하면 전체 스와이프 기능을 즉시 잠금
+      if (target.closest('.overflow-x-auto') || target.closest('button')) {
+        return; 
       }
     }}
     onDragEnd={(e, { offset, velocity }) => {
@@ -334,8 +335,8 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
       const tabs: TabName[] = ['홈', '내 지출', '연금/투자 관리', '감자 지출', '월급 비교', '대출 관리', '1년 결산'];
       const currentIndex = tabs.indexOf(activeTab);
 
-      // 드래그 속도나 거리가 충분할 때만 이동
-      if (Math.abs(velocity.x) > 500 || Math.abs(swipe) > 120) {
+      // 전체 화면 전환 민감도 하향 조정 (실수로 넘어가는 것 방지)
+      if (Math.abs(velocity.x) > 600 || Math.abs(swipe) > 150) {
         if (swipe < -100 && currentIndex < tabs.length - 1) {
           setActiveTab(tabs[currentIndex + 1]);
         } else if (swipe > 100 && currentIndex > 0) {
@@ -346,7 +347,7 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
     className="h-full touch-pan-y"
   >
     <AnimatePresence mode="wait">
-      {/* 탭별 View 컴포넌트 유지 */}
+      {/* 각 탭의 View 컴포넌트들 (HomeView, ExpenseView 등 기존 코드 유지) */}
       {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, categories: myCategories, setCategories: setMyCategories, tabName: tabNames['홈'], setTabName: (n:string)=>setTabNames({...tabNames, '홈':n}) }} />}
       {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true), tabName: tabNames['내 지출'], setTabName: (n:string)=>setTabNames({...tabNames, '내 지출':n}) }} />}
       {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, setBalances, currentDate, tabName: tabNames['연금/투자 관리'], setTabName: (n:string)=>setTabNames({...tabNames, '연금/투자 관리':n}) }} />}
@@ -357,7 +358,6 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
     </AnimatePresence>
   </motion.div>
 </main>
-
 
       <TransactionEditModal isOpen={isMyEditModalOpen} onClose={() => setIsMyEditModalOpen(false)} transactions={transactions} setTransactions={setTransactions} categories={myCategories} setCategories={setMyCategories} title="내 지출 내역 관리" />
       <TransactionEditModal isOpen={isGamjaEditModalOpen} onClose={() => setIsGamjaEditModalOpen(false)} transactions={gamjaTransactions} setTransactions={setGamjaTransactions} categories={gamjaCategories} setCategories={setGamjaCategories} title="감자 지출 내역 관리" />
