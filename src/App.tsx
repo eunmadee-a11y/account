@@ -1413,19 +1413,28 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
 
 
 
+
 const downloadYearlyReport = () => {
     // CSV 헤더 설정
     const header = ["날짜", "구분", "카테고리/항목", "금액", "메모/상세"];
     
+    // 0. 1년 결산 요약 데이터 (추가됨)
+    const summaryHeader = ["구분", "총 연봉", "총 지출", "여유 자산", ""];
+    const summaryData = [
+      ["나", myData.annualSalary, myData.totalExpense, myData.remaining, ""].join(","),
+      ["감자", gamjaData.annualSalary, gamjaData.totalExpense, gamjaData.remaining, ""].join(","),
+      ["합계", totalAnnualSalary, totalAnnualExpense, totalRemaining, ""].join(",")
+    ];
+
     // 1. 내 지출/수입 내역
     const myYearly = transactions
-      .filter(t => new Date(t.date).getFullYear() === selectedYear)
-      .map(t => [t.date, t.type, t.category, t.amount, `"${(t.memo || "").replace(/"/g, '""')}"`].join(","));
+      .filter((t: any) => new Date(t.date).getFullYear() === selectedYear)
+      .map((t: any) => [t.date, t.type, t.category, t.amount, `"${(t.memo || "").replace(/"/g, '""')}"`].join(","));
 
     // 2. 감자 지출/수입 내역
     const gamjaYearly = gamjaTransactions
-      .filter(t => new Date(t.date).getFullYear() === selectedYear)
-      .map(t => [t.date, t.type, t.category, t.amount, `"${(t.memo || "").replace(/"/g, '""')}"`].join(","));
+      .filter((t: any) => new Date(t.date).getFullYear() === selectedYear)
+      .map((t: any) => [t.date, t.type, t.category, t.amount, `"${(t.memo || "").replace(/"/g, '""')}"`].join(","));
 
     // 3. 급여 데이터 (내 급여 + 감자 급여)
     const mySalaryData = salaries.mySalaryRecords
@@ -1458,6 +1467,10 @@ const downloadYearlyReport = () => {
     const csvContent = [
       `--- ${selectedYear}년 가계부 통합 결산 리포트 ---`,
       "",
+      "[0. 1년 결산 요약]",
+      summaryHeader.join(","),
+      ...summaryData,
+      "",
       "[1. 내역 (나)]",
       header.join(","),
       ...myYearly,
@@ -1480,19 +1493,26 @@ const downloadYearlyReport = () => {
       ...pensionData
     ].join("\n");
 
-    // 파일 다운로드 로직 (BOM 추가로 한글 깨짐 방지)
+    // 파일 다운로드 로직 (아이폰 Safari 다운로드 호환성 적용)
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const link = document.createElement("a");
+    
     const dateStr = new Date().toLocaleDateString('ko-KR', {
       year: 'numeric', month: '2-digit', day: '2-digit'
     }).replace(/\. /g, '-').replace(/\./g, '');
 
-    a.href = url;
-    a.download = `${selectedYear}년_가계부_통합결산_${dateStr}.csv`;
-    a.click();
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${selectedYear}년_가계부_통합결산_${dateStr}.csv`);
+    
+    // 아이폰에서 다운로드가 실행되게 만드는 핵심 코드
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
+  
 
   
   return (
