@@ -732,7 +732,6 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
                   <h4 className="font-black text-lg text-[#4B96FF]">{accountName}</h4>
                 </div>
 
-// ExpenseView 컴포넌트 내부의 잔액 표시 부분
 <div>
   <p className="text-[11px] font-bold text-brand-text-sub uppercase mb-2 tracking-widest">현재 잔액</p>
   {/* useEffect로 자동 계산된 balances 배열에서 현재 선택된 계좌의 잔액을 찾아 표시합니다. */}
