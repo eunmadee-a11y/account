@@ -136,7 +136,7 @@ function NumericInput({ value, onChange, className, placeholder, label }: any) {
 
 export default function App() {
   // --- [데이터 영구 저장 및 불러오기 로직] ---
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+ const [transactions, setTransactions] = useState<Transaction[]>(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('myTransactions') : null;
     if (saved) return JSON.parse(saved);
     const currentYearMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`;
@@ -166,6 +166,35 @@ export default function App() {
   const [myCategories, setMyCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
   const [gamjaCategories, setGamjaCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
 
+  // [아이폰 최적화] 지출/수입 내역이 변할 때마다 각 통장의 잔액을 실시간으로 재계산합니다.
+  useEffect(() => {
+    const updatedBalances = balances.map(balance => {
+      // 내 거래 내역과 감자 거래 내역 모두에서 해당 계좌와 일치하는 내역 필터링
+      const myAccountTxs = transactions.filter(t => t.account === balance.name);
+      const gamjaAccountTxs = gamjaTransactions.filter(t => t.account === balance.name);
+      const allTxs = [...myAccountTxs, ...gamjaAccountTxs];
+      
+      const totalIncome = allTxs
+        .filter(t => t.type === '수입')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalExpense = allTxs
+        .filter(t => t.type === '지출')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      // 현재 잔액 = 설정한 시작 금액(previousBalance) + 수입 총액 - 지출 총액
+      return {
+        ...balance,
+        currentBalance: (balance.previousBalance || 0) + totalIncome - totalExpense
+      };
+    });
+
+    // 실제 값이 변경된 경우에만 상태를 업데이트하여 무한 루프를 방지합니다.
+    if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
+      setBalances(updatedBalances);
+    }
+  }, [transactions, gamjaTransactions]); // 내 거래나 감자 거래가 바뀔 때마다 실행
+
   // 데이터 변경 시 자동 저장 (아이폰 브라우저 저장소 활용)
   useEffect(() => {
     localStorage.setItem('myTransactions', JSON.stringify(transactions));
@@ -176,6 +205,7 @@ export default function App() {
   }, [transactions, gamjaTransactions, balances, salaries, loans]);
   // --- [저장 로직 끝] ---
 
+  
   const [activeTab, setActiveTab] = useState<TabName>('홈');
   const [tabNames, setTabNames] = useState<Record<TabName, string>>({
     '홈': '홈', '내 지출': '내 지출', '연금/투자 관리': '연금/투자 관리',
@@ -701,10 +731,17 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
                 <div className="flex items-center gap-4">
                   <h4 className="font-black text-lg text-[#4B96FF]">{accountName}</h4>
                 </div>
-                <div>
-                  <p className="text-[11px] font-bold text-brand-text-sub uppercase mb-2 tracking-widest">현재 잔액</p>
-                  <p className="text-3xl font-black tabular-nums text-white tracking-tighter">{formatNumber(accountBalance?.currentBalance || 0)}</p>
-                </div>
+
+// ExpenseView 컴포넌트 내부의 잔액 표시 부분
+<div>
+  <p className="text-[11px] font-bold text-brand-text-sub uppercase mb-2 tracking-widest">현재 잔액</p>
+  {/* useEffect로 자동 계산된 balances 배열에서 현재 선택된 계좌의 잔액을 찾아 표시합니다. */}
+  <p className="text-3xl font-black tabular-nums text-white tracking-tighter">
+    {formatNumber(balances.find((b: any) => b.name === activeExpenseAccount)?.currentBalance || 0)}
+  </p>
+</div>
+
+                
                 <div className="grid grid-cols-2 gap-4 pb-2">
                   <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
                     <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1">이번 달 수입</p>
