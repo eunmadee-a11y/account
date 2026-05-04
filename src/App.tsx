@@ -629,97 +629,118 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
 
 /* 내 지출 */
 
-/* 내 지출 탭 (아이폰 최적화: 항목 선택창 포함) */
-function ExpenseView({ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery, setSearchQuery, categories, setCategories, onOpenEdit }: any) {
+/* 내 지출 탭 (아이폰 최적화: 입력창 제거 및 내역 중심) */
+function ExpenseView({ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery, setSearchQuery, onOpenEdit }: any) {
   const { currMonthTxs } = filteredData;
   const [isStartBalanceOpen, setIsStartBalanceOpen] = useState(false);
+  
+  // 아이폰 터치용 큰 통장 버튼 목록
   const expenseAccountButtons = ['내 생활비 통장', '내 여유자금 통장', '내 자동이체 통장'];
   const [activeExpenseAccount, setActiveExpenseAccount] = useState(expenseAccountButtons.find(name => myAccountNames.includes(name)) || myAccountNames[0] || '');
-  
-  // 내 지출용 새로운 내역 입력 상태
-  const [newTx, setNewTx] = useState({ date: new Date().toISOString().split('T')[0], type: '지출' as TransactionType, category: categories.expense[0], amount: 0, memo: '' });
 
+  // 기초 자산 수정 시 즉시 전역 상태 업데이트 (홈 탭과 실시간 연동)
   const updateStartValue = (id: string, value: number) => {
-    setBalances((prev: any[]) => prev.map((b: any) => b.id === id ? { ...b, previousBalance: value } : b));
+    setBalances((prev: any[]) => prev.map((b: any) => 
+      b.id === id ? { ...b, previousBalance: value } : b
+    ));
   };
 
-  const handleAdd = () => {
-    if (newTx.amount <= 0) return;
-    const tx = { id: Math.random().toString(36).substr(2, 9), ...newTx, account: activeExpenseAccount };
-    setTransactions([tx, ...transactions]);
-    setNewTx({ ...newTx, amount: 0, memo: '' });
-  };
-
+  // 선택된 통장의 현재 실시간 잔액 데이터
   const currentAcc = balances.find((b: any) => b.name === activeExpenseAccount);
   const accountMonthTxs = currMonthTxs.filter((t: any) => t.account === activeExpenseAccount);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-5 pb-28">
-      {/* 통장 선택 스위치 */}
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto space-y-5 pb-28">
+      
+      {/* 1. 통장 선택 스위치 (상단 고정 느낌) */}
       <div className="grid grid-cols-3 gap-2">
         {expenseAccountButtons.map((name) => (
-          <button key={name} onClick={() => { setActiveExpenseAccount(name); setNewTx({...newTx, account: name}); }}
+          <button
+            key={name} onClick={() => setActiveExpenseAccount(name)}
             className={`py-4 rounded-2xl font-black text-[12px] border transition-all active:scale-90 ${
               activeExpenseAccount === name ? 'bg-[#4B96FF] text-[#121212] border-[#4B96FF] shadow-lg' : 'bg-[#1c1c1e] text-brand-text-sub border-white/5'
-            }`}>{name.replace('내 ', '').replace(' 통장', '')}</button>
+            }`}
+          >
+            {name.replace('내 ', '').replace(' 통장', '')}
+          </button>
         ))}
       </div>
 
-      {/* 실시간 잔액 카드 */}
+      {/* 2. 현재 실시간 잔액 카드[cite: 1] */}
       <div className="bg-[#1c1c1e] p-8 rounded-[32px] border border-white/10 shadow-2xl text-center">
-        <p className="text-[11px] font-black text-brand-text-sub uppercase mb-2 tracking-widest">실시간 잔액</p>
+        <p className="text-[11px] font-black text-brand-text-sub uppercase mb-2 tracking-widest">현재 실시간 잔액</p>
         <p className="text-4xl font-black text-white tabular-nums tracking-tighter">
           {new Intl.NumberFormat('ko-KR').format(currentAcc?.currentBalance || 0)}
         </p>
       </div>
 
-      {/* 내역 입력 (항목 선택창 포함) */}
-      <div className="bg-[#1c1c1e] p-7 rounded-[32px] border border-white/5 shadow-2xl space-y-5">
-        <div className="flex bg-black/40 rounded-2xl p-1 border border-white/5">
-          {['지출', '수입'].map((type) => (
-            <button key={type} onClick={() => setNewTx({ ...newTx, type: type as any, category: type === '지출' ? categories.expense[0] : categories.income[0] })} 
-              className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${newTx.type === type ? (type === '지출' ? 'bg-[#FFA59E] text-[#121212]' : 'bg-[#4B96FF] text-[#121212]') : 'text-brand-text-sub'}`}>{type}</button>
-          ))}
-        </div>
-
-        {/* 항목(카테고리) 선택부: 식비 등을 여기서 바로 선택 */}
-        <div className="space-y-2">
-          <p className="text-[11px] font-black text-brand-text-sub ml-2 uppercase">항목 선택</p>
-          <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide snap-x">
-            {(newTx.type === '지출' ? categories.expense : categories.income).map((c: string) => (
-              <button key={c} onClick={() => setNewTx({...newTx, category: c})} 
-                className={`shrink-0 snap-start px-5 py-3 rounded-xl text-[13px] font-black transition-all border ${newTx.category === c ? 'bg-[#4B96FF] text-white border-[#4B96FF]' : 'bg-black/40 text-brand-text-sub border-white/5'}`}>{c}</button>
-            ))}
+      {/* 3. 기초 자산(시작 금액) 수정창[cite: 1] */}
+      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden shadow-xl">
+        <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-white/5 transition-all">
+          <div className="text-left">
+            <h4 className="font-black text-[13px] text-[#E2F2D5] uppercase">기초 자산(시작금액) 수정</h4>
+            <p className="text-[10px] text-brand-text-sub mt-1">이 금액을 기준으로 전체 잔액이 재계산됩니다.</p>
           </div>
-        </div>
-
-        <NumericInput label="금액" value={newTx.amount} onChange={(v: number) => setNewTx({...newTx, amount: v})} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none" />
-        <input type="text" placeholder="메모..." value={newTx.memo} onChange={e => setNewTx({...newTx, memo: e.target.value})} className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white outline-none" />
-        <button onClick={handleAdd} className="w-full py-5 bg-[#4B96FF] text-white rounded-2xl font-black active:scale-95 transition-all shadow-lg">내역 추가</button>
-      </div>
-
-      {/* 기초 자산 수정 */}
-      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden">
-        <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-white/5">
-          <h4 className="font-black text-[13px] text-[#E2F2D5]">기초 자산 수정</h4>
-          <ChevronRight size={18} className={`transition-transform ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
+          <ChevronRight size={18} className={`transition-transform duration-300 ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
         </button>
         <AnimatePresence>
           {isStartBalanceOpen && (
-            <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="px-8 pb-8 space-y-4 bg-black/20 pt-4">
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-black/20 pt-4 px-8 pb-8 space-y-4">
               {balances.filter((b: any) => expenseAccountButtons.includes(b.name)).map((b: any) => (
                 <div key={b.id} className="space-y-1">
                   <p className="text-[11px] font-bold text-brand-text-sub ml-1">{b.name}</p>
-                  <NumericInput value={b.previousBalance || 0} onChange={(v: number) => updateStartValue(b.id, v)} 
-                    className="w-full bg-[#2c2c2e] border border-white/10 rounded-2xl px-5 py-4 text-xl font-black text-white outline-none focus:border-[#4B96FF]" />
+                  <NumericInput 
+                    value={b.previousBalance || 0} 
+                    onChange={(v: number) => updateStartValue(b.id, v)} 
+                    className="w-full bg-[#2c2c2e] border border-white/10 rounded-2xl px-5 py-4 text-xl font-black text-white outline-none focus:border-[#4B96FF]" 
+                  />
                 </div>
               ))}
+              <button 
+                onClick={() => { setIsStartBalanceOpen(false); alert("기초 자산이 성공적으로 반영되었습니다."); }}
+                className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all mt-2 shadow-lg"
+              >
+                반영 및 설정 완료
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      <button onClick={onOpenEdit} className="w-full py-5 bg-[#1c1c1e] border border-white/10 rounded-2xl font-black text-[#4B96FF] active:scale-95">항목 이름 관리</button>
+      {/* 4. 이번 달 상세 내역 (기존 내역 기능 유지)[cite: 1] */}
+      <div className="bg-[#1c1c1e] rounded-[32px] border border-white/5 overflow-hidden shadow-2xl">
+        <div className="px-8 py-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
+          <h3 className="text-[12px] font-black text-white uppercase tracking-widest">이번 달 거래 내역</h3>
+          <span className="text-[11px] font-bold text-brand-text-sub bg-white/10 px-3 py-1 rounded-full">{accountMonthTxs.length}건</span>
+        </div>
+        <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
+          {accountMonthTxs.length > 0 ? (
+            accountMonthTxs.map((t: any) => (
+              <div key={t.id} className="px-8 py-5 flex items-center justify-between active:bg-white/5 transition-colors">
+                <div>
+                  <p className="text-[14px] font-black text-white">{t.memo || t.category}</p>
+                  <p className="text-[10px] text-brand-text-sub mt-1">{t.date} · <span className="text-[#E2F2D5]">{t.category}</span></p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <p className={`text-[16px] font-black tabular-nums ${t.type === '수입' ? 'text-[#4B96FF]' : 'text-white'}`}>
+                    {t.type === '수입' ? '+' : '-'}{new Intl.NumberFormat('ko-KR').format(t.amount)}
+                  </p>
+                  <button onClick={() => deleteTransaction(t.id)} className="p-2 text-brand-text-sub active:text-[#FFA59E]"><X size={16} /></button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="py-20 text-center opacity-20 font-black uppercase tracking-[0.3em] text-xs">거래 내역이 없습니다.</div>
+          )}
+        </div>
+      </div>
+
+      {/* 5. 하단 관리 버튼[cite: 1] */}
+      <div className="pt-4 px-2">
+        <button onClick={onOpenEdit} className="w-full py-5 bg-[#1c1c1e] border border-white/10 rounded-2xl font-black text-[#4B96FF] text-[13px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">
+           항목 이름 및 내역 관리
+        </button>
+      </div>
     </motion.div>
   );
 }
