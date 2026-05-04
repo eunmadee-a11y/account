@@ -1410,111 +1410,17 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
   const biggerFontSize = "text-xl md:text-2xl"; 
   const COLORS = ['#4B96FF', '#A0C7DF', '#E2F2D5', '#FFA59E', '#FFE1EA'];
 
-
-
-
-
-const downloadYearlyReport = () => {
-    // CSV 헤더 설정
-    const header = ["날짜", "구분", "카테고리/항목", "금액", "메모/상세"];
-    
-    // 0. 1년 결산 요약 데이터 (추가됨)
-    const summaryHeader = ["구분", "총 연봉", "총 지출", "여유 자산", ""];
-    const summaryData = [
-      ["나", myData.annualSalary, myData.totalExpense, myData.remaining, ""].join(","),
-      ["감자", gamjaData.annualSalary, gamjaData.totalExpense, gamjaData.remaining, ""].join(","),
-      ["합계", totalAnnualSalary, totalAnnualExpense, totalRemaining, ""].join(",")
-    ];
-
-    // 1. 내 지출/수입 내역
-    const myYearly = transactions
-      .filter((t: any) => new Date(t.date).getFullYear() === selectedYear)
-      .map((t: any) => [t.date, t.type, t.category, t.amount, `"${(t.memo || "").replace(/"/g, '""')}"`].join(","));
-
-    // 2. 감자 지출/수입 내역
-    const gamjaYearly = gamjaTransactions
-      .filter((t: any) => new Date(t.date).getFullYear() === selectedYear)
-      .map((t: any) => [t.date, t.type, t.category, t.amount, `"${(t.memo || "").replace(/"/g, '""')}"`].join(","));
-
-    // 3. 급여 데이터 (내 급여 + 감자 급여)
-    const mySalaryData = salaries.mySalaryRecords
-      .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
-      .map((r: any) => [r.date, "급여(나)", r.type, r.amount, `"${(r.memo || "").replace(/"/g, '""')}"`].join(","));
-    
-    const gamjaSalaryData = salaries.gamjaSalaryRecords
-      .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
-      .map((r: any) => [r.date, "급여(감자)", "월급", r.amount, `"${(r.memo || "").replace(/"/g, '""')}"`].join(","));
-
-    // 4. 대출 상환 내역
-    const loanData: string[] = [];
-    loans.forEach((loan: any) => {
-      loan.repayments
-        .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
-        .forEach((r: any) => {
-          loanData.push([r.date, `대출상환(${loan.name})`, "원금", r.principal, `"${r.turn}회차 / ${(r.memo || "")}"`].join(","));
-          if (r.interest > 0) {
-            loanData.push([r.date, `대출상환(${loan.name})`, "이자", r.interest, ""].join(","));
-          }
-        });
-    });
-
-    // 5. 연금/투자 자산 현황 (현재 잔액 기준 요약)
-    const pensionData = balances
-      .filter((b: any) => b.category === '투자/연금')
-      .map((b: any) => [new Date().toISOString().split('T')[0], "자산현황", b.name, b.currentBalance, "현재 잔액"].join(","));
-
-    // 전체 데이터 통합
-    const csvContent = [
-      `--- ${selectedYear}년 가계부 통합 결산 리포트 ---`,
-      "",
-      "[0. 1년 결산 요약]",
-      summaryHeader.join(","),
-      ...summaryData,
-      "",
-      "[1. 내역 (나)]",
-      header.join(","),
-      ...myYearly,
-      "",
-      "[2. 내역 (감자)]",
-      header.join(","),
-      ...gamjaYearly,
-      "",
-      "[3. 급여 기록]",
-      header.join(","),
-      ...mySalaryData,
-      ...gamjaSalaryData,
-      "",
-      "[4. 대출 상환 기록]",
-      header.join(","),
-      ...loanData,
-      "",
-      "[5. 투자/연금 자산 현황]",
-      header.join(","),
-      ...pensionData
-    ].join("\n");
-
-    // 파일 다운로드 로직 (아이폰 Safari 다운로드 호환성 적용)
+  const downloadYearlyReport = () => {
+    const header = ["날짜", "구분", "카테고리", "금액", "메모"];
+    const myYearly = transactions.filter(t => new Date(t.date).getFullYear() === selectedYear).map(t => [t.date, t.type, t.category, t.amount, t.memo].join(","));
+    const gamjaYearly = gamjaTransactions.filter(t => new Date(t.date).getFullYear() === selectedYear).map(t => [t.date, t.type, t.category, t.amount, t.memo].join(","));
+    const csvContent = [`--- ${selectedYear}년 내 지출 내역 ---`, header.join(","), ...myYearly, "\n", `--- ${selectedYear}년 감자 지출 내역 ---`, header.join(","), ...gamjaYearly].join("\n");
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    
-    const dateStr = new Date().toLocaleDateString('ko-KR', {
-      year: 'numeric', month: '2-digit', day: '2-digit'
-    }).replace(/\. /g, '-').replace(/\./g, '');
-
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${selectedYear}년_가계부_통합결산_${dateStr}.csv`);
-    
-    // 아이폰에서 다운로드가 실행되게 만드는 핵심 코드
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const a = document.createElement("a");
+    a.href = url; a.download = `${selectedYear}년_결산_데이터.csv`; a.click(); URL.revokeObjectURL(url);
   };
 
-  
-
-  
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-8 pb-24 px-1">
 
