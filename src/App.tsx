@@ -311,40 +311,39 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
      {/* 기존 p-4 pt-4 md:p-8 에서 pt-2(위쪽 여백 축소)로 수정 */}
 
 
-<main className="flex-1 max-w-[1400px] w-full mx-auto p-4 pt-2 md:p-8 overflow-hidden">
+<main className="flex-1 max-w-[1400px] w-full mx-auto p-4 pt-2 md:p-8 overflow-hidden relative">
+  {/* 양 끝 터치 이동 영역 (Overlay) */}
+  <div className="absolute inset-y-0 left-0 w-10 z-30 flex items-center justify-start pointer-events-none">
+    <button 
+      onClick={() => {
+        const tabs: TabName[] = ['홈', '내 지출', '연금/투자 관리', '감자 지출', '월급 비교', '대출 관리', '1년 결산'];
+        const currentIndex = tabs.indexOf(activeTab);
+        if (currentIndex > 0) setActiveTab(tabs[currentIndex - 1]);
+      }}
+      className="pointer-events-auto h-full w-full active:bg-white/10 transition-colors duration-200"
+      aria-label="이전 탭"
+    />
+  </div>
+
+  <div className="absolute inset-y-0 right-0 w-10 z-30 flex items-center justify-end pointer-events-none">
+    <button 
+      onClick={() => {
+        const tabs: TabName[] = ['홈', '내 지출', '연금/투자 관리', '감자 지출', '월급 비교', '대출 관리', '1년 결산'];
+        const currentIndex = tabs.indexOf(activeTab);
+        if (currentIndex < tabs.length - 1) setActiveTab(tabs[currentIndex + 1]);
+      }}
+      className="pointer-events-auto h-full w-full active:bg-white/10 transition-colors duration-200"
+      aria-label="다음 탭"
+    />
+  </div>
+
   <motion.div
     key={activeTab}
-    initial={{ x: 50, opacity: 0 }}
+    initial={{ x: 20, opacity: 0 }}
     animate={{ x: 0, opacity: 1 }}
-    exit={{ x: -50, opacity: 0 }}
-    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-    /* 아이폰 에지 스와이프 최적화: 양쪽 끝 40px 영역에서만 드래그 활성 */
-    drag="x"
-    dragConstraints={{ left: 0, right: 0 }}
-    dragElastic={0.1}
-    onDragStart={(e, info) => {
-      const edgeThreshold = 40; // 에지 판정 범위 (픽셀)
-      const touchX = info.point.x;
-      const screenWidth = window.innerWidth;
-
-      // 화면 왼쪽 끝이나 오른쪽 끝이 아니면 드래그 중단
-      if (touchX > edgeThreshold && touchX < screenWidth - edgeThreshold) {
-        return;
-      }
-    }}
-    onDragEnd={(e, { offset, velocity }) => {
-      const swipe = offset.x;
-      const tabs: TabName[] = ['홈', '내 지출', '연금/투자 관리', '감자 지출', '월급 비교', '대출 관리', '1년 결산'];
-      const currentIndex = tabs.indexOf(activeTab);
-
-      // 드래그 방향과 거리에 따른 탭 전환
-      if (swipe < -80 && currentIndex < tabs.length - 1) {
-        setActiveTab(tabs[currentIndex + 1]);
-      } else if (swipe > 80 && currentIndex > 0) {
-        setActiveTab(tabs[currentIndex - 1]);
-      }
-    }}
-    className="h-full touch-pan-y" 
+    exit={{ x: -20, opacity: 0 }}
+    transition={{ duration: 0.2 }}
+    className="h-full"
   >
     <AnimatePresence mode="wait">
       {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, categories: myCategories, setCategories: setMyCategories, tabName: tabNames['홈'], setTabName: (n:string)=>setTabNames({...tabNames, '홈':n}) }} />}
