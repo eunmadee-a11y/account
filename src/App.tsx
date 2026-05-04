@@ -192,15 +192,15 @@ export default function App() {
     }
   }, [transactions, gamjaTransactions, balances.map(b => b.previousBalance).join(',')]); // 기초 자산 변경 시에도 즉시 재계산
 
-  // 데이터 변경 시 자동 저장 (아이폰 브라우저 저장소 활용)
-  // [수정된 저장 로직] 항목 수정 시 즉시 저장되도록 의존성 배열 보강
+ // 데이터를 변경 시 자동 저장 (아이폰 브라우저 저장소 활용 - 카테고리 저장 추가)
   useEffect(() => {
     localStorage.setItem('myTransactions', JSON.stringify(transactions));
     localStorage.setItem('gamjaTransactions', JSON.stringify(gamjaTransactions));
     localStorage.setItem('myBalances', JSON.stringify(balances));
     localStorage.setItem('mySalaries', JSON.stringify(salaries));
     localStorage.setItem('myLoans', JSON.stringify(loans));
-    // 이 아래 두 줄이 핵심입니다!
+    
+    // 이 두 줄이 추가되어야 모든 카테고리 수정 사항이 리셋되지 않고 유지됩니다[cite: 1]
     localStorage.setItem('myCategories', JSON.stringify(myCategories));
     localStorage.setItem('gamjaCategories', JSON.stringify(gamjaCategories));
   }, [transactions, gamjaTransactions, balances, salaries, loans, myCategories, gamjaCategories]);
