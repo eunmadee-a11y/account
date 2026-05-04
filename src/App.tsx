@@ -277,9 +277,24 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
     </button>
   );
 
+// --- 아래 코드로 return 문 전체를 덮어쓰세요 ---
   return (
     <div className="min-h-screen bg-[#121212] text-brand-text-main flex flex-col font-sans selection:bg-[#4B96FF]/30">
       
+      {/* 지출 추가 시 시각적 피드백 효과 (아이폰 최적화) */}
+      <AnimatePresence>
+        {showPlusEffect && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 0.5, scale: 1.2 }}
+            exit={{ opacity: 0, scale: 2 }}
+            className="fixed inset-0 flex items-center justify-center pointer-events-none z-[1000]"
+          >
+            <span className="text-[#4B96FF] text-[200px] font-thin drop-shadow-[0_0_20px_rgba(75,150,255,0.4)]">+</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <header className="sticky top-0 bg-[#121212]/80 backdrop-blur-3xl z-50 border-b border-white/5 px-4 pt-safe-top pb-3">
         <div className="flex items-center justify-between mb-4 mt-2">
           <div className="flex items-center gap-3">
@@ -308,11 +323,7 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
         </nav>
       </header>
 
-     {/* 기존 p-4 pt-4 md:p-8 에서 pt-2(위쪽 여백 축소)로 수정 */}
-
-
-
-<main className="flex-1 max-w-[1400px] w-full mx-auto p-4 pt-2 md:p-8 overflow-hidden">
+      <main className="flex-1 max-w-[1400px] w-full mx-auto p-4 pt-2 md:p-8 overflow-hidden">
         <motion.div
           key={activeTab}
           initial={{ x: 50, opacity: 0 }}
@@ -335,17 +346,21 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
           className="h-full"
         >
           <AnimatePresence mode="wait">
-            {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, categories: myCategories, setCategories: setMyCategories, tabName: tabNames['홈'], setTabName: (n:string)=>setTabNames({...tabNames, '홈':n}) }} />}
+            {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, categories: myCategories, setCategories: setMyCategories, triggerEffect: triggerPlusEffect, tabName: tabNames['홈'], setTabName: (n:string)=>setTabNames({...tabNames, '홈':n}) }} />}
             {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true), tabName: tabNames['내 지출'], setTabName: (n:string)=>setTabNames({...tabNames, '내 지출':n}) }} />}
             {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, setBalances, currentDate, tabName: tabNames['연금/투자 관리'], setTabName: (n:string)=>setTabNames({...tabNames, '연금/투자 관리':n}) }} />}
-            {activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances, setBalances, currentDate, categories: gamjaCategories, setCategories: setGamjaCategories, onOpenEdit: () => setIsGamjaEditModalOpen(true), tabName: tabNames['감자 지출'], setTabName: (n:string)=>setTabNames({...tabNames, '감자 지출':n}) }} />}
+            {activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances, setBalances, currentDate, categories: gamjaCategories, setCategories: setGamjaCategories, onOpenEdit: () => setIsGamjaEditModalOpen(true), triggerEffect: triggerPlusEffect, tabName: tabNames['감자 지출'], setTabName: (n:string)=>setTabNames({...tabNames, '감자 지출':n}) }} />}
             {activeTab === '월급 비교' && <SalaryView key="salary" {...{ salaries, setSalaries, salaryLabels, setSalaryLabels, currentDate, transactions, setTransactions, gamjaTransactions, setGamjaTransactions, balances, setBalances, tabName: tabNames['월급 비교'], setTabName: (n:string)=>setTabNames({...tabNames, '월급 비교':n}) }} />}
             {activeTab === '대출 관리' && <LoanManagementView key="loans" {...{ loans, setLoans, loanSummary, tabName: tabNames['대출 관리'], setTabName: (n:string)=>setTabNames({...tabNames, '대출 관리':n}) }} />}
-            {activeTab === '1년 결산' && <AnnualSettlementView key="annual" {...{ transactions, gamjaTransactions, salaries, tabName: tabNames['1년 결산'], setTabName: (n:string)=>setTabNames({...tabNames, '1년 결산':n}) }} />}
+            {activeTab === '1년 결산' && <AnnualSettlementView key="annual" {...{ transactions, gamjaTransactions, salaries, loans, balances, tabName: tabNames['1년 결산'], setTabName: (n:string)=>setTabNames({...tabNames, '1년 결산':n}) }} />}
           </AnimatePresence>
         </motion.div>
       </main>
-      
+
+      <TransactionEditModal isOpen={isMyEditModalOpen} onClose={() => setIsMyEditModalOpen(false)} transactions={transactions} setTransactions={setTransactions} categories={myCategories} setCategories={setMyCategories} title="내 지출 내역 관리" />
+      <TransactionEditModal isOpen={isGamjaEditModalOpen} onClose={() => setIsGamjaEditModalOpen(false)} transactions={gamjaTransactions} setTransactions={setTransactions} categories={gamjaCategories} setCategories={setMyCategories} title="감자 지출 내역 관리" />
+    </div>
+  );
 
       <TransactionEditModal isOpen={isMyEditModalOpen} onClose={() => setIsMyEditModalOpen(false)} transactions={transactions} setTransactions={setTransactions} categories={myCategories} setCategories={setMyCategories} title="내 지출 내역 관리" />
       <TransactionEditModal isOpen={isGamjaEditModalOpen} onClose={() => setIsGamjaEditModalOpen(false)} transactions={gamjaTransactions} setTransactions={setGamjaTransactions} categories={gamjaCategories} setCategories={setGamjaCategories} title="감자 지출 내역 관리" />
@@ -1171,10 +1186,20 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
 }
 
 // 퀵 엔트리 박스 (홈탭 전용)
-function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
+function QuickEntryBox({ account, onAdd, categories, setCategories, triggerEffect }: any) {
   const [newTx, setNewTx] = useState({ date: new Date().toISOString().split('T')[0], type: '지출' as TransactionType, category: categories.expense[0], amount: 0, memo: '' });
   const handleTypeChange = (newType: TransactionType) => setNewTx({ ...newTx, type: newType, category: newType === '지출' ? categories.expense[0] : categories.income[0] });
-  const handleAdd = () => { if (newTx.amount <= 0) return; onAdd({ id: Math.random().toString(36).substr(2, 9), ...newTx, account }); setNewTx({ ...newTx, type: '지출', category: categories.expense[0], amount: 0, memo: '' }); };
+  
+  const handleAdd = () => { 
+    if (newTx.amount <= 0) return; 
+    onAdd({ id: Math.random().toString(36).substr(2, 9), ...newTx, account }); 
+    
+    // 시각적 피드백 트리거 (App 컴포넌트의 triggerPlusEffect 호출)
+    if(triggerEffect) triggerEffect();
+    
+    setNewTx({ ...newTx, type: '지출', category: categories.expense[0], amount: 0, memo: '' }); 
+  };
+  
   const currentCategories = newTx.type === '지출' ? categories.expense : categories.income;
 
   return (
