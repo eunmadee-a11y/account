@@ -830,14 +830,6 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
   );
 }
       
-      <div className="flex justify-center pt-6">
-        <button onClick={onOpenEdit} className="px-10 py-5 bg-[#4B96FF] rounded-2xl font-black text-white uppercase tracking-widest shadow-[0_10px_30px_rgba(75,150,255,0.4)] hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 text-[13px]">
-          <Edit2 size={18} /> 항목 수정
-        </button>
-      </div>
-    </motion.div>
-  );
-}
 
 /*연금 투자관리*/
 function PensionView({ balances, setBalances, currentDate, tabName, setTabName }: any) {
