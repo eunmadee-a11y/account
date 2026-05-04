@@ -148,35 +148,52 @@ export default function App() {
     return saved ? JSON.parse(saved) : MOCK_GAMJA_TRANSACTIONS;
   });
 
- const [balances, setBalances] = useState<BalanceEntry[]>(() => {
+  const [balances, setBalances] = useState<BalanceEntry[]>(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('myBalances') : null;
     return saved ? JSON.parse(saved) : INITIAL_BALANCES;
   });
 
-  // [아이폰 최적화] 시작 금액(previousBalance)이나 내역이 바뀔 때마다 현재 잔액(currentBalance)을 즉시 재계산
+  const [salaries, setSalaries] = useState<SalaryData>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('mySalaries') : null;
+    return saved ? JSON.parse(saved) : { mySalaryRecords: [], gamjaSalaryRecords: [], mySalary: 3500000, gamjaSalary: 4200000 };
+  });
+
+  const [loans, setLoans] = useState<Loan[]>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('myLoans') : null;
+    return saved ? JSON.parse(saved) : INITIAL_LOANS;
+  });
+
+  const [myCategories, setMyCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
+  const [gamjaCategories, setGamjaCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
+
+  // [아이폰 최적화] 지출/수입 내역이 변할 때마다 각 통장의 잔액을 실시간으로 재계산합니다.
   useEffect(() => {
     const updatedBalances = balances.map(balance => {
-      // 해당 계좌의 모든 내역(내 거래 + 감자 거래) 필터링
-      const accountTxs = transactions.filter(t => t.account === balance.name);
+      // 내 거래 내역과 감자 거래 내역 모두에서 해당 계좌와 일치하는 내역 필터링
+      const myAccountTxs = transactions.filter(t => t.account === balance.name);
       const gamjaAccountTxs = gamjaTransactions.filter(t => t.account === balance.name);
-      const allTxs = [...accountTxs, ...gamjaAccountTxs];
+      const allTxs = [...myAccountTxs, ...gamjaAccountTxs];
       
-      const income = allTxs.filter(t => t.type === '수입').reduce((sum, t) => sum + t.amount, 0);
-      const expense = allTxs.filter(t => t.type === '지출').reduce((sum, t) => sum + t.amount, 0);
+      const totalIncome = allTxs
+        .filter(t => t.type === '수입')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const totalExpense = allTxs
+        .filter(t => t.type === '지출')
+        .reduce((sum, t) => sum + t.amount, 0);
 
-      // 현재 잔액 = 수정된 시작 금액 + 수입 - 지출
+      // 현재 잔액 = 설정한 시작 금액(previousBalance) + 수입 총액 - 지출 총액
       return {
         ...balance,
-        currentBalance: (balance.previousBalance || 0) + income - expense
+        currentBalance: (balance.previousBalance || 0) + totalIncome - totalExpense
       };
     });
 
-    // 변경된 잔액이 있을 때만 업데이트하여 무한 루프 방지 및 실시간 반영
+    // 실제 값이 변경된 경우에만 상태를 업데이트하여 무한 루프를 방지합니다.
     if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
       setBalances(updatedBalances);
-      localStorage.setItem('myBalances', JSON.stringify(updatedBalances));
     }
-  }, [transactions, gamjaTransactions, balances.map(b => b.previousBalance).join(',')]);
+  }, [transactions, gamjaTransactions]); // 내 거래나 감자 거래가 바뀔 때마다 실행
 
   // 데이터 변경 시 자동 저장 (아이폰 브라우저 저장소 활용)
   useEffect(() => {
@@ -803,11 +820,11 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
         )}
       </div>
 
- <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] shadow-2xl overflow-hidden">
+      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] shadow-2xl overflow-hidden">
         <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-6 flex items-center justify-between text-left hover:bg-white/5 transition-all">
           <div>
-            <h4 className="font-black text-base text-[#E2F2D5]">시작 금액(기초 자산) 관리</h4>
-            <p className="text-[11px] font-bold text-brand-text-sub mt-2">입력한 시작 금액을 기준으로 현재 잔액이 자동 계산됩니다.</p>
+            <h4 className="font-black text-base text-[#E2F2D5]">시작금액 입력</h4>
+            <p className="text-[11px] font-bold text-brand-text-sub mt-2">수정 시 오픈</p>
           </div>
           <ChevronRight size={20} className={`text-[#E2F2D5] transition-transform ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
         </button>
@@ -819,24 +836,8 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
                   {balances.filter((b: any) => b.category === '내 통장').map((b: any) => (
                     <div key={b.id} className="bg-[#2c2c2e] border border-white/5 rounded-2xl p-6 space-y-4 shadow-lg">
                       <p className="text-sm font-black text-white">{b.name}</p>
-                      <NumericInput 
-                        label="시작 금액 입력" 
-                        value={b.previousBalance || 0} 
-                        onChange={(v: number) => {
-                          setBalances((prev: any[]) => prev.map((item: any) => item.id === b.id ? { ...item, previousBalance: v } : item));
-                        }} 
-                        className="w-full bg-transparent border-b border-white/20 text-xl font-black text-white outline-none focus:border-[#4B96FF] pb-1" 
-                      />
-                      <button 
-                        onClick={() => {
-                          // 아이폰에서 저장 즉시 반영되도록 강제 저장 트리거
-                          localStorage.setItem('myBalances', JSON.stringify(balances));
-                          alert(`${b.name}의 시작 금액이 성공적으로 반영되었습니다.`);
-                        }}
-                        className="w-full py-3 bg-[#4B96FF] text-[#121212] rounded-xl text-[12px] font-black active:scale-95 transition-transform"
-                      >
-                        저장 및 즉시 반영
-                      </button>
+                      <NumericInput label="시작금액" value={b.previousBalance || 0} onChange={(v: number) => updateStartBalance(b.id, v)} className="w-full bg-transparent border-b border-white/20 text-xl font-black text-white outline-none focus:border-[#4B96FF] pb-1" />
+                      <p className="text-[11px] font-bold text-brand-text-sub bg-black/30 p-2 rounded-xl">계산 잔액: {formatCurrency(getAccountCalculatedBalance(b.name))}</p>
                     </div>
                   ))}
                 </div>
@@ -1641,27 +1642,11 @@ function TransactionEditModal({ isOpen, onClose, transactions, setTransactions, 
     setEditedCategories(newCats);
   };
 
-const handleSave = () => {
-  // [수정] 기존 거래 내역을 보존하면서 변경된 내역만 업데이트
-  // 카테고리 명칭이 변경되어도 기존 데이터의 구조를 깨뜨리지 않도록 설정
-  setTransactions(prev => {
-    const updatedIds = new Set(editedTxs.map(t => t.id));
-    // 편집 창에서 수정된 것은 업데이트하고, 편집되지 않은 기존 내역은 그대로 유지
-    const combined = [
-      ...editedTxs,
-      ...prev.filter(t => !updatedIds.has(t.id))
-    ];
-    return combined;
-  });
-  
-  setCategories(editedCategories);
-  
-  // 아이폰 로컬 스토리지에 즉시 동기화
-  localStorage.setItem('myTransactions', JSON.stringify(editedTxs));
-  localStorage.setItem('myCategories', JSON.stringify(editedCategories));
-  
-  onClose();
-};
+  const handleSave = () => { 
+    setTransactions(editedTxs); 
+    setCategories(editedCategories); 
+    onClose(); 
+  };
 
   if (!isOpen) return null;
 
