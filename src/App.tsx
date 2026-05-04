@@ -820,32 +820,49 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
         )}
       </div>
 
-      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] shadow-2xl overflow-hidden">
-        <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-6 flex items-center justify-between text-left hover:bg-white/5 transition-all">
-          <div>
-            <h4 className="font-black text-base text-[#E2F2D5]">시작금액 입력</h4>
-            <p className="text-[11px] font-bold text-brand-text-sub mt-2">수정 시 오픈</p>
-          </div>
-          <ChevronRight size={20} className={`text-[#E2F2D5] transition-transform ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
-        </button>
-        <AnimatePresence>
-          {isStartBalanceOpen && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-              <div className="px-8 pb-8 pt-4 border-t border-white/5 bg-black/20">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {balances.filter((b: any) => b.category === '내 통장').map((b: any) => (
-                    <div key={b.id} className="bg-[#2c2c2e] border border-white/5 rounded-2xl p-6 space-y-4 shadow-lg">
-                      <p className="text-sm font-black text-white">{b.name}</p>
-                      <NumericInput label="시작금액" value={b.previousBalance || 0} onChange={(v: number) => updateStartBalance(b.id, v)} className="w-full bg-transparent border-b border-white/20 text-xl font-black text-white outline-none focus:border-[#4B96FF] pb-1" />
-                      <p className="text-[11px] font-bold text-brand-text-sub bg-black/30 p-2 rounded-xl">계산 잔액: {formatCurrency(getAccountCalculatedBalance(b.name))}</p>
-                    </div>
-                  ))}
-                </div>
+ <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] shadow-2xl overflow-hidden">
+  <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-6 flex items-center justify-between text-left hover:bg-white/5 transition-all">
+    <div>
+      <h4 className="font-black text-base text-[#E2F2D5]">시작금액(기초자산) 입력</h4>
+      <p className="text-[11px] font-bold text-brand-text-sub mt-2">이 금액을 기준으로 지출이 계산됩니다.</p>
+    </div>
+    <ChevronRight size={20} className={`text-[#E2F2D5] transition-transform ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
+  </button>
+  <AnimatePresence>
+    {isStartBalanceOpen && (
+      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+        <div className="px-8 pb-8 pt-4 border-t border-white/5 bg-black/20">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {balances.filter((b: any) => b.category === '내 통장').map((b: any) => (
+              <div key={b.id} className="bg-[#2c2c2e] border border-white/5 rounded-2xl p-6 space-y-4 shadow-lg">
+                <p className="text-sm font-black text-white">{b.name}</p>
+                <NumericInput 
+                  label="시작 금액" 
+                  value={b.previousBalance || 0} 
+                  onChange={(v: number) => {
+                    // 즉시 상태 변경이 아닌 임시 변경만 수행하거나, 아래 저장 버튼으로 일괄 처리
+                    setBalances((prev: any[]) => prev.map((item: any) => item.id === b.id ? { ...item, previousBalance: v } : item));
+                  }} 
+                  className="w-full bg-transparent border-b border-white/20 text-xl font-black text-white outline-none focus:border-[#4B96FF] pb-1" 
+                />
+                <button 
+                  onClick={() => {
+                    // 아이폰에서 즉시 반영을 보장하기 위한 저장 트리거
+                    localStorage.setItem('myBalances', JSON.stringify(balances));
+                    alert(`${b.name}의 시작 금액이 저장되었습니다.`);
+                  }}
+                  className="w-full py-2 bg-[#4B96FF]/20 text-[#4B96FF] rounded-xl text-[11px] font-black uppercase"
+                >
+                  반영 및 저장
+                </button>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+</div>
       
       <div className="flex justify-center pt-6">
         <button onClick={onOpenEdit} className="px-10 py-5 bg-[#4B96FF] rounded-2xl font-black text-white uppercase tracking-widest shadow-[0_10px_30px_rgba(75,150,255,0.4)] hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 text-[13px]">
@@ -1642,11 +1659,27 @@ function TransactionEditModal({ isOpen, onClose, transactions, setTransactions, 
     setEditedCategories(newCats);
   };
 
-  const handleSave = () => { 
-    setTransactions(editedTxs); 
-    setCategories(editedCategories); 
-    onClose(); 
-  };
+const handleSave = () => {
+  // [수정] 기존 거래 내역을 보존하면서 변경된 내역만 업데이트
+  // 카테고리 명칭이 변경되어도 기존 데이터의 구조를 깨뜨리지 않도록 설정
+  setTransactions(prev => {
+    const updatedIds = new Set(editedTxs.map(t => t.id));
+    // 편집 창에서 수정된 것은 업데이트하고, 편집되지 않은 기존 내역은 그대로 유지
+    const combined = [
+      ...editedTxs,
+      ...prev.filter(t => !updatedIds.has(t.id))
+    ];
+    return combined;
+  });
+  
+  setCategories(editedCategories);
+  
+  // 아이폰 로컬 스토리지에 즉시 동기화
+  localStorage.setItem('myTransactions', JSON.stringify(editedTxs));
+  localStorage.setItem('myCategories', JSON.stringify(editedCategories));
+  
+  onClose();
+};
 
   if (!isOpen) return null;
 
