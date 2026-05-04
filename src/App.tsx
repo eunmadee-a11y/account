@@ -861,11 +861,14 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
 
 
 /* 감자 지출 탭 (항목 선택 기능 추가 및 아이폰 최적화) */
-function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, setBalances, currentDate, categories, onOpenEdit }: any) {
+
+
+
+function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, setBalances, currentDate, categories, setCategories, onOpenEdit }: any) {
   const [activeGamjaAccount, setActiveGamjaAccount] = useState(gamjaAccountNames[0] || '');
   const [isStartBalanceOpen, setIsStartBalanceOpen] = useState(false);
   
-  // 항목(카테고리) 선택 기능을 포함한 새로운 내역 상태
+  // 감자 전용 입력 상태
   const [newTx, setNewTx] = useState({ 
     date: new Date().toISOString().split('T')[0], 
     type: '지출' as TransactionType, 
@@ -875,12 +878,12 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     memo: '' 
   });
 
-  // 기초 자산 수정 함수 (수정 즉시 실시간 잔액에 반영됨)
+  // 기초 자산 수정 (즉시 반영)
   const updateGamjaStartValue = (id: string, value: number) => {
     setBalances((prev: any[]) => prev.map((item: any) => item.id === id ? { ...item, previousBalance: value } : item));
   };
 
-  // 실시간 누적 잔액 계산 (기초 자산 + 전체 수입 - 전체 지출)
+  // 실시간 잔액 계산 (기존 로직 유지)
   const calculateLiveBalance = (accountName: string) => {
     const acc = balances.find((b: any) => b.name === accountName);
     const txs = gamjaTransactions.filter((t: any) => t.account === accountName);
@@ -893,7 +896,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     if (newTx.amount <= 0 || !activeGamjaAccount) return;
     const tx: GamjaTransaction = { id: Math.random().toString(36).substr(2, 9), ...newTx, account: activeGamjaAccount };
     setGamjaTransactions([tx, ...gamjaTransactions]);
-    setNewTx({ ...newTx, amount: 0, memo: '' }); // 입력 후 금액과 메모만 초기화 (날짜/항목 유지)
+    setNewTx({ ...newTx, amount: 0, memo: '' }); 
   };
 
   const filteredTxs = useMemo(() => {
@@ -908,7 +911,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6 pb-28">
       
-      {/* 1. 감자 통장 선택 스위치 (현재 잔액 포함) */}
+      {/* 1. 감자 계좌 선택 (아이폰 터치 최적화) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {gamjaAccountNames.map((name: string) => (
           <button
@@ -925,12 +928,12 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         ))}
       </div>
 
-      {/* 2. 감자 기초 자산 수정 섹션[cite: 1] */}
+      {/* 2. 기초 자산 수정 (기존 기능 유지) */}
       <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden">
         <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-white/5">
           <div className="text-left">
             <h4 className="font-black text-[13px] text-[#E2F2D5] uppercase">감자 기초 자산 수정</h4>
-            <p className="text-[10px] text-brand-text-sub">수정 즉시 실시간 잔액에 반영됩니다.</p>
+            <p className="text-[10px] text-brand-text-sub">수정 시 전체 잔액에 실시간 반영됩니다.</p>
           </div>
           <ChevronRight size={18} className={`transition-transform duration-300 ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
         </button>
@@ -947,30 +950,18 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
                   />
                 </div>
               ))}
-              <button 
-                onClick={() => { setIsStartBalanceOpen(false); alert("감자 기초 자산이 반영되었습니다."); }}
-                className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all mt-2"
-              >
-                반영 및 설정 완료
-              </button>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-    {/* 3. 감자 내역 입력 상자 (사용자 설정 항목 자동 연동 및 가로 스크롤) */}
+      {/* 3. 감자 내역 입력 상자 */}
       <div className="bg-[#1c1c1e] p-7 rounded-[32px] border border-white/5 shadow-2xl space-y-5">
         <div className="flex justify-between items-center">
           <h4 className="text-sm font-black text-white">{activeGamjaAccount} 입력</h4>
-          <input 
-            type="date" 
-            value={newTx.date} 
-            onChange={e => setNewTx({...newTx, date: e.target.value})} 
-            className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[16px] font-bold text-white outline-none" 
-          />
+          <input type="date" value={newTx.date} onChange={e => setNewTx({...newTx, date: e.target.value})} className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[16px] font-bold text-white outline-none" />
         </div>
         
-        {/* 지출/수입 선택 스위치 */}
         <div className="flex bg-black/40 rounded-2xl p-1 border border-white/5">
           {['지출', '수입'].map((type) => (
             <button 
@@ -983,7 +974,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           ))}
         </div>
 
-        {/* [연동 확인] 내 지출 탭 하단에서 수정한 항목들이 여기에 자동으로 뜹니다 */}
+        {/* 항목 선택 가로 스크롤 */}
         <div className="space-y-2">
           <label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">항목 선택</label>
           <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide snap-x">
@@ -1003,34 +994,15 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           </div>
         </div>
 
-        <NumericInput 
-          label="금액" 
-          value={newTx.amount} 
-          onChange={(v: number) => setNewTx({...newTx, amount: v})} 
-          className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none" 
-        />
-        
-        <input 
-          type="text" 
-          placeholder="메모 입력..." 
-          value={newTx.memo} 
-          onChange={e => setNewTx({...newTx, memo: e.target.value})} 
-          className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white outline-none" 
-        />
-        
-        <button 
-          onClick={handleAdd} 
-          className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg"
-        >
-          거래 내역 추가
-        </button>
+        <NumericInput label="금액" value={newTx.amount} onChange={(v: number) => setNewTx({...newTx, amount: v})} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none" />
+        <input type="text" placeholder="메모 입력..." value={newTx.memo} onChange={e => setNewTx({...newTx, memo: e.target.value})} className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white outline-none" />
+        <button onClick={handleAdd} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">거래 내역 추가</button>
       </div>
 
-      {/* 4. 거래 내역 리스트[cite: 1] */}
+      {/* 4. 감자 거래 내역 리스트 */}
       <div className="bg-[#1c1c1e] rounded-[32px] border border-white/5 overflow-hidden shadow-2xl">
         <div className="px-8 py-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
           <p className="text-[11px] font-black text-brand-text-sub uppercase tracking-widest">감자 거래 내역</p>
-          <button onClick={onOpenEdit} className="text-[11px] font-bold text-[#E2F2D5] px-3 py-1 bg-[#E2F2D5]/10 rounded-lg">항목 관리</button>
         </div>
         <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
           {filteredTxs.map((t: any) => (
@@ -1048,6 +1020,13 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
             </div>
           ))}
         </div>
+      </div>
+
+      {/* 5. [신규 추가] 감자 전용 카테고리 수정 버튼 */}
+      <div className="pt-4 px-2 pb-10">
+        <button onClick={onOpenEdit} className="w-full py-5 bg-[#1c1c1e] border border-white/10 rounded-2xl font-black text-[#E2F2D5] text-[13px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">
+           감자 지출/수입 항목 수정 및 관리
+        </button>
       </div>
     </motion.div>
   );
