@@ -169,10 +169,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : { income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] };
   });
 
-  const [gamjaCategories, setGamjaCategories] = useState(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('gamjaCategories') : null;
-    return saved ? JSON.parse(saved) : { income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] };
-  });
+  
 
 // [통합 잔액 로직] 기초 자산 + 전체 내역을 합산하여 실시간 잔액을 도출합니다
   useEffect(() => {
@@ -376,7 +373,23 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
       {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, categories: myCategories, setCategories: setMyCategories, tabName: tabNames['홈'], setTabName: (n:string)=>setTabNames({...tabNames, '홈':n}) }} />}
       {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true), tabName: tabNames['내 지출'], setTabName: (n:string)=>setTabNames({...tabNames, '내 지출':n}) }} />}
       {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, setBalances, currentDate, tabName: tabNames['연금/투자 관리'], setTabName: (n:string)=>setTabNames({...tabNames, '연금/투자 관리':n}) }} />}
-      {activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances, setBalances, currentDate, categories: gamjaCategories, setCategories: setGamjaCategories, onOpenEdit: () => setIsGamjaEditModalOpen(true), tabName: tabNames['감자 지출'], setTabName: (n:string)=>setTabNames({...tabNames, '감자 지출':n}) }} />}
+      
+      {activeTab === '감자 지출' && <GamjaView key="gamja" {...{ 
+        gamjaTransactions, 
+        setGamjaTransactions, 
+        deleteGamjaTransaction, 
+        gamjaAccountNames, 
+        searchQuery: gamjaSearchQuery, 
+        setSearchQuery: setGamjaSearchQuery, 
+        balances, 
+        setBalances, 
+        currentDate, 
+        categories: myCategories, // 이 부분을 myCategories로 변경하여 항목을 공유합니다[cite: 1]
+        setCategories: setMyCategories, // 감자 탭에서 수정해도 내 지출 항목과 같이 저장됩니다[cite: 1]
+        onOpenEdit: () => setIsGamjaEditModalOpen(true), 
+        tabName: tabNames['감자 지출'], 
+        setTabName: (n:string)=>setTabNames({...tabNames, '감자 지출':n}) 
+      }} />}
       {activeTab === '월급 비교' && <SalaryView key="salary" {...{ salaries, setSalaries, salaryLabels, setSalaryLabels, currentDate, transactions, setTransactions, gamjaTransactions, setGamjaTransactions, balances, setBalances, tabName: tabNames['월급 비교'], setTabName: (n:string)=>setTabNames({...tabNames, '월급 비교':n}) }} />}
       {activeTab === '대출 관리' && <LoanManagementView key="loans" {...{ loans, setLoans, loanSummary, tabName: tabNames['대출 관리'], setTabName: (n:string)=>setTabNames({...tabNames, '대출 관리':n}) }} />}
       {activeTab === '1년 결산' && <AnnualSettlementView key="annual" {...{ transactions, gamjaTransactions, salaries, tabName: tabNames['1년 결산'], setTabName: (n:string)=>setTabNames({...tabNames, '1년 결산':n}) }} />}
