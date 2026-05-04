@@ -1389,7 +1389,7 @@ function SalaryView({ salaries, setSalaries, tabName, setTabName, salaryLabels, 
 }
 
 /*1년 결산*/
-function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabName, setTabName }: any) {
+function AnnualSettlementView({ transactions, gamjaTransactions, salaries, loans = [], balances = [], tabName, setTabName }: any) {
   const selectedYear = new Date().getFullYear();
   const processData = (txs: any[], salaryRecords: any[]) => {
     const annualSalary = salaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0);
@@ -1411,83 +1411,90 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
   const COLORS = ['#4B96FF', '#A0C7DF', '#E2F2D5', '#FFA59E', '#FFE1EA'];
 
   const downloadYearlyReport = () => {
-    const header = ["날짜", "구분", "카테고리", "금액", "메모"];
-    const myYearly = transactions.filter(t => new Date(t.date).getFullYear() === selectedYear).map(t => [t.date, t.type, t.category, t.amount, t.memo].join(","));
-    const gamjaYearly = gamjaTransactions.filter(t => new Date(t.date).getFullYear() === selectedYear).map(t => [t.date, t.type, t.category, t.amount, t.memo].join(","));
-    const csvContent = [`--- ${selectedYear}년 내 지출 내역 ---`, header.join(","), ...myYearly, "\n", `--- ${selectedYear}년 감자 지출 내역 ---`, header.join(","), ...gamjaYearly].join("\n");
+    const header = ["날짜", "구분", "카테고리/항목", "금액", "메모/상세"];
+    
+    // 0. 1년 결산 요약
+    const summaryHeader = ["구분", "총 연봉", "총 지출", "여유 자산", ""];
+    const summaryData = [
+      ["나", myData.annualSalary, myData.totalExpense, myData.remaining, ""].join(","),
+      ["감자", gamjaData.annualSalary, gamjaData.totalExpense, gamjaData.remaining, ""].join(","),
+      ["합계", totalAnnualSalary, totalAnnualExpense, totalRemaining, ""].join(",")
+    ];
+
+    // 1. 내 지출 내역
+    const myYearly = transactions
+      .filter((t: any) => new Date(t.date).getFullYear() === selectedYear)
+      .map((t: any) => [t.date, t.type, t.category, t.amount, `"${(t.memo || "").replace(/"/g, '""')}"`].join(","));
+
+    // 2. 감자 지출 내역
+    const gamjaYearly = gamjaTransactions
+      .filter((t: any) => new Date(t.date).getFullYear() === selectedYear)
+      .map((t: any) => [t.date, t.type, t.category, t.amount, `"${(t.memo || "").replace(/"/g, '""')}"`].join(","));
+
+    // 3. 월급 비교 (급여 데이터)
+    const mySalaryData = salaries.mySalaryRecords
+      .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
+      .map((r: any) => [r.date, "급여(나)", r.type, r.amount, `"${(r.memo || "").replace(/"/g, '""')}"`].join(","));
+    
+    const gamjaSalaryData = salaries.gamjaSalaryRecords
+      .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
+      .map((r: any) => [r.date, "급여(감자)", "월급", r.amount, `"${(r.memo || "").replace(/"/g, '""')}"`].join(","));
+
+    // 4. 대출 관리 (상환 내역)
+    const loanData: string[] = [];
+    loans.forEach((loan: any) => {
+      loan.repayments
+        .filter((r: any) => new Date(r.date).getFullYear() === selectedYear)
+        .forEach((r: any) => {
+          loanData.push([r.date, `대출상환(${loan.name})`, "원금", r.principal, `"${r.turn}회차 / ${(r.memo || "")}"`].join(","));
+          if (r.interest > 0) {
+            loanData.push([r.date, `대출상환(${loan.name})`, "이자", r.interest, ""].join(","));
+          }
+        });
+    });
+
+    // 5. 연금/투자 현황
+    const pensionData = balances
+      .filter((b: any) => b.category === '투자/연금')
+      .map((b: any) => [new Date().toISOString().split('T')[0], "자산현황", b.name, b.currentBalance, "현재 잔액"].join(","));
+
+    // 전체 데이터 통합
+    const csvContent = [
+      `--- ${selectedYear}년 가계부 1년 결산 요약 ---`, "",
+      header.join(","), ...summaryData, "",
+      `--- ${selectedYear}년 내 지출 ---`, "",
+      header.join(","), ...myYearly, "",
+      `--- ${selectedYear}년 감자 지출 ---`, "",
+      header.join(","), ...gamjaYearly, "",
+      `--- ${selectedYear}년 월급 비교 ---`, "",
+      header.join(","), ...mySalaryData, ...gamjaSalaryData, "",
+      `--- ${selectedYear}년 대출 관리 ---`, "",
+      header.join(","), ...loanData, "",
+      `--- ${selectedYear}년 연금 투자 ---`, "",
+      header.join(","), ...pensionData
+    ].join("\n");
+
+    // 파일 다운로드 로직 (아이폰 호환성 유지)
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `${selectedYear}년_결산_데이터.csv`; a.click(); URL.revokeObjectURL(url);
+    const link = document.createElement("a");
+    const dateStr = new Date().toLocaleDateString('ko-KR', {
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    }).replace(/\. /g, '-').replace(/\./g, '');
+
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${selectedYear}년_결산_데이터_${dateStr}.csv`);
+    
+    // 아이폰에서 다운로드 강제 실행
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-8 pb-24 px-1">
 
-      <div className="bg-[#1c1c1e] p-8 border border-white/5 rounded-[32px] shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
-        <p className="text-[14px] font-black text-[#4B96FF] uppercase mb-6 tracking-widest text-center bg-[#4B96FF]/10 py-2 rounded-xl w-fit mx-auto px-6">{selectedYear}년 총결산</p>
-        <div className="grid grid-cols-3 divide-x divide-white/10 text-center">
-          <div><p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">연봉</p><p className={`${biggerFontSize} font-black tabular-nums text-white`}>{formatNumber(totalAnnualSalary)}</p></div>
-          <div><p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">지출</p><p className={`${biggerFontSize} font-black text-[#FFA59E] tabular-nums`}>{formatNumber(totalAnnualExpense)}</p></div>
-          <div><p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">자산</p><p className={`${biggerFontSize} font-black text-[#4B96FF] tabular-nums`}>{formatNumber(totalRemaining)}</p></div>
-        </div>
-      </div>
 
-      {[ { label: '나', data: myData, color: '#4B96FF', bg: 'bg-[#4B96FF]', text: 'text-[#121212]' }, { label: '감자', data: gamjaData, color: '#E2F2D5', bg: 'bg-[#E2F2D5]', text: 'text-[#121212]' } ].map((user) => (
-        <div key={user.label} className="space-y-6">
-          <div className="bg-[#1c1c1e] p-8 border border-white/5 rounded-[32px] shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <span className={`px-4 py-2 rounded-xl ${user.text} text-[13px] font-black uppercase tracking-widest shadow-lg ${user.bg}`}>{user.label} 결산</span>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center">
-                <p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">연봉</p>
-                <p className="text-[14px] md:text-lg font-black tabular-nums text-white">{formatNumber(user.data.annualSalary)}</p>
-              </div>
-              <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center">
-                <p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">지출</p>
-                <p className="text-[14px] md:text-lg font-black text-[#FFA59E] tabular-nums">{formatNumber(user.data.totalExpense)}</p>
-              </div>
-              <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center">
-                <p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">자산</p>
-                <p className="text-[14px] md:text-lg font-black text-[#4B96FF] tabular-nums">{formatNumber(user.data.remaining)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#1c1c1e] p-8 border border-white/5 rounded-[32px] shadow-2xl">
-            <h4 className="text-[15px] font-black mb-8 flex justify-between items-center px-2 text-white">
-              <span>많이 쓴 항목</span>
-              <span className="text-brand-text-sub text-[12px] bg-white/5 px-3 py-1 rounded-xl">{user.label}</span>
-            </h4>
-            <div className="space-y-6">
-              {user.data.chartData.map((item, idx) => (
-                <div key={item.name} className="space-y-2">
-                  <div className="flex justify-between items-end">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[14px] font-black text-white">{item.name}</span>
-                      <span className="text-[11px] font-bold text-brand-text-sub bg-white/10 px-2 py-0.5 rounded-md">{item.percent}%</span>
-                    </div>
-                    <span className="text-[14px] font-black tabular-nums text-white">{formatNumber(item.value)}</span>
-                  </div>
-                  <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 shadow-inner">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${item.percent}%` }} className="h-full rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ))}
-      
-      <div className="flex justify-center pt-10">
-        <button onClick={downloadYearlyReport} className="flex items-center gap-3 px-10 py-5 bg-[#4B96FF] rounded-2xl text-[14px] font-black text-white shadow-[0_8px_30px_rgba(75,150,255,0.3)] hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest">
-          {selectedYear}년 다운로드
-        </button>
-      </div>
-    </motion.div>
-  );
-}
+  
 
 function TransactionEditModal({ isOpen, onClose, transactions, setTransactions, categories, setCategories, title }: any) {
   const [editedTxs, setEditedTxs] = useState<any[]>([]);
