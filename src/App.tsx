@@ -166,34 +166,23 @@ export default function App() {
   const [myCategories, setMyCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
   const [gamjaCategories, setGamjaCategories] = useState({ income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] });
 
-  // [아이폰 최적화] 지출/수입 내역이 변할 때마다 각 통장의 잔액을 실시간으로 재계산합니다.
+// [통합 잔액 로직] 기초 자산 + 전체 내역을 합산하여 실시간 잔액을 도출합니다
   useEffect(() => {
     const updatedBalances = balances.map(balance => {
-      // 내 거래 내역과 감자 거래 내역 모두에서 해당 계좌와 일치하는 내역 필터링
-      const myAccountTxs = transactions.filter(t => t.account === balance.name);
-      const gamjaAccountTxs = gamjaTransactions.filter(t => t.account === balance.name);
-      const allTxs = [...myAccountTxs, ...gamjaAccountTxs];
-      
-      const totalIncome = allTxs
-        .filter(t => t.type === '수입')
-        .reduce((sum, t) => sum + t.amount, 0);
-        
-      const totalExpense = allTxs
-        .filter(t => t.type === '지출')
-        .reduce((sum, t) => sum + t.amount, 0);
+      const allAccountTxs = [...transactions, ...gamjaTransactions].filter(t => t.account === balance.name);
+      const income = allAccountTxs.filter(t => t.type === '수입').reduce((s, t) => s + t.amount, 0);
+      const expense = allAccountTxs.filter(t => t.type === '지출').reduce((s, t) => s + t.amount, 0);
 
-      // 현재 잔액 = 설정한 시작 금액(previousBalance) + 수입 총액 - 지출 총액
       return {
         ...balance,
-        currentBalance: (balance.previousBalance || 0) + totalIncome - totalExpense
+        currentBalance: (balance.previousBalance || 0) + income - expense
       };
     });
 
-    // 실제 값이 변경된 경우에만 상태를 업데이트하여 무한 루프를 방지합니다.
     if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
       setBalances(updatedBalances);
     }
-  }, [transactions, gamjaTransactions]); // 내 거래나 감자 거래가 바뀔 때마다 실행
+  }, [transactions, gamjaTransactions, balances.map(b => b.previousBalance).join(',')]); // 기초 자산 변경 시에도 즉시 재계산
 
   // 데이터 변경 시 자동 저장 (아이폰 브라우저 저장소 활용)
   useEffect(() => {
