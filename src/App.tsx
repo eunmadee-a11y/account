@@ -319,20 +319,25 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -50, opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          /* [수정 사항] 아이폰 최적화: 내부 스크롤 방해 금지 및 드래그 감도 조절 */
           drag="x"
+          dragListener={true} // 기본값 유지하되 아래 로직으로 필터링
           dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.2}
           onDragEnd={(e, { offset, velocity }) => {
             const swipe = offset.x;
+            const swipeThreshold = 100; // 스와이프 민감도
             const tabs: TabName[] = ['홈', '내 지출', '연금/투자 관리', '감자 지출', '월급 비교', '대출 관리', '1년 결산'];
             const currentIndex = tabs.indexOf(activeTab);
 
-            if (swipe < -100 && currentIndex < tabs.length - 1) {
+            // 속도가 빠르거나 거리가 먼 경우에만 탭 이동
+            if (swipe < -swipeThreshold && currentIndex < tabs.length - 1) {
               setActiveTab(tabs[currentIndex + 1]);
-            } else if (swipe > 100 && currentIndex > 0) {
+            } else if (swipe > swipeThreshold && currentIndex > 0) {
               setActiveTab(tabs[currentIndex - 1]);
             }
           }}
-          className="h-full"
+          className="h-full touch-pan-y" // CSS로 수직 스크롤은 브라우저에 맡김
         >
           <AnimatePresence mode="wait">
             {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, categories: myCategories, setCategories: setMyCategories, tabName: tabNames['홈'], setTabName: (n:string)=>setTabNames({...tabNames, '홈':n}) }} />}
