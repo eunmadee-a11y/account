@@ -367,7 +367,8 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
 
 /* 홈 탭 */
 function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
-  const mainAccounts = balances.filter((b: any) => b.category === '내 통장');
+  // [수정] 부모 컴포넌트에서 실시간 계산되어 내려온 balances를 직접 필터링합니다.
+  const mainAccounts = balances.filter((b: any) => b.name.includes('통장'));
   const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
   const [savingsList, setSavingsList] = useState<{id: string, name: string}[]>(() => {
     try { const saved = localStorage.getItem('mySavingsList'); return saved ? JSON.parse(saved) : [{ id: 'savings-1', name: '적금 1' }]; } catch { return [{ id: 'savings-1', name: '적금 1' }]; }
@@ -701,10 +702,16 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
                 <div className="flex items-center gap-4">
                   <h4 className="font-black text-lg text-[#4B96FF]">{accountName}</h4>
                 </div>
-                <div>
-                  <p className="text-[11px] font-bold text-brand-text-sub uppercase mb-2 tracking-widest">현재 잔액</p>
-                  <p className="text-3xl font-black tabular-nums text-white tracking-tighter">{formatNumber(accountBalance?.currentBalance || 0)}</p>
-                </div>
+
+// ExpenseView 내부에서 계좌 잔액을 표시하는 부분 확인
+<div>
+  <p className="text-[11px] font-bold text-brand-text-sub uppercase mb-2 tracking-widest">현재 잔액</p>
+  {/* 이제 accountBalance.currentBalance는 useEffect에 의해 실시간으로 업데이트된 값을 보여줍니다. */}
+  <p className="text-3xl font-black tabular-nums text-white tracking-tighter">
+    {formatNumber(balances.find((b: any) => b.name === activeExpenseAccount)?.currentBalance || 0)}
+  </p>
+</div>
+                
                 <div className="grid grid-cols-2 gap-4 pb-2">
                   <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
                     <p className="text-[10px] font-bold text-brand-text-sub uppercase mb-1">이번 달 수입</p>
