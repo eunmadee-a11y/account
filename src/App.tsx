@@ -546,12 +546,21 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
         )}
 
         <div className="divide-y divide-white/5">
-          {mainAccounts.map((b: any) => (
-            <div key={b.id} className="px-6 py-5 flex items-center justify-between gap-3">
-              <p className="text-xs font-black text-brand-text-sub">{b.name.replace('내 ', '').replace(' 통장', '')}</p>
-              <p className="text-lg font-black tabular-nums text-white">{formatCurrency(b.currentBalance)}</p>
+
+{mainAccounts.map((b: any) => (
+            <div key={b.id} className="px-6 py-6 flex flex-col items-end gap-1 hover:bg-white/5 transition-colors">
+              {/* 금액을 위로 올리고 강조함 */}
+              <p className="text-xl font-black tabular-nums text-white tracking-tight">
+                {formatCurrency(b.currentBalance)}
+              </p>
+              {/* 항목 이름을 아래로 배치 */}
+              <p className="text-[10px] font-bold text-brand-text-sub uppercase tracking-widest opacity-80">
+                {b.name.replace('내 ', '').replace(' 통장', '')}
+              </p>
             </div>
           ))}
+
+          
           {/* 적금 목록 복구 */}
           {savingsList.map((savings) => (
             <div key={savings.id} className="px-6 py-5 flex items-center justify-between gap-3 bg-black/20">
