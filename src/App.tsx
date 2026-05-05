@@ -984,6 +984,9 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           <input type="date" value={newTx.date} onChange={e => setNewTx({...newTx, date: e.target.value})} className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[16px] font-bold text-white outline-none" />
         </div>
         
+
+
+{/* 1. 지출/수입 유형 선택 */}
         <div className="flex bg-black/40 rounded-2xl p-1 border border-white/5">
           {['지출', '수입'].map((type) => (
             <button 
@@ -996,6 +999,19 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           ))}
         </div>
 
+        {/* 2. 메모 입력 */}
+        <div className="space-y-2">
+          <label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">메모</label>
+          <input type="text" placeholder="메모 입력..." value={newTx.memo} onChange={e => setNewTx({...newTx, memo: e.target.value})} className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-[#E2F2D5]" />
+        </div>
+
+        {/* 3. 금액 입력 (아이폰용 큰 폰트 적용) */}
+        <div className="space-y-2">
+          <label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">금액</label>
+          <NumericInput value={newTx.amount} onChange={(v: number) => setNewTx({...newTx, amount: v})} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none" />
+        </div>
+
+        {/* 4. 항목 선택 (가로 스크롤) */}
         <div className="space-y-2">
           <label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">항목 선택</label>
           <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide snap-x">
@@ -1014,6 +1030,10 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
             ))}
           </div>
         </div>
+
+        <button onClick={handleAdd} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg mt-2">내역 추가</button>
+
+        
 
         <NumericInput label="금액" value={newTx.amount} onChange={(v: number) => setNewTx({...newTx, amount: v})} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none" />
         <input type="text" placeholder="메모 입력..." value={newTx.memo} onChange={e => setNewTx({...newTx, memo: e.target.value})} className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white outline-none" />
