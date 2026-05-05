@@ -1482,12 +1482,36 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
   const [reportTab, setReportTab] = useState<'나' | '감자'>('나');
 
   const processData = (txs: any[], salaryRecords: any[]) => {
+    // 연봉 계산
     const annualSalary = salaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).reduce((s: number, r: any) => s + r.amount, 0);
-    const expenseTxs = txs.filter((t: any) => t.type === '지출' && new Date(t.date).getFullYear() === selectedYear);
-    const totalExpense = expenseTxs.reduce((sum, t) => sum + t.amount, 0);
+    
+    // 전체 지출 내역
+    const allExpenseTxs = txs.filter((t: any) => t.type === '지출' && new Date(t.date).getFullYear() === selectedYear);
+    
+    // [수정] 연금 항목은 계산에서 제외 (합계 및 남은 자산 계산용)
+    const filteredExpenseTxs = allExpenseTxs.filter(t => !t.category.includes('연금'));
+    const totalExpense = filteredExpenseTxs.reduce((sum, t) => sum + t.amount, 0);
+
     const categoryTotals: Record<string, number> = {};
-    expenseTxs.forEach((t: any) => { categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount; });
-    const chartData = Object.entries(categoryTotals).map(([name, value]) => ({ name, value: value as number, percent: totalExpense > 0 ? ((value as number / totalExpense) * 100).toFixed(1) : '0' })).sort((a, b) => b.value - a.value);
+    allExpenseTxs.forEach((t: any) => { 
+      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount; 
+    });
+
+    // [수정] 그래프용 데이터: 연금을 맨 위로 올리고 계산은 안 하되 수치만 표시
+    const chartDataRaw = Object.entries(categoryTotals).map(([name, value]) => ({
+      name,
+      value: value as number,
+      // 연금은 전체 지출 퍼센트 계산에서 제외하거나 별도 표시
+      percent: totalExpense > 0 ? ((value as number / totalExpense) * 100).toFixed(1) : '0',
+      isPension: name.includes('연금')
+    }));
+
+    // 정렬: 연금 우선 배치 -> 나머지 금액순 정렬
+    const chartData = [
+      ...chartDataRaw.filter(item => item.isPension),
+      ...chartDataRaw.filter(item => !item.isPension).sort((a, b) => b.value - a.value)
+    ];
+
     return { annualSalary, totalExpense, remaining: annualSalary - totalExpense, chartData };
   };
 
@@ -1499,6 +1523,7 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
 
   const COLORS = ['#4B96FF', '#A0C7DF', '#E2F2D5', '#FFA59E', '#FFE1EA'];
 
+  // [유지] 엑셀 다운로드 기능 (연금 데이터 포함 유지)
   const downloadYearlyReport = () => {
     const localLoans = JSON.parse(localStorage.getItem('myLoans') || '[]');
     const localBalances = JSON.parse(localStorage.getItem('myBalances') || '[]');
@@ -1513,6 +1538,7 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
     const gamjaYearly = gamjaTransactions.filter((t: any) => t.date && new Date(t.date).getFullYear() === selectedYear).map((t: any) => [t.date, t.type, t.category, t.amount, `"${(t.memo || "").replace(/"/g, '""')}"`].join(","));
     const mySalData = salaries.mySalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).map((r: any) => [r.date, "급여(나)", r.type, r.amount, `"${(r.memo || "").replace(/"/g, '""')}"`].join(","));
     const gamjaSalData = salaries.gamjaSalaryRecords.filter((r: any) => new Date(r.date).getFullYear() === selectedYear).map((r: any) => [r.date, "급여(감자)", "월급", r.amount, `"${(r.memo || "").replace(/"/g, '""')}"`].join(","));
+    
     const loanData: string[] = [];
     localLoans.forEach((loan: any) => {
       (loan.repayments || []).filter((r: any) => new Date(r.date).getFullYear() === selectedYear).forEach((r: any) => {
@@ -1520,8 +1546,10 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
         if (r.interest > 0) loanData.push([r.date, `대출(${loan.name})`, "이자", r.interest, ""].join(","));
       });
     });
+
     const pensionData = localBalances.filter((b: any) => b.category === '투자/연금').map((b: any) => [new Date().toISOString().split('T')[0], "자산현황", b.name, b.currentBalance, "현재 잔액"].join(","));
-    const csvContent = [`--- ${selectedYear}년 요약 ---`, summaryHeader.join(","), ...summaryData, "\n", `--- 내 지출 ---`, header.join(","), ...myYearly, "\n", `--- 감자 지출 ---`, header.join(","), ...gamjaYearly, "\n", `--- 월급 ---`, header.join(","), ...mySalData, ...gamjaSalData, "\n", `--- 대출 ---`, header.join(","), ...loanData, "\n", `--- 연금 ---`, header.join(","), ...pensionData].join("\n");
+    
+    const csvContent = [`--- ${selectedYear}년 요약 ---`, summaryHeader.join(","), ...summaryData, "\n", `--- 나 지출 ---`, header.join(","), ...myYearly, "\n", `--- 감자 지출 ---`, header.join(","), ...gamjaYearly, "\n", `--- 월급 ---`, header.join(","), ...mySalData, ...gamjaSalData, "\n", `--- 대출 ---`, header.join(","), ...loanData, "\n", `--- 연금 ---`, header.join(","), ...pensionData].join("\n");
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1533,7 +1561,7 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6 pb-24 px-1">
-      {/* 1. 최상단 총결산 요약 (너비 확보 및 라인 구분) */}
+      {/* 연간 요약 카드 */}
       <div className="bg-[#1c1c1e] p-3 py-6 border border-white/5 rounded-[24px] shadow-lg">
         <p className="text-[12px] font-black text-[#4B96FF] uppercase mb-5 tracking-widest text-center bg-[#4B96FF]/10 py-1.5 rounded-lg w-fit mx-auto px-4">{selectedYear}년 총합계</p>
         <div className="flex w-full">
@@ -1552,13 +1580,12 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
         </div>
       </div>
 
-      {/* 2. 대상 선택 버튼 (아이폰 스타일 탭) */}
+      {/* 탭 버튼 */}
       <div className="flex bg-black/40 rounded-2xl p-1 border border-white/5 mx-1">
         <button onClick={() => setReportTab('나')} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${reportTab === '나' ? 'bg-[#4B96FF] text-[#121212] shadow-lg' : 'text-brand-text-sub'}`}>나 결산</button>
         <button onClick={() => setReportTab('감자')} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${reportTab === '감자' ? 'bg-[#E2F2D5] text-[#121212] shadow-lg' : 'text-brand-text-sub'}`}>감자 결산</button>
       </div>
 
-      {/* 3. 상세 결산 페이지 (전환 방식) */}
       <AnimatePresence mode="wait">
         <motion.div key={reportTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-6">
           {(() => {
@@ -1567,6 +1594,7 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
               : { label: '감자', data: gamjaData, bg: 'bg-[#E2F2D5]', text: 'text-[#121212]' };
             return (
               <>
+                {/* 사용자별 요약 */}
                 <div className="bg-[#1c1c1e] p-3 py-6 border border-white/5 rounded-[24px] shadow-2xl">
                   <div className="flex w-full">
                     <div className="flex-1 flex flex-col items-center border-r border-white/10 px-0.5">
@@ -1583,18 +1611,38 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
                     </div>
                   </div>
                 </div>
+
+                {/* 많이 쓴 항목 그래프 */}
                 <div className="bg-[#1c1c1e] p-6 border border-white/5 rounded-[24px] shadow-2xl">
-                  <h4 className="text-[13px] font-black mb-6 flex justify-between items-center text-white"><span>많이 쓴 항목</span><span className={`text-[10px] px-2 py-0.5 rounded-md ${user.bg} ${user.text}`}>{user.label}</span></h4>
+                  <h4 className="text-[13px] font-black mb-6 flex justify-between items-center text-white">
+                    <span>많이 쓴 항목</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-md ${user.bg} ${user.text}`}>{user.label}</span>
+                  </h4>
                   <div className="space-y-5">
-                    {user.data.chartData.map((item, idx) => (
+                    {user.data.chartData.map((item, idx, array) => (
                       <div key={item.name} className="space-y-1.5">
                         <div className="flex justify-between items-end">
-                          <div className="flex items-center gap-2"><span className="text-[12px] font-bold text-white/90">{item.name}</span><span className="text-[10px] text-brand-text-sub">{item.percent}%</span></div>
-                          <span className="text-[11px] font-black tabular-nums text-white/60">{formatNumber(item.value)}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[12px] font-bold ${item.isPension ? 'text-[#4B96FF]' : 'text-white/90'}`}>
+                              {item.isPension ? `[연금] ${item.name}` : item.name}
+                            </span>
+                            {!item.isPension && <span className="text-[10px] text-brand-text-sub">{item.percent}%</span>}
+                          </div>
+                          <span className={`text-[11px] font-black tabular-nums ${item.isPension ? 'text-[#4B96FF]' : 'text-white/60'}`}>
+                            {formatNumber(item.value)}
+                          </span>
                         </div>
                         <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 shadow-inner">
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${item.percent}%` }} className="h-full rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                          <motion.div initial={{ width: 0 }} animate={{ width: item.isPension ? '100%' : `${item.percent}%` }} 
+                            className="h-full rounded-full" 
+                            style={{ backgroundColor: item.isPension ? '#4B96FF' : COLORS[idx % COLORS.length] }} />
                         </div>
+                        {/* 연금 항목과 일반 항목 사이 구분선 */}
+                        {item.isPension && !array[idx + 1]?.isPension && (
+                          <div className="py-2">
+                            <div className="border-b border-dashed border-white/10" />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1604,13 +1652,13 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
           })()}
         </motion.div>
       </AnimatePresence>
+
       <div className="flex justify-center pt-8">
         <button onClick={downloadYearlyReport} className="flex items-center gap-3 px-10 py-5 bg-[#4B96FF] rounded-2xl text-[14px] font-black text-white shadow-[0_8px_30px_rgba(75,150,255,0.3)] active:scale-95 transition-all uppercase tracking-widest">저장하기</button>
       </div>
     </motion.div>
   );
 }
-
 
 
 function TransactionEditModal({ isOpen, onClose, transactions, setTransactions, categories, setCategories, title }: any) {
