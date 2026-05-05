@@ -914,6 +914,7 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
 
 
 
+
 function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, setBalances, currentDate, categories, onOpenEdit, selectedDateStr }: any) {
   // 1. 상단에 보이는 6개의 통장을 명시적으로 선언하여 모든 곳에 강제 연동
   const livingGroup = ['감자 생활비 통장', '감자 여유자금 통장', '감자 적금 통장'];
@@ -1140,6 +1141,9 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     </motion.div>
   );
 }
+
+
+
 
 // 대출 현황
 function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName }: any) {
