@@ -304,7 +304,23 @@ export default function App() {
   }, [loans, currentDate]);
 
   const changeMonth = (offset: number) => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
+    const nextDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1);
+    setCurrentDate(nextDate);
+
+    // [추가] 상단 달 이동 시 하단 입력 날짜탭(selectedDateStr)도 해당 달의 날짜로 자동 이동
+    if (selectedDateStr) {
+      const currentSelected = new Date(selectedDateStr);
+      // 선택된 날짜가 해당 달에 없는 경우(예: 31일인데 다음달은 30일까지인 경우)를 대비해 안전하게 세팅
+      const updatedDate = new Date(nextDate.getFullYear(), nextDate.getMonth(), currentSelected.getDate());
+      
+      // 만약 계산된 날짜의 달이 목표한 달과 다르면(말일 오류), 해당 달의 마지막 날로 세팅
+      if (updatedDate.getMonth() !== nextDate.getMonth()) {
+        const lastDay = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
+        setSelectedDateStr(`${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`);
+      } else {
+        setSelectedDateStr(`${updatedDate.getFullYear()}-${String(updatedDate.getMonth() + 1).padStart(2, '0')}-${String(updatedDate.getDate()).padStart(2, '0')}`);
+      }
+    }
   };
   const deleteTransaction = (id: string) => {
     if (confirm('이 내역을 삭제하시겠습니까?')) setTransactions(prev => prev.filter(t => t.id !== id));
