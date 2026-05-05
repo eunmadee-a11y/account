@@ -182,33 +182,29 @@ export default function App() {
 
 // [통합 잔액 로직] 기초 자산 + 전체 내역을 합산하여 실시간 잔액을 도출합니다
   /* 이 부분이 전체 자산 통계에서 지출/수입으로 중복 계산되지 않게 해줍니다. */
-  /* [계부 잔액 로직] 선택된 달의 말일 잔액을 고정하여 계산함 */
   useEffect(() => {
     const updatedBalances = balances.map(balance => {
       const allTxs = [...transactions, ...gamjaTransactions];
-      const targetYear = currentDate.getFullYear();
-      const targetMonth = currentDate.getMonth();
-      // 선택된 달의 마지막 순간을 기준점으로 잡음
-      const lastMomentOfSelectedMonth = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
-
-      // 기준일(선택월 말일)보다 이전 내역만 필터링
-      const filteredTxs = allTxs.filter(t => new Date(t.date) <= lastMomentOfSelectedMonth);
       
-      const income = filteredTxs.filter(t => t.account === balance.name && t.type === '수입').reduce((s, t) => s + t.amount, 0);
-      const expense = filteredTxs.filter(t => t.account === balance.name && t.type === '지출').reduce((s, t) => s + t.amount, 0);
-      const transferOut = filteredTxs.filter(t => t.type === '이체' && t.account === balance.name).reduce((s, t) => s + t.amount, 0);
-      const transferIn = filteredTxs.filter(t => t.type === '이체' && (t as any).toAccount === balance.name).reduce((s, t) => s + t.amount, 0);
+      // 1. 일반 수입/지출 계산
+      const income = allTxs.filter(t => t.account === balance.name && t.type === '수입').reduce((s, t) => s + t.amount, 0);
+      const expense = allTxs.filter(t => t.account === balance.name && t.type === '지출').reduce((s, t) => s + t.amount, 0);
+      
+      // 2. 이체 로직 추가 (보낸 돈은 차감, 받은 돈은 합산)
+      const transferOut = allTxs.filter(t => t.type === '이체' && t.account === balance.name).reduce((s, t) => s + t.amount, 0);
+      const transferIn = allTxs.filter(t => t.type === '이체' && (t as any).toAccount === balance.name).reduce((s, t) => s + t.amount, 0);
 
       return {
         ...balance,
-        currentBalance: (Number(balance.previousBalance) || 0) + income - expense - transferOut + transferIn
+        currentBalance: (balance.previousBalance || 0) + income - expense - transferOut + transferIn
       };
     });
 
     if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
       setBalances(updatedBalances);
     }
-  }, [transactions, gamjaTransactions, currentDate, balances.map(b => b.previousBalance).join(',')]);
+  }, [transactions, gamjaTransactions, balances.map(b => b.previousBalance).join(',')]);
+
  // 데이터를 변경 시 자동 저장 (아이폰 브라우저 저장소 활용 - 카테고리 저장 추가)
 
 
@@ -469,32 +465,21 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
     setSavingsValues(newTotalData); localStorage.setItem('mySavingsValues', JSON.stringify(newTotalData));
   };
 
-
-
-// --- [데이터 계산] ---
+  // --- [데이터 계산] ---
   const totalSavingsAmount = savingsList.reduce((sum, s) => sum + (currentMonthSavings[s.id] || 0), 0);
-  
-  // totalSum 계산 시 currentBalance가 업데이트된 mainAccounts를 실시간 반영
   const totalSum = useMemo(() => {
     const targetKeywords = ['생활비', '여유자금', '자동이체'];
-    const accountsSum = mainAccounts
-      .filter((b: any) => targetKeywords.some(k => b.name.includes(k)))
-      .reduce((sum: number, b: any) => sum + (b.currentBalance || 0), 0);
+    const accountsSum = mainAccounts.filter((b: any) => targetKeywords.some(k => b.name.includes(k))).reduce((sum: number, b: any) => sum + b.currentBalance, 0);
     return accountsSum + totalSavingsAmount;
   }, [mainAccounts, totalSavingsAmount]);
 
-  // 잔액이 currentDate에 맞춰 계산되었으므로, 이를 그대로 자산 요약에 반영
+  const homePensionTotal = balances.filter((b: any) => b.category === '투자/연금').reduce((sum: number, b: any) => sum + (b.monthlyBalances?.[monthKey] ?? b.currentBalance ?? 0), 0);
   const customCashLike = totalSum;               
-  const customInvestment = balances
-    .filter((b: any) => b.category === '투자/연금')
-    .reduce((sum: number, b: any) => sum + (b.currentBalance || 0), 0);
+  const customInvestment = homePensionTotal;
   const customTotalAsset = customCashLike + customInvestment;
 
-  const quickAccounts = ['생활비', '여유자금', '자동이체']
-    .map(kw => mainAccounts.find((a: any) => a.name.includes(kw)))
-    .filter(Boolean);
+  const quickAccounts = ['생활비', '여유자금', '자동이체'].map(kw => mainAccounts.find((a: any) => a.name.includes(kw))).filter(Boolean);
   const selectedDateTransactions = transactions.filter((t: any) => t.date === selectedDateStr);
-  
 
   const handleTransfer = () => {
     if (transferData.amount <= 0 || transferData.from === transferData.to) return;
