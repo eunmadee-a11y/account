@@ -182,47 +182,28 @@ export default function App() {
 
 // [통합 잔액 로직] 기초 자산 + 전체 내역을 합산하여 실시간 잔액을 도출합니다
   /* 이 부분이 전체 자산 통계에서 지출/수입으로 중복 계산되지 않게 해줍니다. */
-
-
-// [계부 로직] 선택된 달의 마지막 날 기준 잔액 고정 표시 로직
-  /* [계부 잔액 로직] 선택된 달의 마지막 날 기준 잔액 고정 및 실시간 반영 */
   useEffect(() => {
     const updatedBalances = balances.map(balance => {
       const allTxs = [...transactions, ...gamjaTransactions];
       
-      // 1. 아이폰 상단 헤더에서 선택된 달(currentDate)의 마지막 날 구하기
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const endOfSelectedMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
-
-      // 2. 선택된 달의 말일보다 '이후'인 미래 내역은 계산에서 배제 (잔액 고정의 핵심)
-      const relevantTxs = allTxs.filter(t => {
-        const txDate = new Date(t.date);
-        return txDate <= endOfSelectedMonth;
-      });
+      // 1. 일반 수입/지출 계산
+      const income = allTxs.filter(t => t.account === balance.name && t.type === '수입').reduce((s, t) => s + t.amount, 0);
+      const expense = allTxs.filter(t => t.account === balance.name && t.type === '지출').reduce((s, t) => s + t.amount, 0);
       
-      // 3. 필터링된 내역으로만 해당 계좌의 수입, 지출, 이체 합산
-      const income = relevantTxs.filter(t => t.account === balance.name && t.type === '수입').reduce((s, t) => s + t.amount, 0);
-      const expense = relevantTxs.filter(t => t.account === balance.name && t.type === '지출').reduce((s, t) => s + t.amount, 0);
-      
-      const transferOut = relevantTxs.filter(t => t.type === '이체' && t.account === balance.name).reduce((s, t) => s + t.amount, 0);
-      const transferIn = relevantTxs.filter(t => t.type === '이체' && (t as any).toAccount === balance.name).reduce((s, t) => s + t.amount, 0);
+      // 2. 이체 로직 추가 (보낸 돈은 차감, 받은 돈은 합산)
+      const transferOut = allTxs.filter(t => t.type === '이체' && t.account === balance.name).reduce((s, t) => s + t.amount, 0);
+      const transferIn = allTxs.filter(t => t.type === '이체' && (t as any).toAccount === balance.name).reduce((s, t) => s + t.amount, 0);
 
       return {
         ...balance,
-        // 결과: 기초 자산 + 선택한 달 말일까지의 누적치
-        currentBalance: (Number(balance.previousBalance) || 0) + income - expense - transferOut + transferIn
+        currentBalance: (balance.previousBalance || 0) + income - expense - transferOut + transferIn
       };
     });
 
-    // 화면 빈칸 방지: 데이터가 실제로 바뀌었을 때만 업데이트 수행
     if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
       setBalances(updatedBalances);
     }
-  }, [transactions, gamjaTransactions, currentDate, balances.map(b => b.previousBalance).join(',')]);
-
-
-  
+  }, [transactions, gamjaTransactions, balances.map(b => b.previousBalance).join(',')]);
 
  // 데이터를 변경 시 자동 저장 (아이폰 브라우저 저장소 활용 - 카테고리 저장 추가)
 
