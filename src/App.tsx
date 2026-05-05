@@ -890,9 +890,12 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
 /* 감자 지출 탭 (항목 선택 기능 추가 및 아이폰 최적화) */
 
 
+
+
 function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, setBalances, currentDate, categories, onOpenEdit }: any) {
   const [activeGamjaAccount, setActiveGamjaAccount] = useState(gamjaAccountNames[0] || '');
   const [isStartBalanceOpen, setIsStartBalanceOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   
   const [newTx, setNewTx] = useState({ 
     date: new Date().toISOString().split('T')[0], 
@@ -903,16 +906,38 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     memo: '' 
   });
 
-  const updateGamjaStartValue = (id: string, value: number) => {
-    setBalances((prev: any[]) => prev.map((item: any) => item.id === id ? { ...item, previousBalance: value } : item));
-  };
+  const [transferData, setTransferData] = useState({
+    from: gamjaAccountNames[0] || '',
+    to: gamjaAccountNames[1] || '',
+    amount: 0,
+    date: new Date().toISOString().split('T')[0]
+  });
 
   const calculateLiveBalance = (accountName: string) => {
     const acc = balances.find((b: any) => b.name === accountName);
     const txs = gamjaTransactions.filter((t: any) => t.account === accountName);
     const income = txs.filter((t: any) => t.type === '수입').reduce((s: number, t: any) => s + t.amount, 0);
     const expense = txs.filter((t: any) => t.type === '지출').reduce((s: number, t: any) => s + t.amount, 0);
-    return (acc?.previousBalance || 0) + income - expense;
+    const transferOut = txs.filter((t: any) => (t as any).type === '이체').reduce((s: number, t: any) => s + t.amount, 0);
+    const transferIn = gamjaTransactions.filter((t: any) => (t as any).type === '이체' && (t as any).toAccount === accountName).reduce((s: number, t: any) => s + t.amount, 0);
+    return (acc?.previousBalance || 0) + income - expense - transferOut + transferIn;
+  };
+
+  const handleTransfer = () => {
+    if (transferData.amount <= 0 || transferData.from === transferData.to) return;
+    const newTransfer = {
+      id: Math.random().toString(36).substr(2, 9),
+      date: transferData.date,
+      type: '이체' as any,
+      category: '계좌이체',
+      account: transferData.from,
+      toAccount: transferData.to,
+      amount: transferData.amount,
+      memo: `[이체] ${transferData.from} → ${transferData.to}`
+    };
+    setGamjaTransactions([newTransfer, ...gamjaTransactions]);
+    setIsTransferModalOpen(false);
+    setTransferData({ ...transferData, amount: 0 });
   };
 
   const handleAdd = () => {
@@ -922,8 +947,13 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     setNewTx({ ...newTx, amount: 0, memo: '' }); 
   };
 
+  const livingGroup = ['감자 생활비 통장', '감자 여유자금 통장', '감자 적금 통장'];
+  const pensionGroup = ['감자 개인연금 통장', '감자 퇴직금 통장'];
+  const livingTotal = livingGroup.reduce((sum, name) => sum + calculateLiveBalance(name), 0);
+  const pensionTotal = pensionGroup.reduce((sum, name) => sum + calculateLiveBalance(name), 0);
+
   const filteredTxs = useMemo(() => {
-    let txs = gamjaTransactions.filter((t: any) => t.account === activeGamjaAccount);
+    let txs = gamjaTransactions.filter((t: any) => t.account === activeGamjaAccount || (t as any).toAccount === activeGamjaAccount);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       txs = txs.filter((t: any) => (t.memo?.toLowerCase().includes(q)) || (t.category?.toLowerCase().includes(q)));
@@ -933,139 +963,92 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6 pb-28">
-      
-      {/* 1. 계좌 선택 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {gamjaAccountNames.map((name: string) => (
-          <button
-            key={name} onClick={() => { setActiveGamjaAccount(name); setNewTx({ ...newTx, account: name }); }}
-            className={`py-4 px-3 rounded-2xl border transition-all active:scale-90 ${
-              activeGamjaAccount === name ? 'bg-[#E2F2D5] text-[#121212] border-[#E2F2D5] shadow-lg' : 'bg-[#1c1c1e] text-brand-text-sub border-white/5'
-            }`}
-          >
-            <p className="text-[12px] font-black truncate">{name.replace('감자 ', '').replace(' 통장', '')}</p>
-            <p className="text-[13px] font-bold mt-1 tabular-nums">
-              {new Intl.NumberFormat('ko-KR').format(calculateLiveBalance(name))}
-            </p>
-          </button>
-        ))}
-      </div>
-
-      {/* 2. 기초자산 수정 */}
-      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden">
-        <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-white/5">
-          <div className="text-left">
-            <h4 className="font-black text-[13px] text-[#E2F2D5] uppercase">감자 기초 자산 수정</h4>
+      {/* 1. 계좌 그룹 레이아웃 */}
+      <div className="space-y-4">
+        {/* 생활비/여유자금/적금 그룹 */}
+        <div className="bg-black/20 p-4 rounded-[28px] border border-white/5 space-y-3">
+          <div className="flex justify-between items-center px-2">
+            <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">현금성 자산 합계</p>
+            <p className="text-[12px] font-black text-[#E2F2D5]">{formatCurrency(livingTotal)}</p>
           </div>
-          <ChevronRight size={18} className={`transition-transform duration-300 ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
-        </button>
-        <AnimatePresence>
-          {isStartBalanceOpen && (
-            <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="px-8 pb-8 space-y-5 bg-black/20 pt-4">
-              {balances.filter((b: any) => gamjaAccountNames.includes(b.name)).map((b: any) => (
-                <div key={b.id} className="space-y-1">
-                  <p className="text-[11px] font-bold text-brand-text-sub ml-1">{b.name}</p>
-                  <NumericInput 
-                    value={b.previousBalance || 0} 
-                    onChange={(v: number) => updateGamjaStartValue(b.id, v)} 
-                    className="w-full bg-[#2c2c2e] border border-white/10 rounded-2xl px-5 py-4 text-xl font-black text-white outline-none focus:border-[#E2F2D5]" 
-                  />
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* 3. 내역 입력 (아이폰용 가로 스크롤) */}
-      <div className="bg-[#1c1c1e] p-7 rounded-[32px] border border-white/5 shadow-2xl space-y-5">
-        <div className="flex justify-between items-center">
-          <h4 className="text-sm font-black text-white">{activeGamjaAccount} 입력</h4>
-          <input type="date" value={newTx.date} onChange={e => setNewTx({...newTx, date: e.target.value})} className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[16px] font-bold text-white outline-none" />
-        </div>
-        
-
-
-{/* 1. 지출/수입 유형 선택 */}
-        <div className="flex bg-black/40 rounded-2xl p-1 border border-white/5">
-          {['지출', '수입'].map((type) => (
-            <button 
-              key={type} 
-              onClick={() => setNewTx({ ...newTx, type: type as any, category: type === '지출' ? categories.expense[0] : categories.income[0] })} 
-              className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${newTx.type === type ? (type === '지출' ? 'bg-[#FFA59E] text-[#121212]' : 'bg-[#4B96FF] text-[#121212]') : 'text-brand-text-sub'}`}
-            >
-              {type}
-            </button>
-          ))}
-        </div>
-
-        {/* 2. 메모 입력 */}
-        <div className="space-y-2">
-          <label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">메모</label>
-          <input type="text" placeholder="메모 입력..." value={newTx.memo} onChange={e => setNewTx({...newTx, memo: e.target.value})} className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-[#E2F2D5]" />
-        </div>
-
-        {/* 3. 금액 입력 (아이폰용 큰 폰트 적용) */}
-        <div className="space-y-2">
-          <label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">금액</label>
-          <NumericInput value={newTx.amount} onChange={(v: number) => setNewTx({...newTx, amount: v})} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none" />
-        </div>
-
-        {/* 4. 항목 선택 (가로 스크롤) */}
-        <div className="space-y-2">
-          <label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">항목 선택</label>
-          <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide snap-x">
-            {(newTx.type === '지출' ? categories.expense : categories.income).map((c: string) => (
-              <button 
-                key={c} 
-                onClick={() => setNewTx({...newTx, category: c})} 
-                className={`shrink-0 snap-start px-5 py-3 rounded-xl text-[13px] font-black transition-all border ${
-                  newTx.category === c 
-                    ? (newTx.type === '지출' ? 'bg-[#FFA59E]/20 text-[#FFA59E] border-[#FFA59E]/50' : 'bg-[#4B96FF]/20 text-[#4B96FF] border-[#4B96FF]/50') 
-                    : 'bg-black/40 text-brand-text-sub border-white/5'
-                }`}
-              >
-                {c}
+          <div className="grid grid-cols-3 gap-2">
+            {livingGroup.map(name => (
+              <button key={name} onClick={() => { setActiveGamjaAccount(name); setNewTx({ ...newTx, account: name }); }}
+                className={`py-4 px-1 rounded-xl border transition-all active:scale-95 flex flex-col items-center gap-1 ${activeGamjaAccount === name ? 'bg-[#E2F2D5] text-[#121212] border-[#E2F2D5]' : 'bg-[#1c1c1e] text-brand-text-sub border-white/5'}`}>
+                <span className="text-[10px] font-black truncate w-full text-center">{name.replace('감자 ', '').replace(' 통장', '')}</span>
+                <span className="text-[11px] font-bold tabular-nums">{formatNumber(calculateLiveBalance(name))}</span>
               </button>
             ))}
           </div>
         </div>
 
-        <button onClick={handleAdd} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg mt-2">내역 추가</button>
+        {/* 연금/퇴직금 그룹 */}
+        <div className="bg-black/20 p-4 rounded-[28px] border border-white/5 space-y-3">
+          <div className="flex justify-between items-center px-2">
+            <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">연금 : 총액</p>
+            <p className="text-[12px] font-black text-[#4B96FF]">{formatCurrency(pensionTotal)}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {pensionGroup.map(name => (
+              <button key={name} onClick={() => { setActiveGamjaAccount(name); setNewTx({ ...newTx, account: name }); }}
+                className={`py-4 px-1 rounded-xl border transition-all active:scale-95 flex flex-col items-center gap-1 ${activeGamjaAccount === name ? 'bg-[#4B96FF] text-white border-[#4B96FF]' : 'bg-[#1c1c1e] text-brand-text-sub border-white/5'}`}>
+                <span className="text-[10px] font-black truncate w-full text-center">{name.replace('감자 ', '').replace(' 통장', '')}</span>
+                <span className="text-[11px] font-bold tabular-nums">{formatNumber(calculateLiveBalance(name))}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
-        
-        
+        {/* 계좌간 이동 및 이체 실행 영역 */}
+        <button onClick={() => setIsTransferModalOpen(!isTransferModalOpen)} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-[11px] font-black text-[#E2F2D5] uppercase tracking-widest active:scale-95 transition-all">감자 계좌간 이동</button>
+        {isTransferModalOpen && (
+          <div className="p-6 bg-black/40 border border-[#E2F2D5]/30 rounded-[24px] space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="grid grid-cols-2 gap-3">
+              <select value={transferData.from} onChange={e => setTransferData({...transferData, from: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold outline-none border border-white/10">{gamjaAccountNames.map((name: string) => <option key={name} value={name}>{name}</option>)}</select>
+              <select value={transferData.to} onChange={e => setTransferData({...transferData, to: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold outline-none border border-white/10">{gamjaAccountNames.map((name: string) => <option key={name} value={name}>{name}</option>)}</select>
+            </div>
+            <NumericInput value={transferData.amount} onChange={(v: number) => setTransferData({...transferData, amount: v})} className="w-full bg-[#1c1c1e] border border-[#E2F2D5]/30 rounded-2xl px-5 py-4 text-2xl font-black text-white text-right" placeholder="이체 금액" />
+            <button onClick={handleTransfer} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-[15px] active:scale-95 transition-all">이체 실행</button>
+          </div>
+        )}
       </div>
 
+      {/* 2. 내역 입력 (순서 조정: 유형 -> 메모 -> 금액 -> 항목) */}
+      <div className="bg-[#1c1c1e] p-7 rounded-[32px] border border-white/5 shadow-2xl space-y-5">
+        <div className="flex justify-between items-center">
+          <h4 className="text-sm font-black text-white">{activeGamjaAccount.replace('감자 ', '')} 입력</h4>
+          <input type="date" value={newTx.date} onChange={e => setNewTx({...newTx, date: e.target.value})} className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[16px] font-bold text-white outline-none" />
+        </div>
+        <div className="flex bg-black/40 rounded-2xl p-1 border border-white/5">
+          {['지출', '수입'].map((type) => (
+            <button key={type} onClick={() => setNewTx({ ...newTx, type: type as any, category: type === '지출' ? categories.expense[0] : categories.income[0] })} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${newTx.type === type ? (type === '지출' ? 'bg-[#FFA59E] text-[#121212]' : 'bg-[#4B96FF] text-[#121212]') : 'text-brand-text-sub'}`}>{type}</button>
+          ))}
+        </div>
+        <div className="space-y-2"><label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">메모</label><input type="text" placeholder="메모 입력..." value={newTx.memo} onChange={e => setNewTx({...newTx, memo: e.target.value})} className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-[#E2F2D5]" /></div>
+        <div className="space-y-2"><label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">금액</label><NumericInput value={newTx.amount} onChange={(v: number) => setNewTx({...newTx, amount: v})} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none" /></div>
+        <div className="space-y-2">
+          <label className="text-[11px] font-black text-brand-text-sub ml-2 uppercase tracking-widest">항목 선택</label>
+          <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide snap-x">
+            {(newTx.type === '지출' ? categories.expense : categories.income).map((c: string) => (
+              <button key={c} onClick={() => setNewTx({...newTx, category: c})} className={`shrink-0 snap-start px-5 py-3 rounded-xl text-[13px] font-black transition-all border ${newTx.category === c ? (newTx.type === '지출' ? 'bg-[#FFA59E]/20 text-[#FFA59E] border-[#FFA59E]/50' : 'bg-[#4B96FF]/20 text-[#4B96FF] border-[#4B96FF]/50') : 'bg-black/40 text-brand-text-sub border-white/5'}`}>{c}</button>
+            ))}
+          </div>
+        </div>
+        <button onClick={handleAdd} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">내역 추가</button>
+      </div>
 
-
-      
-      {/* 4. 거래 리스트 */}
+      {/* 3. 거래 리스트 및 관리 버튼 */}
       <div className="bg-[#1c1c1e] rounded-[32px] border border-white/5 overflow-hidden shadow-2xl">
         <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
           {filteredTxs.map((t: any) => (
             <div key={t.id} className="px-8 py-5 flex justify-between items-center active:bg-white/5 transition-colors">
-              <div>
-                <p className="text-[14px] font-black text-white">{t.memo || t.category}</p>
-                <p className="text-[10px] text-brand-text-sub mt-1">{t.date} · <span className="text-[#E2F2D5]">{t.category}</span></p>
-              </div>
-              <div className="flex items-center gap-4">
-                <p className={`text-base font-black tabular-nums ${t.type === '수입' ? 'text-[#4B96FF]' : 'text-white'}`}>
-                  {t.type === '수입' ? '+' : '-'}{new Intl.NumberFormat('ko-KR').format(t.amount)}
-                </p>
-                <button onClick={() => deleteGamjaTransaction(t.id)} className="p-2 text-brand-text-sub"><X size={16} /></button>
-              </div>
+              <div><p className="text-[14px] font-black text-white">{t.memo || t.category}</p><p className="text-[10px] text-brand-text-sub mt-1">{t.date} · <span className="text-[#E2F2D5]">{t.category}</span></p></div>
+              <div className="flex items-center gap-4"><p className={`text-base font-black tabular-nums ${t.type === '수입' ? 'text-[#4B96FF]' : t.type === '이체' ? 'text-[#A0C7DF]' : 'text-white'}`}>{t.type === '수입' ? '+' : t.type === '이체' ? '' : '-'}{formatNumber(t.amount)}</p><button onClick={() => deleteGamjaTransaction(t.id)} className="p-2 text-brand-text-sub"><X size={16} /></button></div>
             </div>
           ))}
         </div>
       </div>
-
-      {/* 5. 최하단 수정 버튼 (리셋 방지용) */}
-      <div className="pt-4 px-2 pb-10">
-        <button onClick={onOpenEdit} className="w-full py-5 bg-[#1c1c1e] border border-white/10 rounded-2xl font-black text-[#E2F2D5] text-[13px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">
-           항목 수정 및 관리
-        </button>
-      </div>
+      <div className="pt-4 px-2 pb-10"><button onClick={onOpenEdit} className="w-full py-5 bg-[#1c1c1e] border border-white/10 rounded-2xl font-black text-[#E2F2D5] text-[13px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">항목 수정 및 관리</button></div>
     </motion.div>
   );
 }
