@@ -534,7 +534,7 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
         </div>
         {activeQuickAccount && (
           <div className="bg-[#1c1c1e] p-6 border border-white/5 rounded-[24px] shadow-2xl">
-            <QuickEntryBox account={activeQuickAccount} onAdd={(tx:any)=>setTransactions([tx, ...transactions])} categories={categories} setCategories={setCategories} />
+            <QuickEntryBox account={activeQuickAccount} onAdd={(tx:any)=>setTransactions([tx, ...transactions])} categories={categories} setCategories={setCategories} selectedDateStr={selectedDateStr} />
           </div>
         )}
       </div>
@@ -1190,14 +1190,23 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
 }
 
 // 퀵 엔트리 박스 (홈탭 전용)
-function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
-  const [newTx, setNewTx] = useState({ date: new Date().toISOString().split('T')[0], type: '지출' as TransactionType, category: categories.expense[0], amount: 0, memo: '' });
+// 퀵 엔트리 박스 (홈탭 전용)
+function QuickEntryBox({ account, onAdd, categories, setCategories, selectedDateStr }: any) {
+  const [newTx, setNewTx] = useState({ date: selectedDateStr || new Date().toISOString().split('T')[0], type: '지출' as TransactionType, category: categories.expense[0], amount: 0, memo: '' });
+  
+  // 상단 달 변경이나 캘린더 날짜 클릭 시 퀵엔트리 날짜 입력창 텍스트도 실시간 동기화
+  useEffect(() => {
+    if (selectedDateStr) {
+      setNewTx(prev => ({ ...prev, date: selectedDateStr }));
+    }
+  }, [selectedDateStr]);
+
   const handleTypeChange = (newType: TransactionType) => setNewTx({ ...newTx, type: newType, category: newType === '지출' ? categories.expense[0] : categories.income[0] });
   const handleAdd = () => { if (newTx.amount <= 0) return; onAdd({ id: Math.random().toString(36).substr(2, 9), ...newTx, account }); setNewTx({ ...newTx, type: '지출', category: categories.expense[0], amount: 0, memo: '' }); };
   const currentCategories = newTx.type === '지출' ? categories.expense : categories.income;
 
 
-return (
+  
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-2">
          <h4 className="text-base font-black text-[#4B96FF]">{account}</h4>
