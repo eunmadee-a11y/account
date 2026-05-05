@@ -1166,7 +1166,8 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
   const handleAdd = () => { if (newTx.amount <= 0) return; onAdd({ id: Math.random().toString(36).substr(2, 9), ...newTx, account }); setNewTx({ ...newTx, type: '지출', category: categories.expense[0], amount: 0, memo: '' }); };
   const currentCategories = newTx.type === '지출' ? categories.expense : categories.income;
 
-  return (
+
+return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-2">
          <h4 className="text-base font-black text-[#4B96FF]">{account}</h4>
@@ -1174,6 +1175,16 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
            <input type="date" value={newTx.date} onChange={e => setNewTx({...newTx, date: e.target.value})} className="bg-transparent border-none text-[16px] md:text-sm font-bold outline-none text-white" />
         </div>
       </div>
+
+      {/* 1. 금액 입력을 최상단으로 이동 (아이폰 최적화) */}
+      <div className="space-y-2">
+         <label className="text-[11px] font-black text-brand-text-sub uppercase ml-2 tracking-widest">금액</label>
+         <div className="p-4 bg-white/5 border border-white/10 rounded-2xl focus-within:border-[#4B96FF] transition-colors">
+           <NumericInput value={newTx.amount} placeholder="0" onChange={(val: number) => setNewTx({...newTx, amount: val})} className="w-full bg-transparent border-none text-3xl font-black text-white outline-none tabular-nums" />
+         </div>
+      </div>
+
+      {/* 2. 유형 선택 */}
       <div className="space-y-2">
          <label className="text-[11px] font-black text-brand-text-sub uppercase ml-2 tracking-widest">유형</label>
          <div className="flex bg-black/40 rounded-2xl p-1 border border-white/5">
@@ -1181,6 +1192,8 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
             <button onClick={() => handleTypeChange('수입')} className={`flex-1 py-2.5 rounded-xl text-[14px] font-black transition-colors ${newTx.type === '수입' ? 'bg-[#4B96FF] text-[#121212] shadow-md' : 'text-brand-text-sub'}`}>수입</button>
          </div>
       </div>
+
+      {/* 3. 항목 선택 (가로 스크롤 유지) */}
       <div className="space-y-2">
          <label className="text-[11px] font-black text-brand-text-sub uppercase ml-2 tracking-widest">항목</label>
          <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide snap-x">
@@ -1189,20 +1202,20 @@ function QuickEntryBox({ account, onAdd, categories, setCategories }: any) {
             ))}
          </div>
       </div>
-      <div className="space-y-4">
-         <div className="space-y-2 p-4 bg-white/5 border border-white/10 rounded-2xl">
-           <NumericInput label="금액" value={newTx.amount} placeholder="0" onChange={(val: number) => setNewTx({...newTx, amount: val})} className="w-full bg-transparent border-none text-2xl font-black text-white outline-none tabular-nums" />
-         </div>
-         <div className="space-y-2">
-            <label className="text-[11px] font-black text-brand-text-sub uppercase ml-2 tracking-widest">메모</label>
-            <input type="text" value={newTx.memo} placeholder="입력" onChange={e => setNewTx({...newTx, memo: e.target.value})} className="w-full bg-black/40 border border-white/5 rounded-2xl px-4 py-4 text-[14px] text-white outline-none focus:border-[#4B96FF]" />
-         </div>
+
+      {/* 4. 메모 입력 */}
+      <div className="space-y-2">
+         <label className="text-[11px] font-black text-brand-text-sub uppercase ml-2 tracking-widest">메모</label>
+         <input type="text" value={newTx.memo} placeholder="메모를 입력하세요" onChange={e => setNewTx({...newTx, memo: e.target.value})} className="w-full bg-black/40 border border-white/5 rounded-2xl px-4 py-4 text-[14px] text-white outline-none focus:border-[#4B96FF]" />
       </div>
+
       <div className="pt-2">
-         <button onClick={handleAdd} className="w-full bg-[#4B96FF] text-[#121212] text-[16px] font-black py-5 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-widest shadow-[0_8px_30px_rgba(75,150,255,0.3)]">추가</button>
+         <button onClick={handleAdd} className="w-full bg-[#4B96FF] text-[#121212] text-[16px] font-black py-5 rounded-2xl active:scale-[0.98] transition-all uppercase tracking-widest shadow-[0_8px_30px_rgba(75,150,255,0.3)]">기록 추가</button>
       </div>
     </div>
   );
+
+  
 }
 
 /* 월급 비교 */
