@@ -180,49 +180,72 @@ export default function App() {
     return saved ? JSON.parse(saved) : { income: [...INCOME_CATEGORIES], expense: [...EXPENSE_CATEGORIES] };
   });
 
-// [통합 잔액 로직] 기초 자산 + 전체 내역을 합산하여 실시간 잔액을 도출합니다
-  /* 이 부분이 전체 자산 통계에서 지출/수입으로 중복 계산되지 않게 해줍니다. */
-  useEffect(() => {
-    const updatedBalances = balances.map(balance => {
-      const allTxs = [...transactions, ...gamjaTransactions];
-      
-      // 1. 일반 수입/지출 계산
-      const income = allTxs.filter(t => t.account === balance.name && t.type === '수입').reduce((s, t) => s + t.amount, 0);
-      const expense = allTxs.filter(t => t.account === balance.name && t.type === '지출').reduce((s, t) => s + t.amount, 0);
-      
-      // 2. 이체 로직 추가 (보낸 돈은 차감, 받은 돈은 합산)
-      const transferOut = allTxs.filter(t => t.type === '이체' && t.account === balance.name).reduce((s, t) => s + t.amount, 0);
-      const transferIn = allTxs.filter(t => t.type === '이체' && (t as any).toAccount === balance.name).reduce((s, t) => s + t.amount, 0);
 
-      return {
-        ...balance,
-        currentBalance: (balance.previousBalance || 0) + income - expense - transferOut + transferIn
-      };
+
+// [통합 잔액 로직] 월별 이월 시스템 적용 (적금 제외)
+useEffect(() => {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+
+  const updatedBalances = balances.map(balance => {
+    // 1. 적금 항목은 이월 로직에서 제외 (기존 로직 유지)
+    if (balance.category === '투자/연금' || balance.name.includes('적금')) {
+      return balance;
+    }
+
+    // 2. 현재 선택된 달까지의 모든 내역 필터링
+    const allTxs = [...transactions, ...gamjaTransactions].filter(t => {
+      const d = new Date(t.date);
+      return d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() <= month);
     });
 
-    if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
-      setBalances(updatedBalances);
-    }
-  }, [transactions, gamjaTransactions, balances.map(b => b.previousBalance).join(',')]);
+    // 3. 현재 달의 내역만 필터링
+    const currMonthTxs = allTxs.filter(t => {
+      const d = new Date(t.date);
+      return d.getFullYear() === year && d.getMonth() === month;
+    });
 
- // 데이터를 변경 시 자동 저장 (아이폰 브라우저 저장소 활용 - 카테고리 저장 추가)
+    // 4. 이전 달까지의 누적 잔액 계산 (이월금 도출)
+    const prevTxs = allTxs.filter(t => {
+      const d = new Date(t.date);
+      return d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() < month);
+    });
 
+    const calculateBalance = (txList: any[]) => {
+      const inc = txList.filter(t => t.account === balance.name && t.type === '수입').reduce((s, t) => s + t.amount, 0);
+      const exp = txList.filter(t => t.account === balance.name && t.type === '지출').reduce((s, t) => s + t.amount, 0);
+      const tOut = txList.filter(t => t.type === '이체' && t.account === balance.name).reduce((s, t) => s + t.amount, 0);
+      const tIn = txList.filter(t => t.type === '이체' && (t as any).toAccount === balance.name).reduce((s, t) => s + t.amount, 0);
+      return inc - exp - tOut + tIn;
+    };
+
+    const carryOver = (balance.previousBalance || 0) + calculateBalance(prevTxs);
+    const monthChange = calculateBalance(currMonthTxs);
+
+    return {
+      ...balance,
+      currentBalance: carryOver + monthChange, // 화면에 표시될 실시간 잔액
+      monthlyCarryOver: carryOver // 해당 월 시작 시점의 이월 금액
+    };
+  });
+
+  if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
+    setBalances(updatedBalances);
+  }
+}, [transactions, gamjaTransactions, currentDate, balances.map(b => b.previousBalance).join(',')]);
 
 // 데이터를 변경 시 자동 저장 (아이폰 브라우저 저장소 활용)
-  useEffect(() => {
-    localStorage.setItem('myTransactions', JSON.stringify(transactions));
-    localStorage.setItem('gamjaTransactions', JSON.stringify(gamjaTransactions));
-    localStorage.setItem('myBalances', JSON.stringify(balances));
-    localStorage.setItem('mySalaries', JSON.stringify(salaries));
-    localStorage.setItem('myLoans', JSON.stringify(loans));
-    
-    // [수정 완료] 내 카테고리와 감자 카테고리 모두 리셋 없이 유지되도록 저장 실행문 추가
-    localStorage.setItem('myCategories', JSON.stringify(myCategories));
-    localStorage.setItem('gamjaCategories', JSON.stringify(gamjaCategories));
-  }, [transactions, gamjaTransactions, balances, salaries, loans, myCategories, gamjaCategories]);
+useEffect(() => {
+  localStorage.setItem('myTransactions', JSON.stringify(transactions));
+  localStorage.setItem('gamjaTransactions', JSON.stringify(gamjaTransactions));
+  localStorage.setItem('myBalances', JSON.stringify(balances));
+  localStorage.setItem('mySalaries', JSON.stringify(salaries));
+  localStorage.setItem('myLoans', JSON.stringify(loans));
+  localStorage.setItem('myCategories', JSON.stringify(myCategories));
+  localStorage.setItem('gamjaCategories', JSON.stringify(gamjaCategories));
+}, [transactions, gamjaTransactions, balances, salaries, loans, myCategories, gamjaCategories]);
 
-  
-  // --- [저장 로직 끝] ---
 
   
   const [activeTab, setActiveTab] = useState<TabName>('홈');
