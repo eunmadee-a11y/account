@@ -1101,37 +1101,30 @@ function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6 pb-20 px-2">
       {activeLoan && activeStats && (
-
-
-{/* 1년 결산 최상단 요약: 아이폰 가로폭 최적화 및 라인 구분형 레이아웃 */}
-      <div className="bg-[#1c1c1e] p-4 py-6 border border-white/5 rounded-[24px] shadow-lg">
-        <p className="text-[12px] font-black text-[#4B96FF] uppercase mb-5 tracking-widest text-center bg-[#4B96FF]/10 py-1.5 rounded-lg w-fit mx-auto px-4">{selectedYear}년 총결산</p>
-        
-        {/* 박스를 빼고 얇은 라인으로 구분하여 가로 너비 확보 */}
-        <div className="grid grid-cols-3 w-full">
-          <div className="flex flex-col items-center border-r border-white/10 px-1">
-            <p className="text-[10px] font-bold text-brand-text-sub mb-1 uppercase tracking-tighter">연봉</p>
-            <p className="text-[15px] md:text-xl font-black tabular-nums text-white truncate w-full text-center tracking-tighter">
-              {formatNumber(totalAnnualSalary)}
-            </p>
+        <div className="bg-[#1c1c1e] p-8 border border-white/5 rounded-[32px] shadow-[0_10px_40px_rgba(0,0,0,0.3)] space-y-6 relative overflow-hidden">
+          <div className="text-center">
+            <p className="text-[12px] font-black text-brand-text-sub uppercase mb-2 tracking-widest">남은 원금</p>
+            <p className="text-3xl md:text-4xl font-black text-[#FFA59E] tabular-nums tracking-tighter">{formatCurrency(activeStats.remaining)}</p>
           </div>
-          <div className="flex flex-col items-center border-r border-white/10 px-1">
-            <p className="text-[10px] font-bold text-brand-text-sub mb-1 uppercase tracking-tighter">지출</p>
-            <p className="text-[15px] md:text-xl font-black text-[#FFA59E] tabular-nums truncate w-full text-center tracking-tighter">
-              {formatNumber(totalAnnualExpense)}
-            </p>
+          <div className="space-y-3">
+            <div className="flex justify-between text-[11px] font-black text-brand-text-sub uppercase px-2">
+              <span>상환 진행률</span><span className="text-[#4B96FF]">{activeStats.progress.toFixed(1)}%</span>
+            </div>
+            <div className="h-4 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 shadow-inner">
+              <motion.div initial={{ width: 0 }} animate={{ width: `${activeStats.progress}%` }} className="h-full bg-gradient-to-r from-[#A0C7DF] to-[#4B96FF]" />
+            </div>
           </div>
-          <div className="flex flex-col items-center px-1">
-            <p className="text-[10px] font-bold text-brand-text-sub mb-1 uppercase tracking-tighter">자산</p>
-            <p className="text-[15px] md:text-xl font-black text-[#4B96FF] tabular-nums truncate w-full text-center tracking-tighter">
-              {formatNumber(totalRemaining)}
-            </p>
+          <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/10">
+            <div className="bg-black/30 p-4 rounded-2xl text-center border border-white/5">
+              <p className="text-[10px] font-black text-brand-text-sub uppercase mb-1">상환원금</p>
+              <p className="text-base md:text-lg font-black text-[#4B96FF]">{formatNumber(activeStats.cumulativePrincipal)}</p>
+            </div>
+            <div className="bg-black/30 p-4 rounded-2xl text-center border border-white/5">
+              <p className="text-[10px] font-black text-brand-text-sub uppercase mb-1">상환이자</p>
+              <p className="text-base md:text-lg font-black text-[#FFE1EA]">{formatNumber(activeStats.cumulativeInterest)}</p>
+            </div>
           </div>
         </div>
-      </div>
-
-
-      
       )}
       <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x">
         {loans.map((loan: any) => (
