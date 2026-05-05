@@ -914,13 +914,13 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
 
 
 
-function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, setBalances, currentDate, categories, onOpenEdit }: any) {
+function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, setBalances, currentDate, categories, onOpenEdit, selectedDateStr }: any) {
   const [activeGamjaAccount, setActiveGamjaAccount] = useState(gamjaAccountNames[0] || '');
   const [isStartBalanceOpen, setIsStartBalanceOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   
   const [newTx, setNewTx] = useState({ 
-    date: new Date().toISOString().split('T')[0], 
+    date: selectedDateStr || new Date().toISOString().split('T')[0], 
     type: '지출' as TransactionType, 
     account: gamjaAccountNames[0] || '', 
     category: categories.expense[0], 
@@ -932,8 +932,16 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     from: gamjaAccountNames[0] || '',
     to: gamjaAccountNames[1] || '',
     amount: 0,
-    date: new Date().toISOString().split('T')[0]
+    date: selectedDateStr || new Date().toISOString().split('T')[0]
   });
+
+  // 상단 달 변경 시 감자 지출 탭의 입력창(기록 추가 및 계좌 이동) 날짜도 실시간 동기화
+  useEffect(() => {
+    if (selectedDateStr) {
+      setNewTx(prev => ({ ...prev, date: selectedDateStr }));
+      setTransferData(prev => ({ ...prev, date: selectedDateStr }));
+    }
+  }, [selectedDateStr]);
   
 
   const calculateLiveBalance = (accountName: string) => {
@@ -969,6 +977,15 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     setGamjaTransactions([tx, ...gamjaTransactions]);
     setNewTx({ ...newTx, amount: 0, memo: '' }); 
   };
+
+  // 기초 자산(시작금액) 수정 함수 (추가됨!)
+  const updateStartValue = (id: string, value: number) => {
+    setBalances((prev: any[]) => prev.map((b: any) => 
+      b.id === id ? { ...b, previousBalance: value } : b
+    ));
+  };
+
+  // 계좌 그룹 정의 (ISA 추가)
 
   // 계좌 그룹 정의 (ISA 추가)
   const livingGroup = ['감자 생활비 통장', '감자 여유자금 통장', '감자 적금 통장'];
@@ -1033,8 +1050,47 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
               <select value={transferData.to} onChange={e => setTransferData({...transferData, to: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold outline-none border border-white/10">{gamjaAccountNames.map((name: string) => <option key={name} value={name}>{name}</option>)}</select>
             </div>
             <NumericInput value={transferData.amount} onChange={(v: number) => setTransferData({...transferData, amount: v})} className="w-full bg-[#1c1c1e] border border-[#E2F2D5]/30 rounded-2xl px-5 py-4 text-2xl font-black text-white text-right" placeholder="이체 금액" />
-            <button onClick={handleTransfer} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-[15px] active:scale-95 transition-all">이체 실행</button>
+<button onClick={handleTransfer} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-[15px] active:scale-95 transition-all">
+계좌이체 실행
+</button>
           </div>
+        )}
+      </div>
+
+      {/* 기초 자산(시작금액) 수정 (추가됨!) */}
+      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden shadow-xl">
+        <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-white/5 transition-all">
+          <div className="text-left">
+            <h4 className="font-black text-[13px] text-[#E2F2D5] uppercase">기초 자산(시작금액) 수정</h4>
+            <p className="text-[10px] text-brand-text-sub mt-1">이 금액을 기준으로 감자 전체 잔액이 재계산됩니다.</p>
+          </div>
+          <ChevronRight size={18} className={`transition-transform duration-300 ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
+        </button>
+        <AnimatePresence>
+          {isStartBalanceOpen && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-black/20 pt-4 px-8 pb-8 space-y-4">
+              {balances.filter((b: any) => gamjaAccountNames.includes(b.name)).map((b: any) => (
+                <div key={b.id} className="space-y-1">
+                  <p className="text-[11px] font-bold text-brand-text-sub ml-1">{b.name}</p>
+                  <NumericInput 
+                    value={b.previousBalance || 0} 
+                    onChange={(v: number) => updateStartValue(b.id, v)} 
+                    className="w-full bg-[#2c2c2e] border border-white/10 rounded-2xl px-5 py-4 text-xl font-black text-white outline-none focus:border-[#E2F2D5]" 
+                  />
+                </div>
+              ))}
+              <button 
+                onClick={() => { setIsStartBalanceOpen(false); alert("감자 기초 자산이 성공적으로 반영되었습니다."); }}
+                className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all mt-2 shadow-lg"
+              >
+                변경 및 설정 완료
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* 2. 내역 입력          </div>
         )}
       </div>
 
