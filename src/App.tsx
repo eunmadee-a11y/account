@@ -915,22 +915,28 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
 
 
 function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, setBalances, currentDate, categories, onOpenEdit, selectedDateStr }: any) {
-  const [activeGamjaAccount, setActiveGamjaAccount] = useState(gamjaAccountNames[0] || '');
+  // 1. 상단에 보이는 6개의 통장을 명시적으로 선언하여 모든 곳에 강제 연동
+  const livingGroup = ['감자 생활비 통장', '감자 여유자금 통장', '감자 적금 통장'];
+  const pensionGroup = ['감자 개인연금 통장', '감자 ISA 통장', '감자 퇴직금 통장'];
+  const allGamjaAccounts = [...livingGroup, ...pensionGroup];
+
+  const [activeGamjaAccount, setActiveGamjaAccount] = useState(allGamjaAccounts[0]);
   const [isStartBalanceOpen, setIsStartBalanceOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   
   const [newTx, setNewTx] = useState({ 
     date: selectedDateStr || new Date().toISOString().split('T')[0], 
     type: '지출' as TransactionType, 
-    account: gamjaAccountNames[0] || '', 
+    account: allGamjaAccounts[0], 
     category: categories.expense[0], 
     amount: 0, 
     memo: '' 
   });
 
+  // 2. 계좌이체 초기값도 확실하게 6개 통장 배열에서 가져오도록 수정
   const [transferData, setTransferData] = useState({
-    from: gamjaAccountNames[0] || '',
-    to: gamjaAccountNames[1] || '',
+    from: allGamjaAccounts[0],
+    to: allGamjaAccounts[1],
     amount: 0,
     date: selectedDateStr || new Date().toISOString().split('T')[0]
   });
@@ -976,14 +982,18 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     setNewTx({ ...newTx, amount: 0, memo: '' }); 
   };
 
-  const updateStartValue = (id: string, value: number) => {
-    setBalances((prev: any[]) => prev.map((b: any) => 
-      b.id === id ? { ...b, previousBalance: value } : b
-    ));
+  // 3. 통장 이름 기반으로 기초 자산을 안전하게 업데이트하거나 새로 생성하는 함수
+  const updateStartValueByName = (name: string, value: number) => {
+    setBalances((prev: any[]) => {
+      const exists = prev.some(b => b.name === name);
+      if (exists) {
+        return prev.map(b => b.name === name ? { ...b, previousBalance: value } : b);
+      } else {
+        // 기존 데이터에 통장이 없으면 새로 생성하여 연동
+        return [...prev, { id: `gamja-${Date.now()}-${Math.random()}`, name, currentBalance: 0, previousBalance: value, category: '감자 자산' }];
+      }
+    });
   };
-
-  const livingGroup = ['감자 생활비 통장', '감자 여유자금 통장', '감자 적금 통장'];
-  const pensionGroup = ['감자 개인연금 통장', '감자 ISA 통장', '감자 퇴직금 통장'];
   
   const livingTotal = livingGroup.reduce((sum, name) => sum + calculateLiveBalance(name), 0);
   const pensionTotal = pensionGroup.reduce((sum, name) => sum + calculateLiveBalance(name), 0);
@@ -1040,8 +1050,9 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         {isTransferModalOpen && (
           <div className="p-6 bg-black/40 border border-[#E2F2D5]/30 rounded-[24px] space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="grid grid-cols-2 gap-3">
-              <select value={transferData.from} onChange={e => setTransferData({...transferData, from: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold outline-none border border-white/10">{gamjaAccountNames.map((name: string) => <option key={name} value={name}>{name}</option>)}</select>
-              <select value={transferData.to} onChange={e => setTransferData({...transferData, to: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold outline-none border border-white/10">{gamjaAccountNames.map((name: string) => <option key={name} value={name}>{name}</option>)}</select>
+              {/* 계좌이체 리스트에 6개 계좌 강제 노출 */}
+              <select value={transferData.from} onChange={e => setTransferData({...transferData, from: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold outline-none border border-white/10">{allGamjaAccounts.map((name: string) => <option key={name} value={name}>{name}</option>)}</select>
+              <select value={transferData.to} onChange={e => setTransferData({...transferData, to: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold outline-none border border-white/10">{allGamjaAccounts.map((name: string) => <option key={name} value={name}>{name}</option>)}</select>
             </div>
             <NumericInput value={transferData.amount} onChange={(v: number) => setTransferData({...transferData, amount: v})} className="w-full bg-[#1c1c1e] border border-[#E2F2D5]/30 rounded-2xl px-5 py-4 text-2xl font-black text-white text-right" placeholder="이체 금액" />
             <button onClick={handleTransfer} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-[15px] active:scale-95 transition-all">계좌이체 실행</button>
@@ -1085,12 +1096,12 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         </div>
       </div>
 
-      {/* 항목 수정 및 관리 */}
+      {/* 4. 항목 수정 및 관리 */}
       <div className="pt-4 px-2">
         <button onClick={onOpenEdit} className="w-full py-5 bg-[#1c1c1e] border border-white/10 rounded-2xl font-black text-[#E2F2D5] text-[13px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">항목 수정 및 관리</button>
       </div>
 
-      {/* 기초 자산(시작금액) 수정 (위치 이동됨 & 상단 6개 연동 항목으로 필터링 적용) */}
+      {/* 5. 기초 자산(시작금액) 수정 (최하단 이동 및 6개 통장 강제 노출) */}
       <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden shadow-xl mt-4">
         <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-white/5 transition-all">
           <div className="text-left">
@@ -1102,16 +1113,19 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         <AnimatePresence>
           {isStartBalanceOpen && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-black/20 pt-4 px-8 pb-8 space-y-4">
-              {balances.filter((b: any) => [...livingGroup, ...pensionGroup].includes(b.name)).map((b: any) => (
-                <div key={b.id} className="space-y-1">
-                  <p className="text-[11px] font-bold text-brand-text-sub ml-1">{b.name}</p>
-                  <NumericInput 
-                    value={b.previousBalance || 0} 
-                    onChange={(v: number) => updateStartValue(b.id, v)} 
-                    className="w-full bg-[#2c2c2e] border border-white/10 rounded-2xl px-5 py-4 text-xl font-black text-white outline-none focus:border-[#E2F2D5]" 
-                  />
-                </div>
-              ))}
+              {allGamjaAccounts.map((accountName: string) => {
+                const b = balances.find((bal: any) => bal.name === accountName) || { previousBalance: 0 };
+                return (
+                  <div key={accountName} className="space-y-1">
+                    <p className="text-[11px] font-bold text-brand-text-sub ml-1">{accountName}</p>
+                    <NumericInput 
+                      value={b.previousBalance} 
+                      onChange={(v: number) => updateStartValueByName(accountName, v)} 
+                      className="w-full bg-[#2c2c2e] border border-white/10 rounded-2xl px-5 py-4 text-xl font-black text-white outline-none focus:border-[#E2F2D5]" 
+                    />
+                  </div>
+                );
+              })}
               <button 
                 onClick={() => { setIsStartBalanceOpen(false); alert("감자 기초 자산이 성공적으로 반영되었습니다."); }}
                 className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all mt-2 shadow-lg"
@@ -1126,8 +1140,6 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     </motion.div>
   );
 }
-
-
 
 // 대출 현황
 function LoanManagementView({ loans, setLoans, loanSummary, tabName, setTabName }: any) {
