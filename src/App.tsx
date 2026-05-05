@@ -182,18 +182,25 @@ export default function App() {
 
 // [통합 잔액 로직] 기초 자산 + 전체 내역을 합산하여 실시간 잔액을 도출합니다
   /* 이 부분이 전체 자산 통계에서 지출/수입으로 중복 계산되지 않게 해줍니다. */
-  useEffect(() => {
+ useEffect(() => {
     const updatedBalances = balances.map(balance => {
-      const allTxs = [...transactions, ...gamjaTransactions];
-      
-      // 1. 일반 수입/지출 계산
+      // 1. 현재 달력에 표시된 연도와 월 추출
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth();
+
+      // 2. 해당 월 말일까지의 거래만 필터링 (미래의 거래는 현재 잔액에 포함하지 않음)
+      const allTxs = [...transactions, ...gamjaTransactions].filter(t => {
+        const d = new Date(t.date);
+        return d.getFullYear() < currentYear || (d.getFullYear() === currentYear && d.getMonth() <= currentMonth);
+      });
+
+      // 3. 해당 계좌의 수입/지출/이체 필터링
       const income = allTxs.filter(t => t.account === balance.name && t.type === '수입').reduce((s, t) => s + t.amount, 0);
       const expense = allTxs.filter(t => t.account === balance.name && t.type === '지출').reduce((s, t) => s + t.amount, 0);
-      
-      // 2. 이체 로직 추가 (보낸 돈은 차감, 받은 돈은 합산)
-      const transferOut = allTxs.filter(t => t.type === '이체' && t.account === balance.name).reduce((s, t) => s + t.amount, 0);
-      const transferIn = allTxs.filter(t => t.type === '이체' && (t as any).toAccount === balance.name).reduce((s, t) => s + t.amount, 0);
+      const transferOut = allTxs.filter(t => t.account === balance.name && t.type === '이체').reduce((s, t) => s + t.amount, 0);
+      const transferIn = allTxs.filter(t => (t as any).toAccount === balance.name && t.type === '이체').reduce((s, t) => s + t.amount, 0);
 
+      // 4. 최종 잔액 반환 (기초자산 + 수입 - 지출 - 보낸이체 + 받은이체)
       return {
         ...balance,
         currentBalance: (balance.previousBalance || 0) + income - expense - transferOut + transferIn
@@ -203,8 +210,7 @@ export default function App() {
     if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
       setBalances(updatedBalances);
     }
-  }, [transactions, gamjaTransactions, balances.map(b => b.previousBalance).join(',')]);
-
+  }, [transactions, gamjaTransactions, currentDate]); // currentDate(달력) 변경 시 재계산 실행
  // 데이터를 변경 시 자동 저장 (아이폰 브라우저 저장소 활용 - 카테고리 저장 추가)
 
 
@@ -417,6 +423,7 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
 /* 홈 탭 */
 /* 기존 HomeView 함수 내부 상단에 추가 */
 
+
 function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
   // --- [상태 관리] ---
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -427,15 +434,16 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
     date: new Date().toISOString().split('T')[0]
   });
 
-  // 1. 생활비 통장을 찾아서 항상 활성화 (아이폰에서 바로 입력 가능하게)
   const mainAccounts = balances.filter((b: any) => b.category === '내 통장');
+  const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  
+  // 생활비 통장을 자동으로 찾아서 입력창 활성화 (아이폰 편의성)
   const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(() => {
     const defaultAcc = mainAccounts.find((a: any) => a.name.includes('생활비'));
     return defaultAcc ? defaultAcc.name : (mainAccounts[0]?.name || null);
   });
 
-  // 2. 적금 관리 로직 복구
-  const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  // 적금 관리 로직 복구
   const [savingsList, setSavingsList] = useState<any[]>(() => {
     const saved = localStorage.getItem('mySavingsList');
     return saved ? JSON.parse(saved) : [{ id: 'savings-1', name: '적금 1' }];
@@ -451,21 +459,14 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
     const newList = [...savingsList, { id: newId, name: `적금 ${savingsList.length + 1}` }];
     setSavingsList(newList); localStorage.setItem('mySavingsList', JSON.stringify(newList));
   };
-  const handleRemoveSavings = (id: string) => {
-    const newList = savingsList.filter(s => s.id !== id);
-    setSavingsList(newList); localStorage.setItem('mySavingsList', JSON.stringify(newList));
-  };
-  const handleSavingsNameChange = (id: string, newName: string) => {
-    const newList = savingsList.map(s => s.id === id ? { ...s, name: newName } : s);
-    setSavingsList(newList); localStorage.setItem('mySavingsList', JSON.stringify(newList));
-  };
+
   const handleSavingsValueChange = (id: string, val: number) => {
     const newMonthData = { ...currentMonthSavings, [id]: val };
     const newTotalData = { ...savingsValues, [monthKey]: newMonthData };
     setSavingsValues(newTotalData); localStorage.setItem('mySavingsValues', JSON.stringify(newTotalData));
   };
 
-  // --- [데이터 계산] ---
+  // 자산 계산
   const totalSavingsAmount = savingsList.reduce((sum, s) => sum + (currentMonthSavings[s.id] || 0), 0);
   const totalSum = useMemo(() => {
     const targetKeywords = ['생활비', '여유자금', '자동이체'];
@@ -473,12 +474,7 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
     return accountsSum + totalSavingsAmount;
   }, [mainAccounts, totalSavingsAmount]);
 
-  const homePensionTotal = balances.filter((b: any) => b.category === '투자/연금').reduce((sum: number, b: any) => sum + (b.monthlyBalances?.[monthKey] ?? b.currentBalance ?? 0), 0);
-  const customCashLike = totalSum;               
-  const customInvestment = homePensionTotal;
-  const customTotalAsset = customCashLike + customInvestment;
-
-  const quickAccounts = ['생활비', '여유자금', '자동이체'].map(kw => mainAccounts.find((a: any) => a.name.includes(kw))).filter(Boolean);
+  const customTotalAsset = totalSum + balances.filter((b: any) => b.category === '투자/연금').reduce((sum: number, b: any) => sum + (b.monthlyBalances?.[monthKey] ?? b.currentBalance ?? 0), 0);
   const selectedDateTransactions = transactions.filter((t: any) => t.date === selectedDateStr);
 
   const handleTransfer = () => {
@@ -501,15 +497,19 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 pb-20">
       
-      {/* 1. 빠른 입력 (생활비 항상 활성화) */}
+      {/* 1. 빠른 입력 (생활비 상시 활성화) */}
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-3">
-          {quickAccounts.map((account: any) => (
-            <button key={account.id} onClick={() => setActiveQuickAccount(account.name)}
-              className={`py-4 rounded-2xl border font-black text-xs transition-all active:scale-95 ${activeQuickAccount === account.name ? 'bg-[#4B96FF] text-[#121212] border-[#4B96FF] shadow-lg' : 'bg-[#1c1c1e] text-white border-white/5'}`}>
-              {account.name.replace('내 ', '').replace(' 통장', '')}
-            </button>
-          ))}
+          {['생활비', '여유자금', '자동이체'].map(kw => {
+            const acc = mainAccounts.find((a: any) => a.name.includes(kw));
+            if (!acc) return null;
+            return (
+              <button key={acc.id} onClick={() => setActiveQuickAccount(acc.name)}
+                className={`py-4 rounded-2xl border font-black text-xs transition-all active:scale-95 ${activeQuickAccount === acc.name ? 'bg-[#4B96FF] text-[#121212] border-[#4B96FF] shadow-lg' : 'bg-[#1c1c1e] text-white border-white/5'}`}>
+                {acc.name.replace('내 ', '').replace(' 통장', '')}
+              </button>
+            );
+          })}
         </div>
         {activeQuickAccount && (
           <div className="bg-[#1c1c1e] p-6 border border-white/5 rounded-[24px] shadow-2xl">
@@ -518,25 +518,23 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
         )}
       </div>
 
-      {/* 2. 내 통장 잔액 & 적금 (이체 및 적금 추가 버튼 포함) */}
+      {/* 2. 내 통장 잔액 (월별 독립 표시) */}
       <div className="bg-[#1c1c1e] rounded-[28px] border border-white/5 shadow-2xl overflow-hidden">
         <div className="px-6 py-5 border-b border-white/5 bg-white/5 flex items-center justify-between">
           <div className="flex flex-col">
-            <h3 className="text-sm font-black text-white">내 통장 잔액</h3>
-            <p className="text-[11px] font-black text-[#4B96FF] mt-1">합계: {formatCurrency(totalSum)}</p>
+            <h3 className="text-sm font-black text-white">내 통장 잔액 ({currentDate.getMonth() + 1}월 말)</h3>
+            <p className="text-[11px] font-black text-[#4B96FF] mt-1">총액: {formatCurrency(totalSum)}</p>
           </div>
-          <button onClick={() => setIsTransferModalOpen(!isTransferModalOpen)} className="text-[10px] font-black bg-[#4B96FF]/20 text-[#4B96FF] px-4 py-2 rounded-xl active:scale-95 transition-all">
-            계좌간 이동
-          </button>
+          <button onClick={() => setIsTransferModalOpen(!isTransferModalOpen)} className="text-[10px] font-black bg-[#4B96FF]/20 text-[#4B96FF] px-4 py-2 rounded-xl active:scale-95 transition-all">계좌간 이동</button>
         </div>
 
         {isTransferModalOpen && (
           <div className="p-6 bg-black/40 border-b border-white/5 space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <select value={transferData.from} onChange={e => setTransferData({...transferData, from: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold outline-none border border-white/10">
+              <select value={transferData.from} onChange={e => setTransferData({...transferData, from: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold border border-white/10 outline-none">
                 {myAccountNames.map((name: string) => <option key={name} value={name}>{name}</option>)}
               </select>
-              <select value={transferData.to} onChange={e => setTransferData({...transferData, to: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold outline-none border border-white/10">
+              <select value={transferData.to} onChange={e => setTransferData({...transferData, to: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold border border-white/10 outline-none">
                 {myAccountNames.map((name: string) => <option key={name} value={name}>{name}</option>)}
               </select>
             </div>
@@ -552,100 +550,28 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
               <p className="text-lg font-black tabular-nums text-white">{formatCurrency(b.currentBalance)}</p>
             </div>
           ))}
-          {/* 적금 목록 복구 */}
           {savingsList.map((savings) => (
             <div key={savings.id} className="px-6 py-5 flex items-center justify-between gap-3 bg-black/20">
-              <div className="flex items-center gap-2 shrink-0">
-                {savingsList.length > 1 && (
-                  <button onClick={() => handleRemoveSavings(savings.id)} className="text-[#FFA59E] p-1.5 rounded-lg active:scale-90"><Minus size={14} /></button>
-                )}
-                <input type="text" value={savings.name} onChange={(e) => handleSavingsNameChange(savings.id, e.target.value)}
-                  className="bg-transparent text-xs font-black text-brand-text-sub outline-none w-28 focus:text-[#4B96FF]" placeholder="적금 이름" />
-              </div>
-              <NumericInput value={currentMonthSavings[savings.id] || 0} onChange={(val: number) => handleSavingsValueChange(savings.id, val)}
-                className="w-32 bg-transparent border-b border-[#4B96FF]/30 text-right text-lg font-black text-[#4B96FF] outline-none" />
+              <span className="text-xs font-black text-brand-text-sub">{savings.name}</span>
+              <NumericInput value={currentMonthSavings[savings.id] || 0} onChange={(val: number) => handleSavingsValueChange(savings.id, val)} className="w-32 bg-transparent border-b border-[#4B96FF]/30 text-right text-lg font-black text-[#4B96FF] outline-none" />
             </div>
           ))}
           <div className="px-6 py-4 bg-white/5 flex justify-center border-t border-white/5">
-             <button onClick={handleAddSavings} className="flex items-center gap-2 text-[11px] font-black text-brand-text-sub hover:text-[#4B96FF] transition-colors">
-               <Plus size={14} /> 적금 추가
-             </button>
+             <button onClick={handleAddSavings} className="flex items-center gap-2 text-[11px] font-black text-brand-text-sub hover:text-[#4B96FF] transition-colors"><Plus size={14} /> 적금 추가</button>
           </div>
         </div>
       </div>
-
-      {/* 3. 자산 현황 섹션 (카드 스타일) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <SummarySmallCard label="총수입" value={monthlySummary.income} color="text-[#4B96FF]" />
-            <SummarySmallCard label="총지출" value={monthlySummary.expense} color="text-[#FFA59E]" />
-            <SummarySmallCard label="저축" value={monthlySummary.savings} color="text-[#E2F2D5]" />
-            <SummarySmallCard label="상환" value={loanSummary.totalPrincipalPaid} color="text-[#FFE1EA]" />
-          </div>
-
-          <div className="bg-[#1c1c1e] rounded-[32px] p-7 border border-white/5 shadow-2xl">
-            <h3 className="font-black text-[15px] text-[#4B96FF] mb-8">자산 현황 요약</h3>
-            <div className="space-y-6">
-              <div>
-                <p className="text-[11px] font-bold text-brand-text-sub uppercase mb-2 tracking-widest">총 자산 (현금 + 투자)</p>
-                <h4 className="text-3xl font-black text-white tracking-tighter">{formatCurrency(customTotalAsset)}</h4>
-              </div>
-              <div className="h-3 bg-[#2c2c2e] rounded-full overflow-hidden flex shadow-inner">
-                <div className="h-full bg-[#4B96FF]" style={{ width: `${customTotalAsset ? (customCashLike / customTotalAsset) * 100 : 0}%` }} />
-                <div className="h-full bg-[#A0C7DF]" style={{ width: `${customTotalAsset ? (customInvestment / customTotalAsset) * 100 : 0}%` }} />
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-[12px] font-black pt-2">
-                <div className="flex flex-col gap-1 p-4 rounded-2xl bg-white/5 border border-white/5">
-                  <span className="text-brand-text-sub">현금성</span>
-                  <span className="text-lg tabular-nums text-white">{formatCurrency(customCashLike)}</span>
-                </div>
-                <div className="flex flex-col gap-1 p-4 rounded-2xl bg-white/5 border border-white/5">
-                  <span className="text-brand-text-sub">투자/연금</span>
-                  <span className="text-lg tabular-nums text-white">{formatCurrency(customInvestment)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 4. 사이드바 (캘린더 및 일일 내역) */}
-        <div className="space-y-6">
-          <div className="bg-[#1c1c1e] p-6 border border-white/5 rounded-[24px] shadow-2xl">
-            <h3 className="font-black text-[#E2F2D5] mb-4">지출 캘린더</h3>
-            <Calendar currentDate={currentDate} transactions={transactions} selectedDateStr={selectedDateStr} onDateClick={(d: string) => setSelectedDateStr(d)} />
-          </div>
-
-          <div className="bg-[#1c1c1e] rounded-[24px] border border-white/5 overflow-hidden shadow-2xl">
-            <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center bg-white/5">
-              <h3 className="font-black text-xs text-white">{selectedDateStr || '날짜 선택'} 내역</h3>
-            </div>
-            <div className="max-h-[300px] overflow-y-auto custom-scrollbar divide-y divide-white/5">
-              {selectedDateTransactions.length > 0 ? (
-                selectedDateTransactions.map((t: any) => (
-                  <div key={t.id} className="px-6 py-4 flex items-center justify-between hover:bg-white/5">
-                    <div>
-                      <p className="text-sm font-black text-white">{t.memo || t.category}</p>
-                      <p className="text-[10px] text-brand-text-sub">{t.account}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <p className={`text-sm font-black ${t.type === '수입' ? 'text-[#4B96FF]' : t.type === '이체' ? 'text-[#A0C7DF]' : 'text-white'}`}>
-                        {t.type === '수입' ? '+' : t.type === '이체' ? '⇆' : '-'}{formatCurrency(t.amount)}
-                      </p>
-                      <button onClick={() => deleteTransaction(t.id)} className="p-2 bg-white/5 rounded-lg active:text-[#FFA59E] transition-all"><X size={14} /></button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-10 text-center text-[11px] text-brand-text-sub font-black uppercase tracking-widest">내역이 없습니다</div>
-              )}
-            </div>
-          </div>
-        </div>
+      
+      {/* 캘린더 섹션 */}
+      <div className="bg-[#1c1c1e] p-6 border border-white/5 rounded-[24px] shadow-2xl">
+        <h3 className="font-black text-[#E2F2D5] mb-4">지출 캘린더</h3>
+        <Calendar currentDate={currentDate} transactions={transactions} selectedDateStr={selectedDateStr} onDateClick={(d: string) => setSelectedDateStr(d)} />
       </div>
     </motion.div>
   );
 }
+
+
 /* 내 지출 */
 
 /* 내 지출 탭 (아이폰 최적화: 입력창 제거 및 내역 중심) */
