@@ -935,7 +935,6 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     date: selectedDateStr || new Date().toISOString().split('T')[0]
   });
 
-  // 상단 달 변경 시 감자 지출 탭의 입력창(기록 추가 및 계좌 이동) 날짜도 실시간 동기화
   useEffect(() => {
     if (selectedDateStr) {
       setNewTx(prev => ({ ...prev, date: selectedDateStr }));
@@ -943,7 +942,6 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     }
   }, [selectedDateStr]);
   
-
   const calculateLiveBalance = (accountName: string) => {
     const acc = balances.find((b: any) => b.name === accountName);
     const txs = gamjaTransactions.filter((t: any) => t.account === accountName);
@@ -978,24 +976,14 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     setNewTx({ ...newTx, amount: 0, memo: '' }); 
   };
 
-  // 기초 자산(시작금액) 수정 함수 (추가됨!)
-  // 기초 자산(시작금액) 수정 함수 (현금성 및 연금 자산 실시간 연동 강화)
   const updateStartValue = (id: string, value: number) => {
-    setBalances((prev: any[]) => {
-      const updatedBalances = prev.map((b: any) => 
-        b.id === id ? { ...b, previousBalance: value } : b
-      );
-      
-      // 상태 변경을 즉시 전파하기 위해 업데이트된 배열을 반환합니다.
-      return updatedBalances;
-    });
+    setBalances((prev: any[]) => prev.map((b: any) => 
+      b.id === id ? { ...b, previousBalance: value } : b
+    ));
   };
 
-  // 계좌 그룹 정의 (ISA 추가)
-
-  // 계좌 그룹 정의 (ISA 추가)
   const livingGroup = ['감자 생활비 통장', '감자 여유자금 통장', '감자 적금 통장'];
-  const pensionGroup = ['감자 개인연금 통장', '감자 ISA 통장', '감자 퇴직금 통장']; // ISA 추가됨
+  const pensionGroup = ['감자 개인연금 통장', '감자 ISA 통장', '감자 퇴직금 통장'];
   
   const livingTotal = livingGroup.reduce((sum, name) => sum + calculateLiveBalance(name), 0);
   const pensionTotal = pensionGroup.reduce((sum, name) => sum + calculateLiveBalance(name), 0);
@@ -1011,7 +999,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6 pb-28">
-      {/* 1. 계좌 그룹 레이아웃 (아이폰 최적화) */}
+      {/* 1. 계좌 그룹 레이아웃 */}
       <div className="space-y-4">
         {/* 현금성 그룹 */}
         <div className="bg-black/20 p-4 rounded-[28px] border border-white/5 space-y-3">
@@ -1030,7 +1018,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           </div>
         </div>
 
-        {/* 연금/투자 그룹 (ISA 포함 3열 배치) */}
+        {/* 연금/투자 그룹 */}
         <div className="bg-black/20 p-4 rounded-[28px] border border-white/5 space-y-3">
           <div className="flex justify-between items-center px-2">
             <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">연금/투자 : 총액</p>
@@ -1056,56 +1044,12 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
               <select value={transferData.to} onChange={e => setTransferData({...transferData, to: e.target.value})} className="bg-[#2c2c2e] text-white p-4 rounded-2xl text-xs font-bold outline-none border border-white/10">{gamjaAccountNames.map((name: string) => <option key={name} value={name}>{name}</option>)}</select>
             </div>
             <NumericInput value={transferData.amount} onChange={(v: number) => setTransferData({...transferData, amount: v})} className="w-full bg-[#1c1c1e] border border-[#E2F2D5]/30 rounded-2xl px-5 py-4 text-2xl font-black text-white text-right" placeholder="이체 금액" />
-<button onClick={handleTransfer} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-[15px] active:scale-95 transition-all">
-계좌이체 실행
-</button>
+            <button onClick={handleTransfer} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-[15px] active:scale-95 transition-all">계좌이체 실행</button>
           </div>
         )}
       </div>
 
-      {/* 기초 자산(시작금액) 수정 (추가됨!) */}
-      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden shadow-xl">
-        <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-white/5 transition-all">
-          <div className="text-left">
-            <h4 className="font-black text-[13px] text-[#E2F2D5] uppercase">기초 자산(시작금액) 수정</h4>
-            <p className="text-[10px] text-brand-text-sub mt-1">이 금액을 기준으로 감자 전체 잔액이 재계산됩니다.</p>
-          </div>
-          <ChevronRight size={18} className={`transition-transform duration-300 ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
-        </button>
-        <AnimatePresence>
-          {isStartBalanceOpen && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-black/20 pt-4 px-8 pb-8 space-y-4">
-              {balances.filter((b: any) => gamjaAccountNames.includes(b.name)).map((b: any) => (
-                <div key={b.id} className="space-y-1">
-                  <p className="text-[11px] font-bold text-brand-text-sub ml-1">{b.name}</p>
-                  <NumericInput 
-                    value={b.previousBalance || 0} 
-                    onChange={(v: number) => updateStartValue(b.id, v)} 
-                    className="w-full bg-[#2c2c2e] border border-white/10 rounded-2xl px-5 py-4 text-xl font-black text-white outline-none focus:border-[#E2F2D5]" 
-                  />
-                </div>
-              ))}
-
-
-<button 
-                onClick={() => { 
-                  setIsStartBalanceOpen(false); 
-                  // 아이폰 사용자를 위한 간단한 피드백 알림
-                  alert("감자 기초 자산이 성공적으로 반영되었습니다."); 
-                }}
-                className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all mt-2 shadow-lg"
-              >
-                변경 및 설정 완료
-              </button>
-              
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-     
-
-      {/* 2. 내역 입력 (유형 -> 메모 -> 금액 -> 항목 순서) */}
+      {/* 2. 내역 입력 */}
       <div className="bg-[#1c1c1e] p-7 rounded-[32px] border border-white/5 shadow-2xl space-y-5">
         <div className="flex justify-between items-center">
           <h4 className="text-sm font-black text-white">{activeGamjaAccount.replace('감자 ', '')} 입력</h4>
@@ -1140,12 +1084,48 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
           ))}
         </div>
       </div>
-      <div className="pt-4 px-2 pb-10"><button onClick={onOpenEdit} className="w-full py-5 bg-[#1c1c1e] border border-white/10 rounded-2xl font-black text-[#E2F2D5] text-[13px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">항목 수정 및 관리</button></div>
+
+      {/* 항목 수정 및 관리 */}
+      <div className="pt-4 px-2">
+        <button onClick={onOpenEdit} className="w-full py-5 bg-[#1c1c1e] border border-white/10 rounded-2xl font-black text-[#E2F2D5] text-[13px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">항목 수정 및 관리</button>
+      </div>
+
+      {/* 기초 자산(시작금액) 수정 (위치 이동됨 & 상단 6개 연동 항목으로 필터링 적용) */}
+      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden shadow-xl mt-4">
+        <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-white/5 transition-all">
+          <div className="text-left">
+            <h4 className="font-black text-[13px] text-[#E2F2D5] uppercase">기초 자산(시작금액) 수정</h4>
+            <p className="text-[10px] text-brand-text-sub mt-1">이 금액을 기준으로 상단의 자산 잔액이 재계산됩니다.</p>
+          </div>
+          <ChevronRight size={18} className={`transition-transform duration-300 ${isStartBalanceOpen ? 'rotate-90' : ''}`} />
+        </button>
+        <AnimatePresence>
+          {isStartBalanceOpen && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-black/20 pt-4 px-8 pb-8 space-y-4">
+              {balances.filter((b: any) => [...livingGroup, ...pensionGroup].includes(b.name)).map((b: any) => (
+                <div key={b.id} className="space-y-1">
+                  <p className="text-[11px] font-bold text-brand-text-sub ml-1">{b.name}</p>
+                  <NumericInput 
+                    value={b.previousBalance || 0} 
+                    onChange={(v: number) => updateStartValue(b.id, v)} 
+                    className="w-full bg-[#2c2c2e] border border-white/10 rounded-2xl px-5 py-4 text-xl font-black text-white outline-none focus:border-[#E2F2D5]" 
+                  />
+                </div>
+              ))}
+              <button 
+                onClick={() => { setIsStartBalanceOpen(false); alert("감자 기초 자산이 성공적으로 반영되었습니다."); }}
+                className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all mt-2 shadow-lg"
+              >
+                변경 및 설정 완료
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
     </motion.div>
   );
 }
-
-
 
 
 
