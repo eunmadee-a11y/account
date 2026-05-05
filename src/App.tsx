@@ -892,6 +892,7 @@ function PensionView({ balances, setBalances, currentDate, tabName, setTabName }
 
 
 
+
 function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery, setSearchQuery, balances, setBalances, currentDate, categories, onOpenEdit }: any) {
   const [activeGamjaAccount, setActiveGamjaAccount] = useState(gamjaAccountNames[0] || '');
   const [isStartBalanceOpen, setIsStartBalanceOpen] = useState(false);
@@ -947,8 +948,10 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     setNewTx({ ...newTx, amount: 0, memo: '' }); 
   };
 
+  // 계좌 그룹 정의 (ISA 추가)
   const livingGroup = ['감자 생활비 통장', '감자 여유자금 통장', '감자 적금 통장'];
-  const pensionGroup = ['감자 개인연금 통장', '감자 퇴직금 통장'];
+  const pensionGroup = ['감자 개인연금 통장', '감자 ISA 통장', '감자 퇴직금 통장']; // ISA 추가됨
+  
   const livingTotal = livingGroup.reduce((sum, name) => sum + calculateLiveBalance(name), 0);
   const pensionTotal = pensionGroup.reduce((sum, name) => sum + calculateLiveBalance(name), 0);
 
@@ -963,9 +966,9 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6 pb-28">
-      {/* 1. 계좌 그룹 레이아웃 */}
+      {/* 1. 계좌 그룹 레이아웃 (아이폰 최적화) */}
       <div className="space-y-4">
-        {/* 생활비/여유자금/적금 그룹 */}
+        {/* 현금성 그룹 */}
         <div className="bg-black/20 p-4 rounded-[28px] border border-white/5 space-y-3">
           <div className="flex justify-between items-center px-2">
             <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">현금성 자산 합계</p>
@@ -975,31 +978,31 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
             {livingGroup.map(name => (
               <button key={name} onClick={() => { setActiveGamjaAccount(name); setNewTx({ ...newTx, account: name }); }}
                 className={`py-4 px-1 rounded-xl border transition-all active:scale-95 flex flex-col items-center gap-1 ${activeGamjaAccount === name ? 'bg-[#E2F2D5] text-[#121212] border-[#E2F2D5]' : 'bg-[#1c1c1e] text-brand-text-sub border-white/5'}`}>
-                <span className="text-[10px] font-black truncate w-full text-center">{name.replace('감자 ', '').replace(' 통장', '')}</span>
+                <span className="text-[9px] font-black truncate w-full text-center leading-tight">{name.replace('감자 ', '').replace(' 통장', '')}</span>
                 <span className="text-[11px] font-bold tabular-nums">{formatNumber(calculateLiveBalance(name))}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* 연금/퇴직금 그룹 */}
+        {/* 연금/투자 그룹 (ISA 포함 3열 배치) */}
         <div className="bg-black/20 p-4 rounded-[28px] border border-white/5 space-y-3">
           <div className="flex justify-between items-center px-2">
-            <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">연금 : 총액</p>
+            <p className="text-[10px] font-black text-brand-text-sub uppercase tracking-widest">연금/투자 : 총액</p>
             <p className="text-[12px] font-black text-[#4B96FF]">{formatCurrency(pensionTotal)}</p>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {pensionGroup.map(name => (
               <button key={name} onClick={() => { setActiveGamjaAccount(name); setNewTx({ ...newTx, account: name }); }}
                 className={`py-4 px-1 rounded-xl border transition-all active:scale-95 flex flex-col items-center gap-1 ${activeGamjaAccount === name ? 'bg-[#4B96FF] text-white border-[#4B96FF]' : 'bg-[#1c1c1e] text-brand-text-sub border-white/5'}`}>
-                <span className="text-[10px] font-black truncate w-full text-center">{name.replace('감자 ', '').replace(' 통장', '')}</span>
+                <span className="text-[9px] font-black truncate w-full text-center leading-tight">{name.replace('감자 ', '').replace(' 통장', '')}</span>
                 <span className="text-[11px] font-bold tabular-nums">{formatNumber(calculateLiveBalance(name))}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* 계좌간 이동 및 이체 실행 영역 */}
+        {/* 계좌간 이동 버튼 */}
         <button onClick={() => setIsTransferModalOpen(!isTransferModalOpen)} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-[11px] font-black text-[#E2F2D5] uppercase tracking-widest active:scale-95 transition-all">감자 계좌간 이동</button>
         {isTransferModalOpen && (
           <div className="p-6 bg-black/40 border border-[#E2F2D5]/30 rounded-[24px] space-y-4 animate-in fade-in zoom-in-95 duration-200">
@@ -1013,7 +1016,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         )}
       </div>
 
-      {/* 2. 내역 입력 (순서 조정: 유형 -> 메모 -> 금액 -> 항목) */}
+      {/* 2. 내역 입력 (유형 -> 메모 -> 금액 -> 항목 순서) */}
       <div className="bg-[#1c1c1e] p-7 rounded-[32px] border border-white/5 shadow-2xl space-y-5">
         <div className="flex justify-between items-center">
           <h4 className="text-sm font-black text-white">{activeGamjaAccount.replace('감자 ', '')} 입력</h4>
@@ -1037,7 +1040,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         <button onClick={handleAdd} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">내역 추가</button>
       </div>
 
-      {/* 3. 거래 리스트 및 관리 버튼 */}
+      {/* 3. 거래 리스트 */}
       <div className="bg-[#1c1c1e] rounded-[32px] border border-white/5 overflow-hidden shadow-2xl">
         <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
           {filteredTxs.map((t: any) => (
@@ -1052,6 +1055,9 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     </motion.div>
   );
 }
+
+
+
 
 
 // 대출 현황
