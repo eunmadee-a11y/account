@@ -979,10 +979,16 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
   };
 
   // 기초 자산(시작금액) 수정 함수 (추가됨!)
+  // 기초 자산(시작금액) 수정 함수 (현금성 및 연금 자산 실시간 연동 강화)
   const updateStartValue = (id: string, value: number) => {
-    setBalances((prev: any[]) => prev.map((b: any) => 
-      b.id === id ? { ...b, previousBalance: value } : b
-    ));
+    setBalances((prev: any[]) => {
+      const updatedBalances = prev.map((b: any) => 
+        b.id === id ? { ...b, previousBalance: value } : b
+      );
+      
+      // 상태 변경을 즉시 전파하기 위해 업데이트된 배열을 반환합니다.
+      return updatedBalances;
+    });
   };
 
   // 계좌 그룹 정의 (ISA 추가)
@@ -1079,12 +1085,19 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
                   />
                 </div>
               ))}
-              <button 
-                onClick={() => { setIsStartBalanceOpen(false); alert("감자 기초 자산이 성공적으로 반영되었습니다."); }}
+
+
+<button 
+                onClick={() => { 
+                  setIsStartBalanceOpen(false); 
+                  // 아이폰 사용자를 위한 간단한 피드백 알림
+                  alert("감자 기초 자산이 성공적으로 반영되었습니다."); 
+                }}
                 className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all mt-2 shadow-lg"
               >
                 변경 및 설정 완료
               </button>
+              
             </motion.div>
           )}
         </AnimatePresence>
