@@ -622,20 +622,33 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
             </div>
             <div className="max-h-[300px] overflow-y-auto custom-scrollbar divide-y divide-white/5">
               {selectedDateTransactions.length > 0 ? (
-                selectedDateTransactions.map((t: any) => (
-                  <div key={t.id} className="px-6 py-4 flex items-center justify-between hover:bg-white/5">
-                    <div>
-                      <p className="text-sm font-black text-white">{t.memo || t.category}</p>
-                      <p className="text-[10px] text-brand-text-sub">{t.account}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <p className={`text-sm font-black ${t.type === '수입' ? 'text-[#4B96FF]' : t.type === '이체' ? 'text-[#A0C7DF]' : 'text-white'}`}>
-                        {t.type === '수입' ? '+' : t.type === '이체' ? '⇆' : '-'}{formatCurrency(t.amount)}
+
+
+selectedDateTransactions.map((t: any) => (
+                  <div key={t.id} className="px-6 py-5 flex items-center justify-between hover:bg-white/5 active:bg-white/10 transition-colors">
+                    {/* 왼쪽: 금액 및 정보 세로 배치 */}
+                    <div className="flex flex-col gap-1">
+                      {/* 1. 금액을 상단으로 (타이틀 역할) */}
+                      <p className={`text-base font-black tabular-nums ${t.type === '수입' ? 'text-[#4B96FF]' : t.type === '이체' ? 'text-[#A0C7DF]' : 'text-white'}`}>
+                        {t.type === '수입' ? '+' : t.type === '이체' ? '' : '-'}{formatCurrency(t.amount)}
                       </p>
-                      <button onClick={() => deleteTransaction(t.id)} className="p-2 bg-white/5 rounded-lg active:text-[#FFA59E] transition-all"><X size={14} /></button>
+                      {/* 2. 항목 및 통장 이름을 하단으로 (설명 역할) */}
+                      <div className="flex items-center gap-2">
+                        <p className="text-[12px] font-bold text-white/80">{t.memo || t.category}</p>
+                        <span className="text-[10px] font-black text-brand-text-sub bg-white/5 px-1.5 py-0.5 rounded-md uppercase">
+                          {t.account.replace('내 ', '').replace(' 통장', '')}
+                        </span>
+                      </div>
                     </div>
+
+                    {/* 오른쪽: 삭제 버튼 (아이폰 터치 편의를 위해 유지) */}
+                    <button onClick={() => deleteTransaction(t.id)} className="p-3 bg-white/5 rounded-xl active:text-[#FFA59E] transition-all">
+                      <X size={16} />
+                    </button>
                   </div>
                 ))
+
+      
               ) : (
                 <div className="p-10 text-center text-[11px] text-brand-text-sub font-black uppercase tracking-widest">내역이 없습니다</div>
               )}
