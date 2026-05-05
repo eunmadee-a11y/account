@@ -5,7 +5,6 @@
 
 /**/
 
-
 /**/
 // ==========================================
 // 🎨 대표 색상 8가지 팔레트 (수정 시 아래 헥스 코드를 '찾기/바꾸기' 하세요)
@@ -728,7 +727,13 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
         </p>
       </div>
 
-     
+      {/* 3. 기초 자산(시작 금액) 수정창[cite: 1] */}
+      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden shadow-xl">
+        <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-white/5 transition-all">
+          <div className="text-left">
+            <h4 className="font-black text-[13px] text-[#E2F2D5] uppercase">기초 자산(시작금액) 수정</h4>
+            <p className="text-[10px] text-brand-text-sub mt-1">이 금액을 기준으로 전체 잔액이 재계산됩니다.</p>
+          </div>
 
 
           
@@ -753,15 +758,6 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
               >
                 반영 및 설정 완료
               </button>
-
-
-
-
-
-
-
-
-              
             </motion.div>
           )}
         </AnimatePresence>
@@ -801,17 +797,6 @@ function ExpenseView({ transactions, setTransactions, filteredData, currentDate,
            항목 이름 및 내역 관리
         </button>
       </div>
-
-
- {/* 3. 기초 자산(시작 금액) 수정창[cite: 1] */}
-      <div className="bg-[#1c1c1e] border border-white/5 rounded-[32px] overflow-hidden shadow-xl">
-        <button onClick={() => setIsStartBalanceOpen(!isStartBalanceOpen)} className="w-full px-8 py-5 flex items-center justify-between hover:bg-white/5 transition-all">
-          <div className="text-left">
-            <h4 className="font-black text-[13px] text-[#E2F2D5] uppercase">기초 자산(시작금액) 수정</h4>
-            <p className="text-[10px] text-brand-text-sub mt-1">이 금액을 기준으로 전체 잔액이 재계산됩니다.</p>
-          </div>
-
-        
     </motion.div>
   );
 }
