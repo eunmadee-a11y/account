@@ -1090,9 +1090,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         </AnimatePresence>
       </div>
 
-      {/* 2. 내역 입력          </div>
-        )}
-      </div>
+     
 
       {/* 2. 내역 입력 (유형 -> 메모 -> 금액 -> 항목 순서) */}
       <div className="bg-[#1c1c1e] p-7 rounded-[32px] border border-white/5 shadow-2xl space-y-5">
