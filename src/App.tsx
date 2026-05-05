@@ -303,6 +303,7 @@ export default function App() {
     return { totalRemaining, totalPrincipalPaid, totalInterestPaid, monthRepayment };
   }, [loans, currentDate]);
 
+
 const changeMonth = (offset: number) => {
     // 1. 상단 기준 달 변경
     const nextDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1);
@@ -323,6 +324,8 @@ const changeMonth = (offset: number) => {
       }
     }
   };
+
+  
   
   const deleteTransaction = (id: string) => {
     if (confirm('이 내역을 삭제하시겠습니까?')) setTransactions(prev => prev.filter(t => t.id !== id));
