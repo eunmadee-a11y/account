@@ -182,58 +182,58 @@ export default function App() {
 
 
 
-// [통합 잔액 로직] 월별 이월 시스템 적용 (적금 제외)
-useEffect(() => {
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
 
-  const updatedBalances = balances.map(balance => {
-    // 1. 적금 항목은 이월 로직에서 제외 (기존 로직 유지)
-    if (balance.category === '투자/연금' || balance.name.includes('적금')) {
-      return balance;
+
+// [통합 잔액 로직] 월별 이월 시스템 (아이폰 최적화 및 적금 제외)
+  useEffect(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    const updatedBalances = balances.map(balance => {
+      // 적금 항목이나 투자/연금 카테고리는 이월 계산에서 제외 (기존 방식 유지)
+      if (balance.category === '투자/연금' || balance.name.includes('적금')) {
+        return balance;
+      }
+
+      // 1. 전체 기간 중 '선택된 달 이전'까지의 모든 내역 계산 (이월금)
+      const allTxs = [...transactions, ...gamjaTransactions];
+      
+      const prevTxs = allTxs.filter(t => {
+        const d = new Date(t.date);
+        return d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() < month);
+      });
+
+      // 2. '선택된 달' 현재의 내역 계산
+      const currMonthTxs = allTxs.filter(t => {
+        const d = new Date(t.date);
+        return d.getFullYear() === year && d.getMonth() === month;
+      });
+
+      const calc = (txList: any[]) => {
+        const inc = txList.filter(t => t.account === balance.name && t.type === '수입').reduce((s, t) => s + t.amount, 0);
+        const exp = txList.filter(t => t.account === balance.name && t.type === '지출').reduce((s, t) => s + t.amount, 0);
+        const tOut = txList.filter(t => t.type === '이체' && t.account === balance.name).reduce((s, t) => s + t.amount, 0);
+        const tIn = txList.filter(t => t.type === '이체' && (t as any).toAccount === balance.name).reduce((s, t) => s + t.amount, 0);
+        return inc - exp - tOut + tIn;
+      };
+
+      const carryOver = (balance.previousBalance || 0) + calc(prevTxs);
+      const currentMonthChange = calc(currMonthTxs);
+
+      return {
+        ...balance,
+        currentBalance: carryOver + currentMonthChange
+      };
+    });
+
+    // 무한 루프 방지를 위한 조건부 업데이트
+    if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
+      setBalances(updatedBalances);
     }
+  }, [transactions, gamjaTransactions, currentDate, balances.map(b => b.previousBalance).join(',')]);
 
-    // 2. 현재 선택된 달까지의 모든 내역 필터링
-    const allTxs = [...transactions, ...gamjaTransactions].filter(t => {
-      const d = new Date(t.date);
-      return d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() <= month);
-    });
 
-    // 3. 현재 달의 내역만 필터링
-    const currMonthTxs = allTxs.filter(t => {
-      const d = new Date(t.date);
-      return d.getFullYear() === year && d.getMonth() === month;
-    });
-
-    // 4. 이전 달까지의 누적 잔액 계산 (이월금 도출)
-    const prevTxs = allTxs.filter(t => {
-      const d = new Date(t.date);
-      return d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() < month);
-    });
-
-    const calculateBalance = (txList: any[]) => {
-      const inc = txList.filter(t => t.account === balance.name && t.type === '수입').reduce((s, t) => s + t.amount, 0);
-      const exp = txList.filter(t => t.account === balance.name && t.type === '지출').reduce((s, t) => s + t.amount, 0);
-      const tOut = txList.filter(t => t.type === '이체' && t.account === balance.name).reduce((s, t) => s + t.amount, 0);
-      const tIn = txList.filter(t => t.type === '이체' && (t as any).toAccount === balance.name).reduce((s, t) => s + t.amount, 0);
-      return inc - exp - tOut + tIn;
-    };
-
-    const carryOver = (balance.previousBalance || 0) + calculateBalance(prevTxs);
-    const monthChange = calculateBalance(currMonthTxs);
-
-    return {
-      ...balance,
-      currentBalance: carryOver + monthChange, // 화면에 표시될 실시간 잔액
-      monthlyCarryOver: carryOver // 해당 월 시작 시점의 이월 금액
-    };
-  });
-
-  if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
-    setBalances(updatedBalances);
-  }
-}, [transactions, gamjaTransactions, currentDate, balances.map(b => b.previousBalance).join(',')]);
+  
 
 // 데이터를 변경 시 자동 저장 (아이폰 브라우저 저장소 활용)
 useEffect(() => {
