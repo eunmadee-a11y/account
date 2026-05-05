@@ -26,10 +26,16 @@ import {
   ChevronLeft, ChevronRight, Plus, Minus,
   Trash2, X, CreditCard as LoanIcon, Edit2, Search, BarChart2
 } from 'lucide-react';
+// 수정할 부분 (types.ts 또는 해당 섹션)
 import { 
   Transaction, TransactionType, TabName, BalanceEntry, SalaryData,
   SalaryType, SalaryRecord, Loan, GamjaTransaction, LoanRepayment
 } from './types';
+
+// TransactionType에 '이체'가 포함되어 있는지 확인하고, 없으면 아래와 같이 처리합니다.
+// 아래 코드를 복사하여 상단 import 문 아래에 배치하세요.
+
+const TRANSFER_CATEGORIES = ['계좌이체', '여유자금이동', '자동이체', '생활비입금'];
 import { 
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, MY_ACCOUNTS, GAMJA_ACCOUNTS,
   SALARY_TYPES, LOAN_NAMES, MOCK_TRANSACTIONS, INITIAL_BALANCES,
@@ -175,22 +181,29 @@ export default function App() {
   });
 
 // [통합 잔액 로직] 기초 자산 + 전체 내역을 합산하여 실시간 잔액을 도출합니다
+  /* 이 부분이 전체 자산 통계에서 지출/수입으로 중복 계산되지 않게 해줍니다. */
   useEffect(() => {
     const updatedBalances = balances.map(balance => {
-      const allAccountTxs = [...transactions, ...gamjaTransactions].filter(t => t.account === balance.name);
-      const income = allAccountTxs.filter(t => t.type === '수입').reduce((s, t) => s + t.amount, 0);
-      const expense = allAccountTxs.filter(t => t.type === '지출').reduce((s, t) => s + t.amount, 0);
+      const allTxs = [...transactions, ...gamjaTransactions];
+      
+      // 1. 일반 수입/지출 계산
+      const income = allTxs.filter(t => t.account === balance.name && t.type === '수입').reduce((s, t) => s + t.amount, 0);
+      const expense = allTxs.filter(t => t.account === balance.name && t.type === '지출').reduce((s, t) => s + t.amount, 0);
+      
+      // 2. 이체 로직 추가 (보낸 돈은 차감, 받은 돈은 합산)
+      const transferOut = allTxs.filter(t => t.type === '이체' && t.account === balance.name).reduce((s, t) => s + t.amount, 0);
+      const transferIn = allTxs.filter(t => t.type === '이체' && (t as any).toAccount === balance.name).reduce((s, t) => s + t.amount, 0);
 
       return {
         ...balance,
-        currentBalance: (balance.previousBalance || 0) + income - expense
+        currentBalance: (balance.previousBalance || 0) + income - expense - transferOut + transferIn
       };
     });
 
     if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
       setBalances(updatedBalances);
     }
-  }, [transactions, gamjaTransactions, balances.map(b => b.previousBalance).join(',')]); // 기초 자산 변경 시에도 즉시 재계산
+  }, [transactions, gamjaTransactions, balances.map(b => b.previousBalance).join(',')]);
 
  // 데이터를 변경 시 자동 저장 (아이폰 브라우저 저장소 활용 - 카테고리 저장 추가)
 
@@ -402,60 +415,41 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
 // --- TAB VIEWS ---
 
 /* 홈 탭 */
+/* 기존 HomeView 함수 내부 상단에 추가 */
 function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, balances, currentDate, myAccountNames, tabName, setTabName, categories, setCategories }: any) {
-  const mainAccounts = balances.filter((b: any) => b.category === '내 통장');
-  const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-  const [savingsList, setSavingsList] = useState<{id: string, name: string}[]>(() => {
-    try { const saved = localStorage.getItem('mySavingsList'); return saved ? JSON.parse(saved) : [{ id: 'savings-1', name: '적금 1' }]; } catch { return [{ id: 'savings-1', name: '적금 1' }]; }
+  // 계좌이체 모달 상태 관리
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [transferData, setTransferData] = useState({
+    from: myAccountNames[0],
+    to: myAccountNames[1],
+    amount: 0,
+    date: new Date().toISOString().split('T')[0]
   });
-  const [savingsValues, setSavingsValues] = useState<Record<string, Record<string, number>>>(() => {
-    try { const saved = localStorage.getItem('mySavingsValues'); return saved ? JSON.parse(saved) : {}; } catch { return {}; }
-  });
-  const currentMonthSavings = savingsValues[monthKey] || {};
 
-  const handleAddSavings = () => {
-    const newId = `savings-${Date.now()}`;
-    const newList = [...savingsList, { id: newId, name: `적금 ${savingsList.length + 1}` }];
-    setSavingsList(newList); localStorage.setItem('mySavingsList', JSON.stringify(newList));
+  const handleTransfer = () => {
+    if (transferData.amount <= 0 || transferData.from === transferData.to) return;
+    
+    const transferId = Math.random().toString(36).substr(2, 9);
+    
+    // 이체는 '지출'이나 '수입' 통계에 잡히지 않도록 타입을 '이체'로 설정하여 추가합니다.
+    const newTransfer = {
+      id: transferId,
+      date: transferData.date,
+      type: '이체' as any, // 타입을 '이체'로 구분
+      category: '계좌이체',
+      account: transferData.from,
+      toAccount: transferData.to, // 받는 계좌 정보 추가
+      amount: transferData.amount,
+      memo: `${transferData.from} -> ${transferData.to} 이체`
+    };
+
+    setTransactions([newTransfer, ...transactions]);
+    setIsTransferModalOpen(false);
+    setTransferData({ ...transferData, amount: 0 });
+    alert("이체가 완료되었습니다.");
   };
-  const handleRemoveSavings = (id: string) => {
-    const newList = savingsList.filter(s => s.id !== id);
-    setSavingsList(newList); localStorage.setItem('mySavingsList', JSON.stringify(newList));
-  };
-  const handleSavingsNameChange = (id: string, newName: string) => {
-    const newList = savingsList.map(s => s.id === id ? { ...s, name: newName } : s);
-    setSavingsList(newList); localStorage.setItem('mySavingsList', JSON.stringify(newList));
-  };
-  const handleSavingsValueChange = (id: string, val: number) => {
-    const newMonthData = { ...currentMonthSavings, [id]: val };
-    const newTotalData = { ...savingsValues, [monthKey]: newMonthData };
-    setSavingsValues(newTotalData); localStorage.setItem('mySavingsValues', JSON.stringify(newTotalData));
-  };
 
-  const totalSavingsAmount = savingsList.reduce((sum, s) => sum + (currentMonthSavings[s.id] || 0), 0);
-  const totalSum = useMemo(() => {
-    const targetKeywords = ['생활비', '여유자금', '자동이체'];
-    const accountsSum = mainAccounts.filter((b: any) => targetKeywords.some(k => b.name.includes(k))).reduce((sum: number, b: any) => sum + b.currentBalance, 0);
-    return accountsSum + totalSavingsAmount;
-  }, [mainAccounts, totalSavingsAmount]);
-
-  const homePensionTotal = balances.filter((b: any) => b.category === '투자/연금').reduce((sum: number, b: any) => sum + (b.monthlyBalances?.[monthKey] ?? b.currentBalance ?? 0), 0);
-  const customCashLike = totalSum;               
-  const customInvestment = homePensionTotal;
-  const customTotalAsset = customCashLike + customInvestment;
-
-  const [activeQuickAccount, setActiveQuickAccount] = useState<string | null>(() => {
-    const defaultAcc = mainAccounts.find((a: any) => a.name.includes('생활비'));
-    return defaultAcc ? defaultAcc.name : null;
-  });
-  const quickAccountKeywords = ['생활비', '여유자금', '자동이체'];
-  const quickAccounts = quickAccountKeywords.map(keyword => mainAccounts.find((account: any) => account.name.includes(keyword))).filter(Boolean);
-
-  const selectedDateTransactions = useMemo(() => {
-    if (!selectedDateStr) return [];
-    return transactions.filter((t: any) => t.date === selectedDateStr);
-  }, [transactions, selectedDateStr]);
-
+  /* ... 기존 변수들 ... */
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
 
@@ -604,13 +598,55 @@ function HomeView({ totalAssets, monthlySummary, transactions, setTransactions, 
             <Calendar currentDate={currentDate} transactions={transactions} selectedDateStr={selectedDateStr} onDateClick={(d: string) => setSelectedDateStr(d)} />
           </div>
 
-          <div className="bg-[#1c1c1e] rounded-[24px] border border-white/5 overflow-hidden shadow-2xl">
-            <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/5">
-              <h3 className="font-black text-sm text-white">
-                {selectedDateStr ? `${selectedDateStr} 내역` : '날짜 선택'}
-              </h3>
-              {selectedDateStr && <span className="text-xs font-bold text-brand-text-sub bg-white/10 px-2 py-1 rounded-xl">{selectedDateTransactions.length}건</span>}
-            </div>
+        /* 내 통장 잔액 박스 상단에 이체 버튼 추가 */
+<div className="bg-[#1c1c1e] rounded-[24px] border border-white/5 shadow-2xl overflow-hidden">
+  <div className="px-6 py-5 border-b border-white/5 bg-white/5 flex items-center justify-between">
+    <h3 className="text-sm font-black text-white">내 통장 잔액</h3>
+    {/* 아이폰에서 터치하기 쉬운 큰 버튼 */}
+    <button 
+      onClick={() => setIsTransferModalOpen(!isTransferModalOpen)}
+      className="text-[11px] font-black bg-[#4B96FF]/20 text-[#4B96FF] px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+    >
+      계좌간 이동
+    </button>
+  </div>
+
+  {/* 이체 입력창 (아이폰 최적화 스타일) */}
+  {isTransferModalOpen && (
+    <div className="p-6 bg-black/40 border-b border-white/5 space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <select 
+          value={transferData.from} 
+          onChange={e => setTransferData({...transferData, from: e.target.value})}
+          className="bg-[#2c2c2e] text-white p-3 rounded-xl text-xs font-bold outline-none border border-white/10"
+        >
+          {myAccountNames.map((name: string) => <option key={name} value={name}>{name}</option>)}
+        </select>
+        <select 
+          value={transferData.to} 
+          onChange={e => setTransferData({...transferData, to: e.target.value})}
+          className="bg-[#2c2c2e] text-white p-3 rounded-xl text-xs font-bold outline-none border border-white/10"
+        >
+          {myAccountNames.map((name: string) => <option key={name} value={name}>{name}</option>)}
+        </select>
+      </div>
+      <NumericInput 
+        value={transferData.amount} 
+        onChange={(v: number) => setTransferData({...transferData, amount: v})}
+        className="w-full bg-[#1c1c1e] border border-[#4B96FF]/50 rounded-xl px-4 py-3 text-xl font-black text-white text-right"
+        placeholder="이체 금액 입력"
+      />
+      <button 
+        onClick={handleTransfer}
+        className="w-full py-4 bg-[#4B96FF] text-[#121212] rounded-xl font-black text-sm active:scale-95 transition-all"
+      >
+        이체 실행하기
+      </button>
+    </div>
+  )}
+
+  <div className="divide-y divide-white/5">
+    {/* ... 기존 통장 목록 렌더링 ... */}
             <div className="divide-y divide-white/5 min-h-[120px] max-h-[360px] overflow-y-auto custom-scrollbar">
               {selectedDateTransactions.length > 0 ? (
                 selectedDateTransactions.map((t: any) => (
