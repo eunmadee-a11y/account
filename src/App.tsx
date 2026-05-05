@@ -419,7 +419,7 @@ const TabButton = ({ name, icon: Icon }: { name: TabName, icon: any }) => (
       {activeTab === '홈' && <HomeView key="home" {...{ totalAssets, monthlySummary: filteredData, currentDate, transactions, balances, setTransactions, selectedDateStr, setSelectedDateStr, deleteTransaction, loanSummary, myAccountNames, categories: myCategories, setCategories: setMyCategories, tabName: tabNames['홈'], setTabName: (n:string)=>setTabNames({...tabNames, '홈':n}) }} />}
       {activeTab === '내 지출' && <ExpenseView key="expense" {...{ transactions, setTransactions, filteredData, currentDate, deleteTransaction, myAccountNames, balances, setBalances, searchQuery: mySearchQuery, setSearchQuery: setMySearchQuery, categories: myCategories, setCategories: setMyCategories, onOpenEdit: () => setIsMyEditModalOpen(true), tabName: tabNames['내 지출'], setTabName: (n:string)=>setTabNames({...tabNames, '내 지출':n}) }} />}
       {activeTab === '연금/투자 관리' && <PensionView key="pension" {...{ balances, setBalances, currentDate, tabName: tabNames['연금/투자 관리'], setTabName: (n:string)=>setTabNames({...tabNames, '연금/투자 관리':n}) }} />}
-      {activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances, setBalances, currentDate, categories: gamjaCategories, setCategories: setGamjaCategories, onOpenEdit: () => setIsGamjaEditModalOpen(true), tabName: tabNames['감자 지출'], setTabName: (n:string)=>setTabNames({...tabNames, '감자 지출':n}) }} />}
+{activeTab === '감자 지출' && <GamjaView key="gamja" {...{ gamjaTransactions, setGamjaTransactions, deleteGamjaTransaction, gamjaAccountNames, searchQuery: gamjaSearchQuery, setSearchQuery: setGamjaSearchQuery, balances, setBalances, currentDate, categories: gamjaCategories, setCategories: setGamjaCategories, selectedDateStr, onOpenEdit: () => setIsGamjaEditModalOpen(true), tabName: tabNames['감자 지출'], setTabName: (n:string)=>setTabNames({...tabNames, '감자 지출':n}) }} />}
       {activeTab === '월급 비교' && <SalaryView key="salary" {...{ salaries, setSalaries, salaryLabels, setSalaryLabels, currentDate, transactions, setTransactions, gamjaTransactions, setGamjaTransactions, balances, setBalances, tabName: tabNames['월급 비교'], setTabName: (n:string)=>setTabNames({...tabNames, '월급 비교':n}) }} />}
       {activeTab === '대출 관리' && <LoanManagementView key="loans" {...{ loans, setLoans, loanSummary, tabName: tabNames['대출 관리'], setTabName: (n:string)=>setTabNames({...tabNames, '대출 관리':n}) }} />}
       {activeTab === '1년 결산' && <AnnualSettlementView key="annual" {...{ transactions, gamjaTransactions, salaries, tabName: tabNames['1년 결산'], setTabName: (n:string)=>setTabNames({...tabNames, '1년 결산':n}) }} />}
@@ -934,6 +934,7 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
     amount: 0,
     date: new Date().toISOString().split('T')[0]
   });
+  
 
   const calculateLiveBalance = (accountName: string) => {
     const acc = balances.find((b: any) => b.name === accountName);
