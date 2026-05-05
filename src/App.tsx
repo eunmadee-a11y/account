@@ -1034,12 +1034,12 @@ function GamjaView({ gamjaTransactions, setGamjaTransactions, deleteGamjaTransac
         <button onClick={handleAdd} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg mt-2">내역 추가</button>
 
         
-
-        <NumericInput label="금액" value={newTx.amount} onChange={(v: number) => setNewTx({...newTx, amount: v})} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none" />
-        <input type="text" placeholder="메모 입력..." value={newTx.memo} onChange={e => setNewTx({...newTx, memo: e.target.value})} className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white outline-none" />
-        <button onClick={handleAdd} className="w-full py-5 bg-[#E2F2D5] text-[#121212] rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">내역 추가</button>
+        
       </div>
 
+
+
+      
       {/* 4. 거래 리스트 */}
       <div className="bg-[#1c1c1e] rounded-[32px] border border-white/5 overflow-hidden shadow-2xl">
         <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
