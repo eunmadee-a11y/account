@@ -1589,36 +1589,65 @@ function AnnualSettlementView({ transactions, gamjaTransactions, salaries, tabNa
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-8 pb-24 px-1">
 
-      <div className="bg-[#1c1c1e] p-8 border border-white/5 rounded-[32px] shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
-        <p className="text-[14px] font-black text-[#4B96FF] uppercase mb-6 tracking-widest text-center bg-[#4B96FF]/10 py-2 rounded-xl w-fit mx-auto px-6">{selectedYear}년 총결산</p>
-        <div className="grid grid-cols-3 divide-x divide-white/10 text-center">
-          <div><p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">연봉</p><p className={`${biggerFontSize} font-black tabular-nums text-white`}>{formatNumber(totalAnnualSalary)}</p></div>
-          <div><p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">지출</p><p className={`${biggerFontSize} font-black text-[#FFA59E] tabular-nums`}>{formatNumber(totalAnnualExpense)}</p></div>
-          <div><p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">자산</p><p className={`${biggerFontSize} font-black text-[#4B96FF] tabular-nums`}>{formatNumber(totalRemaining)}</p></div>
+
+
+
+{/* 1. 최상단 총결산 요약: 가로 폭 최대화 및 라인 구분선 적용 */}
+      <div className="bg-[#1c1c1e] p-3 py-6 border border-white/5 rounded-[24px] shadow-lg">
+        <p className="text-[12px] font-black text-[#4B96FF] uppercase mb-5 tracking-widest text-center bg-[#4B96FF]/10 py-1.5 rounded-lg w-fit mx-auto px-4">{selectedYear}년 총결산</p>
+        <div className="flex w-full">
+          <div className="flex-1 flex flex-col items-center border-r border-white/10 px-0.5">
+            <p className="text-[10px] font-bold text-brand-text-sub mb-1 uppercase tracking-tighter">연봉</p>
+            <p className="text-[14px] font-black tabular-nums text-white tracking-tighter text-center">
+              {formatNumber(totalAnnualSalary)}
+            </p>
+          </div>
+          <div className="flex-1 flex flex-col items-center border-r border-white/10 px-0.5">
+            <p className="text-[10px] font-bold text-brand-text-sub mb-1 uppercase tracking-tighter">지출</p>
+            <p className="text-[14px] font-black text-[#FFA59E] tabular-nums tracking-tighter text-center">
+              {formatNumber(totalAnnualExpense)}
+            </p>
+          </div>
+          <div className="flex-1 flex flex-col items-center px-0.5">
+            <p className="text-[10px] font-bold text-brand-text-sub mb-1 uppercase tracking-tighter">자산</p>
+            <p className="text-[14px] font-black text-[#4B96FF] tabular-nums tracking-tighter text-center">
+              {formatNumber(totalRemaining)}
+            </p>
+          </div>
         </div>
       </div>
 
+      {/* 2. 사용자별 결산: 박스 제거 및 라인 레이아웃 적용 */}
       {[ { label: '나', data: myData, color: '#4B96FF', bg: 'bg-[#4B96FF]', text: 'text-[#121212]' }, { label: '감자', data: gamjaData, color: '#E2F2D5', bg: 'bg-[#E2F2D5]', text: 'text-[#121212]' } ].map((user) => (
         <div key={user.label} className="space-y-6">
-          <div className="bg-[#1c1c1e] p-8 border border-white/5 rounded-[32px] shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <span className={`px-4 py-2 rounded-xl ${user.text} text-[13px] font-black uppercase tracking-widest shadow-lg ${user.bg}`}>{user.label} 결산</span>
+          <div className="bg-[#1c1c1e] p-3 py-6 border border-white/5 rounded-[24px] shadow-2xl">
+            <div className="flex justify-center mb-6">
+              <span className={`px-4 py-1.5 rounded-full ${user.text} text-[11px] font-black uppercase tracking-widest shadow-lg ${user.bg}`}>{user.label} 결산</span>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center">
-                <p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">연봉</p>
-                <p className="text-[14px] md:text-lg font-black tabular-nums text-white">{formatNumber(user.data.annualSalary)}</p>
+            <div className="flex w-full">
+              <div className="flex-1 flex flex-col items-center border-r border-white/10 px-0.5">
+                <p className="text-[9px] font-bold text-brand-text-sub mb-1 uppercase tracking-tighter">연봉</p>
+                <p className="text-[13px] font-black tabular-nums text-white tracking-tighter text-center">
+                  {formatNumber(user.data.annualSalary)}
+                </p>
               </div>
-              <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center">
-                <p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">지출</p>
-                <p className="text-[14px] md:text-lg font-black text-[#FFA59E] tabular-nums">{formatNumber(user.data.totalExpense)}</p>
+              <div className="flex-1 flex flex-col items-center border-r border-white/10 px-0.5">
+                <p className="text-[9px] font-bold text-brand-text-sub mb-1 uppercase tracking-tighter">지출</p>
+                <p className="text-[13px] font-black text-[#FFA59E] tabular-nums tracking-tighter text-center">
+                  {formatNumber(user.data.totalExpense)}
+                </p>
               </div>
-              <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center">
-                <p className="text-[11px] font-bold text-brand-text-sub mb-2 uppercase tracking-widest">자산</p>
-                <p className="text-[14px] md:text-lg font-black text-[#4B96FF] tabular-nums">{formatNumber(user.data.remaining)}</p>
+              <div className="flex-1 flex flex-col items-center px-0.5">
+                <p className="text-[9px] font-bold text-brand-text-sub mb-1 uppercase tracking-tighter">자산</p>
+                <p className="text-[13px] font-black text-[#4B96FF] tabular-nums tracking-tighter text-center">
+                  {formatNumber(user.data.remaining)}
+                </p>
               </div>
             </div>
           </div>
+
+
+      
 
           <div className="bg-[#1c1c1e] p-8 border border-white/5 rounded-[32px] shadow-2xl">
             <h4 className="text-[15px] font-black mb-8 flex justify-between items-center px-2 text-white">
