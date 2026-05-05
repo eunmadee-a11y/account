@@ -183,27 +183,26 @@ export default function App() {
 
 
 
-
-// [통합 잔액 로직] 월별 이월 시스템 (아이폰 최적화 및 적금 제외)
+// [통합 잔액 로직] 월별 이월 시스템 (무한 루프 방지 및 아이폰 최적화)
   useEffect(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
     const updatedBalances = balances.map(balance => {
-      // 적금 항목이나 투자/연금 카테고리는 이월 계산에서 제외 (기존 방식 유지)
+      // 적금 항목이나 투자/연금 카테고리는 이월 계산에서 제외
       if (balance.category === '투자/연금' || balance.name.includes('적금')) {
         return balance;
       }
 
-      // 1. 전체 기간 중 '선택된 달 이전'까지의 모든 내역 계산 (이월금)
       const allTxs = [...transactions, ...gamjaTransactions];
       
+      // 1. 이전 달까지의 누적 (이월금)
       const prevTxs = allTxs.filter(t => {
         const d = new Date(t.date);
         return d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() < month);
       });
 
-      // 2. '선택된 달' 현재의 내역 계산
+      // 2. 현재 선택된 달의 내역
       const currMonthTxs = allTxs.filter(t => {
         const d = new Date(t.date);
         return d.getFullYear() === year && d.getMonth() === month;
@@ -226,11 +225,13 @@ export default function App() {
       };
     });
 
-    // 무한 루프 방지를 위한 조건부 업데이트
-    if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
+    // 데이터가 실제로 변했을 때만 업데이트하여 무한 루프 차단
+    const hasChanged = JSON.stringify(updatedBalances) !== JSON.stringify(balances);
+    if (hasChanged) {
       setBalances(updatedBalances);
     }
-  }, [transactions, gamjaTransactions, currentDate, balances.map(b => b.previousBalance).join(',')]);
+    // 의존성 배열에서 balances.map을 제거하고 balances 자체를 감시하거나 필요한 값만 넣습니다.
+  }, [transactions, gamjaTransactions, currentDate]);
 
 
   
