@@ -185,19 +185,23 @@ export default function App() {
 
 
 // [계부 로직] 선택된 달의 마지막 날 기준 잔액 고정 표시 로직
+  /* [계부 잔액 로직] 선택된 달의 마지막 날 기준 잔액 고정 및 실시간 반영 */
   useEffect(() => {
     const updatedBalances = balances.map(balance => {
       const allTxs = [...transactions, ...gamjaTransactions];
       
-      // 1. 선택된 달(currentDate)의 마지막 날짜 구하기
-      // 해당 달의 다음달 0일은 해당 달의 마지막 날을 의미합니다.
-      const endOfSelectedMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      endOfSelectedMonth.setHours(23, 59, 59, 999);
+      // 1. 아이폰 상단 헤더에서 선택된 달(currentDate)의 마지막 날 구하기
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const endOfSelectedMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
-      // 2. 선택된 달의 말일보다 같거나 이전인 내역들만 필터링 (미래 내역 제외)
-      const relevantTxs = allTxs.filter(t => new Date(t.date) <= endOfSelectedMonth);
+      // 2. 선택된 달의 말일보다 '이후'인 미래 내역은 계산에서 배제 (잔액 고정의 핵심)
+      const relevantTxs = allTxs.filter(t => {
+        const txDate = new Date(t.date);
+        return txDate <= endOfSelectedMonth;
+      });
       
-      // 3. 필터링된 내역으로만 수입, 지출, 이체 합산
+      // 3. 필터링된 내역으로만 해당 계좌의 수입, 지출, 이체 합산
       const income = relevantTxs.filter(t => t.account === balance.name && t.type === '수입').reduce((s, t) => s + t.amount, 0);
       const expense = relevantTxs.filter(t => t.account === balance.name && t.type === '지출').reduce((s, t) => s + t.amount, 0);
       
@@ -206,12 +210,12 @@ export default function App() {
 
       return {
         ...balance,
-        // 결과: 기초 자산 + 선택한 달까지의 모든 내역 합계 (그 이후 미래 내역은 무시됨)
-        currentBalance: (balance.previousBalance || 0) + income - expense - transferOut + transferIn
+        // 결과: 기초 자산 + 선택한 달 말일까지의 누적치
+        currentBalance: (Number(balance.previousBalance) || 0) + income - expense - transferOut + transferIn
       };
     });
 
-    // 무한 루프 방지를 위한 비교 후 업데이트
+    // 화면 빈칸 방지: 데이터가 실제로 바뀌었을 때만 업데이트 수행
     if (JSON.stringify(updatedBalances) !== JSON.stringify(balances)) {
       setBalances(updatedBalances);
     }
